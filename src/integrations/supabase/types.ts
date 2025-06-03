@@ -9,7 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      producer_financials: {
+        Row: {
+          available_balance_cents: number
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_agency: string | null
+          bank_name: string | null
+          pending_balance_cents: number
+          pix_key: string | null
+          producer_id: string
+          updated_at: string
+        }
+        Insert: {
+          available_balance_cents?: number
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          pending_balance_cents?: number
+          pix_key?: string | null
+          producer_id: string
+          updated_at?: string
+        }
+        Update: {
+          available_balance_cents?: number
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          pending_balance_cents?: number
+          pix_key?: string | null
+          producer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producer_financials_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          cpf_cnpj: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          instagram_handle: string | null
+          iugu_customer_id: string | null
+          phone: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          instagram_handle?: string | null
+          iugu_customer_id?: string | null
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          instagram_handle?: string | null
+          iugu_customer_id?: string | null
+          phone?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

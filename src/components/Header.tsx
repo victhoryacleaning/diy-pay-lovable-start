@@ -9,20 +9,26 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
   userRole?: 'user' | 'producer' | 'admin';
   userName?: string;
-  onLogout?: () => void;
 }
 
 const Header = ({ 
-  isAuthenticated = false, 
-  userRole = 'user', 
-  userName = 'Usuário',
-  onLogout 
+  isAuthenticated, 
+  userRole, 
+  userName 
 }: HeaderProps) => {
+  const { user, profile, signOut } = useAuth();
+  
+  // Use auth context if props not provided
+  const isLoggedIn = isAuthenticated ?? !!user;
+  const currentRole = userRole ?? profile?.role ?? 'user';
+  const displayName = userName ?? profile?.full_name ?? 'Usuário';
+
   const getRoleDisplayName = (role: string) => {
     switch (role) {
       case 'producer': return 'Produtor';
@@ -39,6 +45,10 @@ const Header = ({
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+  };
+
   return (
     <header className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,7 +61,7 @@ const Header = ({
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            {!isAuthenticated ? (
+            {!isLoggedIn ? (
               <>
                 <Link to="/about" className="text-gray-600 hover:text-diypay-600 transition-colors">
                   Sobre
@@ -73,17 +83,17 @@ const Header = ({
             ) : (
               <>
                 <Link 
-                  to={getRoleDashboardLink(userRole)} 
+                  to={getRoleDashboardLink(currentRole)} 
                   className="text-gray-600 hover:text-diypay-600 transition-colors"
                 >
-                  Painel {getRoleDisplayName(userRole)}
+                  Painel {getRoleDisplayName(currentRole)}
                 </Link>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center space-x-2">
                       <User className="h-4 w-4" />
-                      <span className="hidden sm:inline">{userName}</span>
+                      <span className="hidden sm:inline">{displayName}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
@@ -93,7 +103,7 @@ const Header = ({
                         Configurações
                       </Link>
                     </DropdownMenuItem>
-                    {userRole === 'producer' && (
+                    {currentRole === 'producer' && (
                       <DropdownMenuItem asChild>
                         <Link to="/complete-producer-profile" className="flex items-center">
                           <CreditCard className="mr-2 h-4 w-4" />
@@ -102,7 +112,7 @@ const Header = ({
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onLogout} className="text-red-600">
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="mr-2 h-4 w-4" />
                       Sair
                     </DropdownMenuItem>
@@ -121,7 +131,7 @@ const Header = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {!isAuthenticated ? (
+                {!isLoggedIn ? (
                   <>
                     <DropdownMenuItem asChild>
                       <Link to="/about">Sobre</Link>
@@ -140,20 +150,20 @@ const Header = ({
                 ) : (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link to={getRoleDashboardLink(userRole)}>
-                        Painel {getRoleDisplayName(userRole)}
+                      <Link to={getRoleDashboardLink(currentRole)}>
+                        Painel {getRoleDisplayName(currentRole)}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/profile">Configurações</Link>
                     </DropdownMenuItem>
-                    {userRole === 'producer' && (
+                    {currentRole === 'producer' && (
                       <DropdownMenuItem asChild>
                         <Link to="/complete-producer-profile">Dados Bancários</Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onLogout} className="text-red-600">
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       Sair
                     </DropdownMenuItem>
                   </>

@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +9,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreditCard, Loader2, CheckCircle } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CompleteProducerProfile = () => {
+  const { user, profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     bankName: "",
     bankAgency: "",
@@ -20,22 +26,94 @@ const CompleteProducerProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [hasExistingData, setHasExistingData] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login");
+      return;
+    }
+
+    if (!authLoading && profile && profile.role !== 'producer') {
+      navigate("/");
+      return;
+    }
+
+    if (user) {
+      fetchProducerFinancials();
+    }
+  }, [user, profile, authLoading, navigate]);
+
+  const fetchProducerFinancials = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('producer_financials')
+        .select('*')
+        .eq('producer_id', user.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching producer financials:', error);
+        return;
+      }
+
+      if (data) {
+        setFormData({
+          bankName: data.bank_name || "",
+          bankAgency: data.bank_agency || "",
+          bankAccountNumber: data.bank_account_number || "",
+          bankAccountType: data.bank_account_type || "",
+          pixKey: data.pix_key || "",
+        });
+        setHasExistingData(true);
+      }
+    } catch (error) {
+      console.error('Error fetching producer financials:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+
     setIsLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      // TODO: Implementar atualização dos dados bancários no Supabase
-      console.log("Update producer financial data:", formData);
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Placeholder - será substituído pela lógica real do Supabase
-      setSuccess("Dados bancários salvos com sucesso! Conecte ao Supabase para persistir os dados.");
-    } catch (err) {
+      const financialData = {
+        producer_id: user.id,
+        bank_name: formData.bankName,
+        bank_agency: formData.bankAgency,
+        bank_account_number: formData.bankAccountNumber,
+        bank_account_type: formData.bankAccountType,
+        pix_key: formData.pixKey || null,
+      };
+
+      let result;
+      if (hasExistingData) {
+        result = await supabase
+          .from('producer_financials')
+          .update(financialData)
+          .eq('producer_id', user.id);
+      } else {
+        result = await supabase
+          .from('producer_financials')
+          .insert([financialData]);
+      }
+
+      if (result.error) {
+        setError(result.error.message);
+      } else {
+        setSuccess("Dados bancários salvos com sucesso!");
+        toast.success("Dados bancários atualizados!");
+        setTimeout(() => {
+          navigate("/producer-dashboard");
+        }, 2000);
+      }
+    } catch (err: any) {
       setError("Erro ao salvar dados bancários. Tente novamente.");
     } finally {
       setIsLoading(false);
@@ -57,12 +135,10 @@ const CompleteProducerProfile = () => {
   };
 
   const formatAgency = (value: string) => {
-    // Remove caracteres não numéricos e limita a 6 dígitos
     return value.replace(/\D/g, '').slice(0, 6);
   };
 
   const formatAccountNumber = (value: string) => {
-    // Remove caracteres não numéricos e formata conta com dígito
     const numbers = value.replace(/\D/g, '');
     if (numbers.length > 1) {
       const account = numbers.slice(0, -1);
@@ -72,9 +148,21 @@ const CompleteProducerProfile = () => {
     return numbers;
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-diypay-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-      <Header isAuthenticated={true} userRole="producer" userName="Produtor" />
+      <Header 
+        isAuthenticated={true} 
+        userRole={profile?.role} 
+        userName={profile?.full_name || "Produtor"} 
+      />
       
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
@@ -145,7 +233,7 @@ const CompleteProducerProfile = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="bankAccountType">Tipo de Conta</Label>
-                    <Select onValueChange={handleSelectChange} required>
+                    <Select value={formData.bankAccountType} onValueChange={handleSelectChange} required>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>

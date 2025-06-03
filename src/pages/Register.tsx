@@ -1,35 +1,46 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreditCard, Eye, EyeOff, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Register = () => {
+  const { signUp, user, profile } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
     fullName: "",
     cpfCnpj: "",
-    role: "user" as "user" | "producer"
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+
+  // Redirect if already logged in
+  if (user && profile) {
+    const roleRedirects = {
+      'producer': '/producer-dashboard',
+      'admin': '/admin-dashboard',
+      'user': '/member-area'
+    };
+    navigate(roleRedirects[profile.role], { replace: true });
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    setSuccess("");
 
     // Validações básicas
     if (formData.password !== formData.confirmPassword) {
@@ -44,18 +55,19 @@ const Register = () => {
       return;
     }
 
-    try {
-      // TODO: Implementar cadastro com Supabase
-      console.log("Register attempt:", formData);
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Placeholder - será substituído pela lógica real do Supabase
-      setSuccess("Cadastro realizado com sucesso! Conecte ao Supabase para habilitar autenticação.");
-    } catch (err) {
-      setError("Erro ao criar conta. Tente novamente.");
-    } finally {
+    const { error } = await signUp(
+      formData.email, 
+      formData.password, 
+      formData.fullName, 
+      formData.cpfCnpj
+    );
+
+    if (error) {
+      setError(error);
       setIsLoading(false);
+    } else {
+      toast.success("Cadastro realizado com sucesso!");
+      navigate("/complete-producer-profile");
     }
   };
 
@@ -110,9 +122,9 @@ const Register = () => {
 
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle>Cadastro</CardTitle>
+              <CardTitle>Cadastro de Produtor</CardTitle>
               <CardDescription>
-                Preencha os dados para criar sua conta
+                Preencha os dados para criar sua conta de produtor
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -157,28 +169,6 @@ const Register = () => {
                     required
                     className="w-full"
                   />
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Tipo de Conta</Label>
-                  <RadioGroup
-                    value={formData.role}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as "user" | "producer" }))}
-                    className="flex flex-col space-y-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="user" id="user" />
-                      <Label htmlFor="user" className="text-sm">
-                        Cliente - Comprar produtos/serviços
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="producer" id="producer" />
-                      <Label htmlFor="producer" className="text-sm">
-                        Produtor - Vender produtos/serviços
-                      </Label>
-                    </div>
-                  </RadioGroup>
                 </div>
 
                 <div className="space-y-2">
@@ -230,12 +220,6 @@ const Register = () => {
                 {error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert>
-                    <AlertDescription>{success}</AlertDescription>
                   </Alert>
                 )}
 

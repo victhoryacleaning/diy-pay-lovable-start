@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CreditCard, Eye, EyeOff, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Login = () => {
+  const { signIn, user, profile } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -18,23 +22,30 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Redirect if already logged in
+  if (user && profile) {
+    const roleRedirects = {
+      'producer': '/producer-dashboard',
+      'admin': '/admin-dashboard',
+      'user': '/member-area'
+    };
+    navigate(roleRedirects[profile.role], { replace: true });
+    return null;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    try {
-      // TODO: Implementar autenticação com Supabase
-      console.log("Login attempt:", formData);
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Placeholder - será substituído pela lógica real do Supabase
-      setError("Conecte ao Supabase para habilitar autenticação");
-    } catch (err) {
-      setError("Erro ao fazer login. Tente novamente.");
-    } finally {
+    const { error } = await signIn(formData.email, formData.password);
+
+    if (error) {
+      setError(error);
       setIsLoading(false);
+    } else {
+      toast.success("Login realizado com sucesso!");
+      // Navigation will be handled by the auth state change
     }
   };
 
@@ -127,13 +138,6 @@ const Login = () => {
                 </Button>
 
                 <div className="text-center space-y-2">
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-diypay-600 hover:text-diypay-700 hover:underline"
-                  >
-                    Esqueceu sua senha?
-                  </Link>
-                  
                   <div className="text-sm text-gray-600">
                     Não tem uma conta?{" "}
                     <Link
