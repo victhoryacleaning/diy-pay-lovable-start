@@ -53,6 +53,59 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          checkout_link_slug: string | null
+          created_at: string
+          description: string | null
+          file_url_or_access_info: string | null
+          id: string
+          is_active: boolean | null
+          max_installments_allowed: number | null
+          name: string
+          price_cents: number
+          producer_id: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          checkout_link_slug?: string | null
+          created_at?: string
+          description?: string | null
+          file_url_or_access_info?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_installments_allowed?: number | null
+          name: string
+          price_cents: number
+          producer_id: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          checkout_link_slug?: string | null
+          created_at?: string
+          description?: string | null
+          file_url_or_access_info?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_installments_allowed?: number | null
+          name?: string
+          price_cents?: number
+          producer_id?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           cpf_cnpj: string | null
@@ -91,6 +144,93 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sales: {
+        Row: {
+          amount_total_cents: number
+          buyer_email: string
+          buyer_profile_id: string | null
+          created_at: string
+          error_message_internal: string | null
+          error_message_iugu: string | null
+          id: string
+          installments_chosen: number | null
+          iugu_bank_slip_barcode: string | null
+          iugu_charge_id: string | null
+          iugu_invoice_id: string | null
+          iugu_invoice_secure_url: string | null
+          iugu_pix_qr_code_base64: string | null
+          iugu_pix_qr_code_text: string | null
+          paid_at: string | null
+          payment_method_used: string
+          platform_fee_cents: number
+          producer_share_cents: number
+          product_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_total_cents: number
+          buyer_email: string
+          buyer_profile_id?: string | null
+          created_at?: string
+          error_message_internal?: string | null
+          error_message_iugu?: string | null
+          id?: string
+          installments_chosen?: number | null
+          iugu_bank_slip_barcode?: string | null
+          iugu_charge_id?: string | null
+          iugu_invoice_id?: string | null
+          iugu_invoice_secure_url?: string | null
+          iugu_pix_qr_code_base64?: string | null
+          iugu_pix_qr_code_text?: string | null
+          paid_at?: string | null
+          payment_method_used: string
+          platform_fee_cents?: number
+          producer_share_cents?: number
+          product_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_total_cents?: number
+          buyer_email?: string
+          buyer_profile_id?: string | null
+          created_at?: string
+          error_message_internal?: string | null
+          error_message_iugu?: string | null
+          id?: string
+          installments_chosen?: number | null
+          iugu_bank_slip_barcode?: string | null
+          iugu_charge_id?: string | null
+          iugu_invoice_id?: string | null
+          iugu_invoice_secure_url?: string | null
+          iugu_pix_qr_code_base64?: string | null
+          iugu_pix_qr_code_text?: string | null
+          paid_at?: string | null
+          payment_method_used?: string
+          platform_fee_cents?: number
+          producer_share_cents?: number
+          product_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_buyer_profile_id_fkey"
+            columns: ["buyer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

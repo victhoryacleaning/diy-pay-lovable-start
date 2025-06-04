@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.create-iugu-payment-token]
 verify_jwt = false
+
+[functions.create-iugu-transaction]
+verify_jwt = false
