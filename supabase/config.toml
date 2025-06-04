@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.create-iugu-transaction]
 verify_jwt = false
+
+[functions.iugu-webhook-handler]
+verify_jwt = false
