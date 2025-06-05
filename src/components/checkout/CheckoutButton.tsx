@@ -26,11 +26,11 @@ export const CheckoutButton = ({
   const [processingStep, setProcessingStep] = useState<string>("");
 
   const handlePayment = async () => {
-    console.log('[DEBUG] Iniciando processo de pagamento');
-    console.log('[DEBUG] Dados do formulário:', formData);
-    console.log('[DEBUG] Método de pagamento:', paymentMethod);
-    console.log('[DEBUG] Dados do cartão:', cardData);
-    console.log('[DEBUG] Parcelas:', installments);
+    console.log('[DEBUG] *** FRONTEND: INICIANDO PROCESSO DE PAGAMENTO ***');
+    console.log('[DEBUG] Frontend: Dados do formulário:', formData);
+    console.log('[DEBUG] Frontend: Método de pagamento:', paymentMethod);
+    console.log('[DEBUG] Frontend: Dados do cartão:', cardData);
+    console.log('[DEBUG] Frontend: Parcelas:', installments);
 
     onPaymentProcess(true);
     setProcessingStep("Processando...");
@@ -38,7 +38,7 @@ export const CheckoutButton = ({
     try {
       // Step 1: Create or get Iugu customer
       setProcessingStep("Criando cliente...");
-      console.log('[DEBUG] Passo 1: Criando cliente na Iugu');
+      console.log('[DEBUG] *** FRONTEND: PASSO 1 - CRIANDO CLIENTE NA IUGU ***');
 
       const customerPayload = {
         email: formData.email,
@@ -47,26 +47,41 @@ export const CheckoutButton = ({
         phone: formData.phone,
       };
 
-      console.log('[DEBUG] Payload para get-or-create-iugu-customer:', customerPayload);
+      console.log('[DEBUG] Frontend: Payload para get-or-create-iugu-customer:', customerPayload);
+      console.log('[DEBUG] Frontend: Preparando para chamar get-or-create-iugu-customer...');
 
       const customerResponse = await supabase.functions.invoke('get-or-create-iugu-customer', {
         body: customerPayload,
       });
 
-      console.log('[DEBUG] Resposta bruta do get-or-create-iugu-customer:', customerResponse);
-      console.log('[DEBUG] Status da resposta:', customerResponse.error ? 'erro' : 'sucesso');
-      console.log('[DEBUG] Dados da resposta:', customerResponse.data);
+      console.log('[DEBUG] *** FRONTEND: RESPOSTA DO get-or-create-iugu-customer ***');
+      console.log('[DEBUG] Frontend: Status da resposta:', customerResponse.error ? 'ERRO' : 'SUCESSO');
+      console.log('[DEBUG] Frontend: customerResponse.error:', customerResponse.error);
+      console.log('[DEBUG] Frontend: customerResponse.data:', customerResponse.data);
 
+      // Log the raw response for debugging
       if (customerResponse.error) {
-        console.error('[ERRO] Erro na criação do cliente:', customerResponse.error);
-        throw new Error(`Erro ao criar cliente: ${customerResponse.error.message}`);
+        console.error('[ERRO] Frontend: Erro na criação do cliente:', customerResponse.error);
+        
+        // Try to get more details from the error
+        if (typeof customerResponse.error === 'object') {
+          console.error('[ERRO] Frontend: Detalhes do erro:', JSON.stringify(customerResponse.error, null, 2));
+        }
+        
+        throw new Error(`Erro ao criar cliente: ${customerResponse.error.message || JSON.stringify(customerResponse.error)}`);
+      }
+
+      if (!customerResponse.data) {
+        console.error('[ERRO] Frontend: Resposta da função não contém data');
+        throw new Error('Resposta inválida da função de criação de cliente');
       }
 
       const iuguCustomerId = customerResponse.data?.iugu_customer_id;
-      console.log('[DEBUG] ID do cliente Iugu obtido:', iuguCustomerId);
+      console.log('[DEBUG] Frontend: ID do cliente Iugu obtido:', iuguCustomerId);
 
       if (!iuguCustomerId) {
-        console.error('[ERRO] ID do cliente Iugu não retornado');
+        console.error('[ERRO] Frontend: ID do cliente Iugu não retornado');
+        console.error('[ERRO] Frontend: Dados completos da resposta:', JSON.stringify(customerResponse.data, null, 2));
         throw new Error('ID do cliente não retornado');
       }
 
@@ -75,12 +90,12 @@ export const CheckoutButton = ({
 
       if (paymentMethod === 'credit_card') {
         if (!cardData) {
-          console.error('[ERRO] Dados do cartão não fornecidos para pagamento com cartão');
+          console.error('[ERRO] Frontend: Dados do cartão não fornecidos para pagamento com cartão');
           throw new Error('Dados do cartão são obrigatórios para pagamento com cartão de crédito');
         }
 
         setProcessingStep("Processando cartão...");
-        console.log('[DEBUG] Passo 2: Criando token do cartão (apenas para credit_card)');
+        console.log('[DEBUG] *** FRONTEND: PASSO 2 - CRIANDO TOKEN DO CARTÃO (APENAS PARA CREDIT_CARD) ***');
 
         const [firstName, ...lastNameParts] = (cardData.holderName || '').split(' ');
         const lastName = lastNameParts.join(' ');
@@ -95,34 +110,40 @@ export const CheckoutButton = ({
           year: `20${year}`
         };
 
-        console.log('[DEBUG] Payload para create-iugu-payment-token:', tokenPayload);
+        console.log('[DEBUG] Frontend: Payload para create-iugu-payment-token:', tokenPayload);
+        console.log('[DEBUG] Frontend: Preparando para chamar create-iugu-payment-token...');
 
         const tokenResponse = await supabase.functions.invoke('create-iugu-payment-token', {
           body: tokenPayload,
         });
 
-        console.log('[DEBUG] Resposta bruta do create-iugu-payment-token:', tokenResponse);
+        console.log('[DEBUG] *** FRONTEND: RESPOSTA DO create-iugu-payment-token ***');
+        console.log('[DEBUG] Frontend: Status da resposta do token:', tokenResponse.error ? 'ERRO' : 'SUCESSO');
+        console.log('[DEBUG] Frontend: tokenResponse.error:', tokenResponse.error);
+        console.log('[DEBUG] Frontend: tokenResponse.data:', tokenResponse.data);
 
         if (tokenResponse.error) {
-          console.error('[ERRO] Erro na criação do token:', tokenResponse.error);
-          throw new Error(`Erro ao processar cartão: ${tokenResponse.error.message}`);
+          console.error('[ERRO] Frontend: Erro na criação do token:', tokenResponse.error);
+          throw new Error(`Erro ao processar cartão: ${tokenResponse.error.message || JSON.stringify(tokenResponse.error)}`);
         }
 
         cardToken = tokenResponse.data?.id;
-        console.log('[DEBUG] Token do cartão obtido:', cardToken);
+        console.log('[DEBUG] Frontend: Token do cartão obtido:', cardToken);
 
         if (!cardToken) {
-          console.error('[ERRO] Token do cartão não retornado');
+          console.error('[ERRO] Frontend: Token do cartão não retornado');
+          console.error('[ERRO] Frontend: Dados completos da resposta do token:', JSON.stringify(tokenResponse.data, null, 2));
           throw new Error('Token do cartão não retornado');
         }
       } else {
-        console.log('[DEBUG] Passo 2: Pulando criação de token (método não é credit_card)');
-        console.log('[DEBUG] Método de pagamento é:', paymentMethod);
+        console.log('[DEBUG] *** FRONTEND: PASSO 2 - PULANDO CRIAÇÃO DE TOKEN (MÉTODO NÃO É CREDIT_CARD) ***');
+        console.log('[DEBUG] Frontend: Método de pagamento é:', paymentMethod);
       }
 
       // Step 3: Create transaction
       setProcessingStep("Finalizando pagamento...");
-      console.log('[DEBUG] Passo 3: Criando transação');
+      console.log('[DEBUG] *** FRONTEND: PASSO 3 - CRIANDO TRANSAÇÃO ***');
+      console.log('[DEBUG] Frontend: Preparando para chamar create-iugu-transaction...');
 
       const transactionPayload = {
         product_id: product.id,
@@ -136,49 +157,58 @@ export const CheckoutButton = ({
         notification_url_base: `${window.location.origin}/webhook`
       };
 
-      console.log('[DEBUG] Payload para create-iugu-transaction:', transactionPayload);
+      console.log('[DEBUG] Frontend: Payload para create-iugu-transaction:', transactionPayload);
 
       const transactionResponse = await supabase.functions.invoke('create-iugu-transaction', {
         body: transactionPayload,
       });
 
-      console.log('[DEBUG] Resposta bruta do create-iugu-transaction:', transactionResponse);
+      console.log('[DEBUG] *** FRONTEND: RESPOSTA DO create-iugu-transaction ***');
+      console.log('[DEBUG] Frontend: Status da resposta da transação:', transactionResponse.error ? 'ERRO' : 'SUCESSO');
+      console.log('[DEBUG] Frontend: transactionResponse.error:', transactionResponse.error);
+      console.log('[DEBUG] Frontend: transactionResponse.data:', transactionResponse.data);
 
       if (transactionResponse.error) {
-        console.error('[ERRO] Erro na criação da transação:', transactionResponse.error);
-        throw new Error(`Erro ao processar pagamento: ${transactionResponse.error.message}`);
+        console.error('[ERRO] Frontend: Erro na criação da transação:', transactionResponse.error);
+        throw new Error(`Erro ao processar pagamento: ${transactionResponse.error.message || JSON.stringify(transactionResponse.error)}`);
       }
 
       const transactionData = transactionResponse.data;
-      console.log('[DEBUG] Dados da transação:', transactionData);
+      console.log('[DEBUG] Frontend: Dados da transação:', transactionData);
 
       if (!transactionData?.success) {
-        console.error('[ERRO] Transação não foi bem-sucedida:', transactionData);
+        console.error('[ERRO] Frontend: Transação não foi bem-sucedida:', transactionData);
         throw new Error(transactionData?.message || 'Falha no processamento do pagamento');
       }
 
+      console.log('[DEBUG] *** FRONTEND: TRANSAÇÃO CRIADA COM SUCESSO ***');
+
       // Handle success based on payment method
       if (paymentMethod === 'credit_card' && transactionData.iugu_status === 'paid') {
+        console.log('[DEBUG] Frontend: Pagamento com cartão aprovado imediatamente');
         toast({
           title: "Pagamento aprovado!",
           description: "Seu pagamento foi processado com sucesso.",
         });
       } else if (paymentMethod === 'pix' && transactionData.pix_qr_code_text) {
+        console.log('[DEBUG] Frontend: PIX gerado com sucesso');
         // Show PIX QR code and instructions
-        console.log('[DEBUG] PIX QR Code:', transactionData.pix_qr_code_text);
+        console.log('[DEBUG] Frontend: PIX QR Code:', transactionData.pix_qr_code_text);
         toast({
           title: "PIX gerado!",
           description: "Use o código PIX para finalizar o pagamento.",
         });
       } else if (paymentMethod === 'bank_slip' && transactionData.secure_url) {
+        console.log('[DEBUG] Frontend: Boleto gerado com sucesso');
         // Redirect to bank slip
-        console.log('[DEBUG] URL do boleto:', transactionData.secure_url);
+        console.log('[DEBUG] Frontend: URL do boleto:', transactionData.secure_url);
         window.open(transactionData.secure_url, '_blank');
         toast({
           title: "Boleto gerado!",
           description: "Você será redirecionado para o boleto.",
         });
       } else {
+        console.log('[DEBUG] Frontend: Pagamento iniciado, redirecionando se necessário');
         toast({
           title: "Pagamento iniciado!",
           description: "Você será redirecionado para finalizar o pagamento.",
@@ -189,13 +219,19 @@ export const CheckoutButton = ({
       }
 
     } catch (error) {
-      console.error('[ERRO] Erro no processo de pagamento:', error);
+      console.error('[ERRO] *** FRONTEND: ERRO NO PROCESSO DE PAGAMENTO ***:', error);
+      console.error('[ERRO] Frontend: Tipo do erro:', typeof error);
+      console.error('[ERRO] Frontend: Nome do erro:', error.name);
+      console.error('[ERRO] Frontend: Mensagem do erro:', error.message);
+      console.error('[ERRO] Frontend: Stack do erro:', error.stack);
+      
       toast({
         title: "Erro no pagamento",
         description: error.message || "Ocorreu um erro ao processar seu pagamento. Tente novamente.",
         variant: "destructive",
       });
     } finally {
+      console.log('[DEBUG] Frontend: Finalizando processo de pagamento');
       onPaymentProcess(false);
       setProcessingStep("");
     }

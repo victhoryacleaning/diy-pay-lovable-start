@@ -32,8 +32,9 @@ interface IuguCustomerResponse {
 }
 
 Deno.serve(async (req) => {
-  console.log('[DEBUG] Iniciando get-or-create-iugu-customer');
+  console.log('[DEBUG] *** INÍCIO DA FUNÇÃO get-or-create-iugu-customer ***');
   console.log('[DEBUG] Método da requisição:', req.method);
+  console.log('[DEBUG] URL da requisição:', req.url);
   console.log('[DEBUG] Headers da requisição:', Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
@@ -43,18 +44,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('[DEBUG] Iniciando processamento principal da função');
+    console.log('[DEBUG] *** INICIANDO PROCESSAMENTO PRINCIPAL ***');
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    console.log('[DEBUG] SUPABASE_URL existe:', !!supabaseUrl);
-    console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY existe:', !!supabaseServiceKey);
+    console.log('[DEBUG] SUPABASE_URL:', supabaseUrl ? 'PRESENTE' : 'AUSENTE');
+    console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'PRESENTE' : 'AUSENTE');
 
     if (!supabaseUrl || !supabaseServiceKey) {
       const errorMsg = 'Variáveis de ambiente do Supabase não encontradas';
-      console.error('[ERRO]', errorMsg);
+      console.error('[ERRO] *** CRITICAL ERROR ***:', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('[DEBUG] Cliente Supabase inicializado');
+    console.log('[DEBUG] Cliente Supabase inicializado com sucesso');
 
     // Get environment and API keys
     const appEnv = Deno.env.get('APP_ENV') || 'test';
@@ -87,12 +88,12 @@ Deno.serve(async (req) => {
       ? Deno.env.get('IUGU_ACCOUNT_ID_LIVE')
       : Deno.env.get('IUGU_ACCOUNT_ID_TEST');
 
-    console.log('[DEBUG] Iugu API Key existe:', !!iuguApiKey);
-    console.log('[DEBUG] Iugu Account ID existe:', !!iuguAccountId);
+    console.log('[DEBUG] Iugu API Key:', iuguApiKey ? 'PRESENTE (length: ' + iuguApiKey.length + ')' : 'AUSENTE');
+    console.log('[DEBUG] Iugu Account ID:', iuguAccountId ? 'PRESENTE' : 'AUSENTE');
 
     if (!iuguApiKey) {
       const errorMsg = 'Configuração da API da Iugu não encontrada para ambiente: ' + appEnv;
-      console.error('[ERRO]', errorMsg);
+      console.error('[ERRO] *** CRITICAL ERROR ***:', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -108,17 +109,17 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    console.log('[DEBUG] Tentando fazer parse do body da requisição');
+    console.log('[DEBUG] *** TENTANDO FAZER PARSE DO BODY ***');
     let payload: IuguCustomerPayload;
     
     try {
       const requestText = await req.text();
-      console.log('[DEBUG] Body bruto da requisição:', requestText);
+      console.log('[DEBUG] Body bruto recebido (length: ' + requestText.length + '):', requestText);
       payload = JSON.parse(requestText);
-      console.log('[DEBUG] Payload parseado:', payload);
+      console.log('[DEBUG] Payload parseado com sucesso:', JSON.stringify(payload, null, 2));
     } catch (parseError) {
       const errorMsg = 'Erro ao fazer parse do JSON da requisição';
-      console.error('[ERRO]', errorMsg, parseError);
+      console.error('[ERRO] *** PARSE ERROR ***:', errorMsg, parseError);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -136,7 +137,7 @@ Deno.serve(async (req) => {
 
     if (!payload.email) {
       const errorMsg = 'Email é obrigatório';
-      console.error('[ERRO]', errorMsg);
+      console.error('[ERRO] *** VALIDATION ERROR ***:', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -151,9 +152,11 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('[DEBUG] *** VALIDAÇÃO DO PAYLOAD PASSOU ***');
+
     // Step 1: Check if user exists in our database with iugu_customer_id
     if (payload.user_id) {
-      console.log('[DEBUG] Verificando perfil existente para user_id:', payload.user_id);
+      console.log('[DEBUG] *** VERIFICANDO PERFIL EXISTENTE *** para user_id:', payload.user_id);
       
       try {
         const { data: profile, error: profileError } = await supabaseClient
@@ -165,16 +168,17 @@ Deno.serve(async (req) => {
         console.log('[DEBUG] Resultado da busca de perfil:', { profile, profileError });
 
         if (!profileError && profile?.iugu_customer_id) {
-          console.log('[DEBUG] Encontrado iugu_customer_id existente:', profile.iugu_customer_id);
+          console.log('[DEBUG] *** ENCONTRADO CLIENTE EXISTENTE ***:', profile.iugu_customer_id);
           const successResponse = { 
             success: true,
             iugu_customer_id: profile.iugu_customer_id, 
             exists_in_iugu: true 
           };
-          console.log('[DEBUG] Retornando resposta de sucesso (cliente existente):', successResponse);
+          console.log('[DEBUG] *** RETORNANDO RESPOSTA DE SUCESSO (cliente existente) ***:', JSON.stringify(successResponse, null, 2));
           return new Response(
             JSON.stringify(successResponse),
             { 
+              status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
             }
           );
@@ -184,6 +188,8 @@ Deno.serve(async (req) => {
         // Continue com o processo de criação
       }
     }
+
+    console.log('[DEBUG] *** CRIANDO/BUSCANDO CLIENTE NA IUGU ***');
 
     // Step 2: Create or get customer from Iugu
     const iuguPayload: any = {
@@ -206,17 +212,18 @@ Deno.serve(async (req) => {
     if (payload.district) iuguPayload.district = payload.district;
     if (payload.complement) iuguPayload.complement = payload.complement;
 
-    console.log('[DEBUG] Payload para enviar à Iugu:', iuguPayload);
+    console.log('[DEBUG] Payload para enviar à Iugu:', JSON.stringify(iuguPayload, null, 2));
 
     // Create Basic Auth header
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
-    console.log('[DEBUG] Header de autenticação criado (primeiros 20 chars):', authHeader.substring(0, 20) + '...');
+    console.log('[DEBUG] Header de autenticação criado (primeiros 30 chars):', authHeader.substring(0, 30) + '...');
 
-    console.log('[DEBUG] Fazendo requisição para criar cliente na Iugu');
+    console.log('[DEBUG] *** FAZENDO REQUISIÇÃO PARA CRIAR CLIENTE NA IUGU ***');
     let iuguResponse;
     let iuguData;
 
     try {
+      console.log('[DEBUG] Chamando fetch para https://api.iugu.com/v1/customers');
       iuguResponse = await fetch('https://api.iugu.com/v1/customers', {
         method: 'POST',
         headers: {
@@ -226,29 +233,33 @@ Deno.serve(async (req) => {
         body: JSON.stringify(iuguPayload),
       });
 
+      console.log('[DEBUG] *** RESPOSTA DA IUGU RECEBIDA ***');
       console.log('[DEBUG] Status da resposta da Iugu:', iuguResponse.status);
+      console.log('[DEBUG] Status text da resposta da Iugu:', iuguResponse.statusText);
       console.log('[DEBUG] Headers da resposta da Iugu:', Object.fromEntries(iuguResponse.headers.entries()));
 
       const responseText = await iuguResponse.text();
-      console.log('[DEBUG] Texto bruto da resposta da Iugu:', responseText);
+      console.log('[DEBUG] Texto bruto da resposta da Iugu (length: ' + responseText.length + '):', responseText);
 
       try {
         iuguData = JSON.parse(responseText);
-        console.log('[DEBUG] Dados parseados da resposta da Iugu:', iuguData);
+        console.log('[DEBUG] *** DADOS PARSEADOS DA IUGU ***:', JSON.stringify(iuguData, null, 2));
       } catch (iuguParseError) {
-        console.error('[ERRO] Erro ao fazer parse da resposta da Iugu:', iuguParseError);
+        console.error('[ERRO] *** ERRO AO FAZER PARSE DA RESPOSTA DA IUGU ***:', iuguParseError);
         throw new Error('Resposta inválida da API da Iugu: ' + responseText);
       }
     } catch (fetchError) {
-      console.error('[ERRO] Erro na requisição para a Iugu:', fetchError);
+      console.error('[ERRO] *** ERRO NA REQUISIÇÃO PARA A IUGU ***:', fetchError);
+      const errorResponse = {
+        success: false,
+        error: true, 
+        message: 'Erro na comunicação com a Iugu',
+        functionName: 'get-or-create-iugu-customer',
+        details: fetchError.toString()
+      };
+      console.log('[DEBUG] *** RETORNANDO ERRO DE FETCH ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: true, 
-          message: 'Erro na comunicação com a Iugu',
-          functionName: 'get-or-create-iugu-customer',
-          details: fetchError.toString()
-        }),
+        JSON.stringify(errorResponse),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -257,17 +268,22 @@ Deno.serve(async (req) => {
     }
 
     if (!iuguResponse.ok) {
-      console.log('[DEBUG] Resposta da Iugu não foi OK, verificando erros');
+      console.log('[DEBUG] *** RESPOSTA DA IUGU NÃO FOI OK ***');
       
       // Handle specific Iugu errors
       if (iuguData.errors) {
+        console.log('[DEBUG] Erros específicos da Iugu detectados:', iuguData.errors);
+        
         // Check if it's a "already exists" error
         if (iuguData.errors.email || iuguData.errors.cpf_cnpj) {
-          console.log('[DEBUG] Cliente pode já existir, tentando encontrar...');
+          console.log('[DEBUG] *** CLIENTE PODE JÁ EXISTIR, TENTANDO ENCONTRAR ***');
           
           try {
             // Try to find existing customer by email
-            const searchResponse = await fetch(`https://api.iugu.com/v1/customers?query=${encodeURIComponent(payload.email)}`, {
+            const searchUrl = `https://api.iugu.com/v1/customers?query=${encodeURIComponent(payload.email)}`;
+            console.log('[DEBUG] Fazendo busca de cliente existente:', searchUrl);
+            
+            const searchResponse = await fetch(searchUrl, {
               method: 'GET',
               headers: {
                 'Authorization': authHeader,
@@ -278,12 +294,12 @@ Deno.serve(async (req) => {
 
             if (searchResponse.ok) {
               const searchText = await searchResponse.text();
-              console.log('[DEBUG] Resposta da busca:', searchText);
+              console.log('[DEBUG] Resposta da busca (length: ' + searchText.length + '):', searchText);
               
               const searchData = JSON.parse(searchText);
               if (searchData.items && searchData.items.length > 0) {
                 const existingCustomer = searchData.items[0];
-                console.log('[DEBUG] Cliente existente encontrado:', existingCustomer.id);
+                console.log('[DEBUG] *** CLIENTE EXISTENTE ENCONTRADO ***:', existingCustomer.id);
                 
                 // Update our database with the found customer ID
                 await updateProfileWithIuguId(supabaseClient, payload, existingCustomer.id);
@@ -293,10 +309,11 @@ Deno.serve(async (req) => {
                   iugu_customer_id: existingCustomer.id, 
                   exists_in_iugu: true 
                 };
-                console.log('[DEBUG] Retornando cliente existente encontrado:', successResponse);
+                console.log('[DEBUG] *** RETORNANDO CLIENTE EXISTENTE ENCONTRADO ***:', JSON.stringify(successResponse, null, 2));
                 return new Response(
                   JSON.stringify(successResponse),
                   { 
+                    status: 200,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
                   }
                 );
@@ -315,7 +332,7 @@ Deno.serve(async (req) => {
           iugu_errors: iuguData.errors,
           functionName: 'get-or-create-iugu-customer'
         };
-        console.log('[DEBUG] Retornando erro da Iugu:', errorResponse);
+        console.log('[DEBUG] *** RETORNANDO ERRO DA IUGU ***:', JSON.stringify(errorResponse, null, 2));
         return new Response(
           JSON.stringify(errorResponse),
           { 
@@ -332,7 +349,7 @@ Deno.serve(async (req) => {
         details: iuguData,
         functionName: 'get-or-create-iugu-customer'
       };
-      console.log('[DEBUG] Retornando erro genérico da Iugu:', errorResponse);
+      console.log('[DEBUG] *** RETORNANDO ERRO GENÉRICO DA IUGU ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
         JSON.stringify(errorResponse),
         { 
@@ -344,12 +361,13 @@ Deno.serve(async (req) => {
 
     // Success: Customer created or retrieved
     const iuguCustomerId = iuguData.id;
-    console.log('[DEBUG] Cliente criado com sucesso - Iugu customer ID:', iuguCustomerId);
+    console.log('[DEBUG] *** CLIENTE CRIADO COM SUCESSO *** - Iugu customer ID:', iuguCustomerId);
 
     // Update our database
     try {
+      console.log('[DEBUG] *** ATUALIZANDO PERFIL NO BANCO DE DADOS ***');
       await updateProfileWithIuguId(supabaseClient, payload, iuguCustomerId);
-      console.log('[DEBUG] Perfil atualizado no banco de dados');
+      console.log('[DEBUG] Perfil atualizado no banco de dados com sucesso');
     } catch (updateError) {
       console.error('[ERRO] Erro ao atualizar perfil no banco:', updateError);
       // Continue anyway, as the customer was created in Iugu
@@ -360,27 +378,31 @@ Deno.serve(async (req) => {
       iugu_customer_id: iuguCustomerId, 
       exists_in_iugu: false 
     };
-    console.log('[DEBUG] Retornando resposta de sucesso final:', successResponse);
+    console.log('[DEBUG] *** RETORNANDO RESPOSTA DE SUCESSO FINAL ***:', JSON.stringify(successResponse, null, 2));
     return new Response(
       JSON.stringify(successResponse),
       { 
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 
   } catch (error) {
-    console.error('[ERRO] Erro geral na get-or-create-iugu-customer:', error.message);
+    console.error('[ERRO] *** ERRO GERAL NA get-or-create-iugu-customer ***:', error.message);
     console.error('[ERRO] Stack trace:', error.stack);
     console.error('[ERRO] Erro completo:', error);
     
+    const errorResponse = {
+      success: false,
+      error: true, 
+      message: 'Erro interno do servidor', 
+      details: error.message,
+      functionName: 'get-or-create-iugu-customer'
+    };
+    console.log('[DEBUG] *** RETORNANDO ERRO GERAL ***:', JSON.stringify(errorResponse, null, 2));
+    
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: true, 
-        message: 'Erro interno do servidor', 
-        details: error.message,
-        functionName: 'get-or-create-iugu-customer'
-      }),
+      JSON.stringify(errorResponse),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -390,7 +412,7 @@ Deno.serve(async (req) => {
 });
 
 async function updateProfileWithIuguId(supabaseClient: any, payload: IuguCustomerPayload, iuguCustomerId: string) {
-  console.log('[DEBUG] Iniciando updateProfileWithIuguId com:', { user_id: payload.user_id, email: payload.email, iuguCustomerId });
+  console.log('[DEBUG] *** INICIANDO updateProfileWithIuguId ***:', { user_id: payload.user_id, email: payload.email, iuguCustomerId });
   
   try {
     if (payload.user_id) {

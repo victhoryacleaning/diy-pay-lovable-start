@@ -19,8 +19,9 @@ interface TransactionPayload {
 }
 
 Deno.serve(async (req) => {
-  console.log('[DEBUG] Iniciando create-iugu-transaction');
+  console.log('[DEBUG] *** INÍCIO DA FUNÇÃO create-iugu-transaction ***');
   console.log('[DEBUG] Método da requisição:', req.method);
+  console.log('[DEBUG] URL da requisição:', req.url);
   console.log('[DEBUG] Headers da requisição:', Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('[DEBUG] Iniciando processamento principal da função');
+    console.log('[DEBUG] *** INICIANDO PROCESSAMENTO PRINCIPAL DA TRANSAÇÃO ***');
 
     // Get environment and API keys
     const appEnv = Deno.env.get('APP_ENV') || 'test';
@@ -49,13 +50,13 @@ Deno.serve(async (req) => {
 
     const platformFeePercentage = parseFloat(Deno.env.get('PLATFORM_FEE_PERCENTAGE') || '0.05'); // Default 5%
 
-    console.log('[DEBUG] Iugu API Key existe:', !!iuguApiKey);
-    console.log('[DEBUG] Iugu Account ID existe:', !!iuguAccountId);
+    console.log('[DEBUG] Iugu API Key:', iuguApiKey ? 'PRESENTE (length: ' + iuguApiKey.length + ')' : 'AUSENTE');
+    console.log('[DEBUG] Iugu Account ID:', iuguAccountId ? 'PRESENTE' : 'AUSENTE');
     console.log('[DEBUG] Platform fee percentage:', platformFeePercentage);
 
     if (!iuguApiKey || !iuguAccountId) {
       const errorMsg = 'Configuração da API da Iugu não encontrada para ambiente: ' + appEnv;
-      console.error('[ERRO]', errorMsg);
+      console.error('[ERRO] *** CRITICAL ERROR ***:', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -74,12 +75,12 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    console.log('[DEBUG] SUPABASE_URL existe:', !!supabaseUrl);
-    console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY existe:', !!supabaseServiceKey);
+    console.log('[DEBUG] SUPABASE_URL:', supabaseUrl ? 'PRESENTE' : 'AUSENTE');
+    console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'PRESENTE' : 'AUSENTE');
 
     if (!supabaseUrl || !supabaseServiceKey) {
       const errorMsg = 'Variáveis de ambiente do Supabase não encontradas';
-      console.error('[ERRO]', errorMsg);
+      console.error('[ERRO] *** CRITICAL ERROR ***:', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -95,20 +96,20 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('[DEBUG] Cliente Supabase inicializado');
+    console.log('[DEBUG] Cliente Supabase inicializado com sucesso');
 
     // Parse request body
-    console.log('[DEBUG] Tentando fazer parse do body da requisição');
+    console.log('[DEBUG] *** TENTANDO FAZER PARSE DO BODY ***');
     let payload: TransactionPayload;
     
     try {
       const requestText = await req.text();
-      console.log('[DEBUG] Body bruto da requisição:', requestText);
+      console.log('[DEBUG] Body bruto recebido (length: ' + requestText.length + '):', requestText);
       payload = JSON.parse(requestText);
-      console.log('[DEBUG] Payload parseado:', payload);
+      console.log('[DEBUG] Payload parseado com sucesso:', JSON.stringify(payload, null, 2));
     } catch (parseError) {
       const errorMsg = 'Erro ao fazer parse do JSON da requisição';
-      console.error('[ERRO]', errorMsg, parseError);
+      console.error('[ERRO] *** PARSE ERROR ***:', errorMsg, parseError);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -124,12 +125,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('[DEBUG] Processando transação para produto:', payload.product_id);
+    console.log('[DEBUG] *** PROCESSANDO TRANSAÇÃO PARA PRODUTO ***:', payload.product_id);
 
     // Validate required fields
     if (!payload.product_id || !payload.buyer_email || !payload.payment_method_selected) {
       const errorMsg = 'Campos obrigatórios não informados';
-      console.error('[ERRO]', errorMsg, { 
+      console.error('[ERRO] *** VALIDATION ERROR ***:', errorMsg, { 
         product_id: !!payload.product_id, 
         buyer_email: !!payload.buyer_email, 
         payment_method_selected: !!payload.payment_method_selected 
@@ -148,8 +149,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('[DEBUG] *** VALIDAÇÃO DO PAYLOAD PASSOU ***');
+
     // Get product data
-    console.log('[DEBUG] Buscando dados do produto:', payload.product_id);
+    console.log('[DEBUG] *** BUSCANDO DADOS DO PRODUTO ***:', payload.product_id);
     let product;
     
     try {
@@ -163,7 +166,7 @@ Deno.serve(async (req) => {
       console.log('[DEBUG] Resultado da busca do produto:', { data, productError });
 
       if (productError || !data) {
-        console.error('[ERRO] Produto não encontrado ou inativo:', productError);
+        console.error('[ERRO] *** PRODUTO NÃO ENCONTRADO ***:', productError);
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -179,9 +182,9 @@ Deno.serve(async (req) => {
       }
 
       product = data;
-      console.log('[DEBUG] Produto encontrado:', product);
+      console.log('[DEBUG] *** PRODUTO ENCONTRADO ***:', JSON.stringify(product, null, 2));
     } catch (dbError) {
-      console.error('[ERRO] Erro ao buscar produto no banco:', dbError);
+      console.error('[ERRO] *** ERRO AO BUSCAR PRODUTO NO BANCO ***:', dbError);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -202,7 +205,7 @@ Deno.serve(async (req) => {
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
     const producerShareCents = amountTotalCents - platformFeeCents;
 
-    console.log('[DEBUG] Cálculos de valores:', {
+    console.log('[DEBUG] *** CÁLCULOS DE VALORES ***:', {
       amountTotalCents,
       platformFeeCents,
       producerShareCents,
@@ -215,7 +218,7 @@ Deno.serve(async (req) => {
     
     if (installments > product.max_installments_allowed) {
       const errorMsg = `Número máximo de parcelas permitidas: ${product.max_installments_allowed}`;
-      console.error('[ERRO]', errorMsg);
+      console.error('[ERRO] *** INSTALLMENTS ERROR ***:', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -231,7 +234,7 @@ Deno.serve(async (req) => {
     }
 
     // Create initial sale record
-    console.log('[DEBUG] Criando registro de venda inicial');
+    console.log('[DEBUG] *** CRIANDO REGISTRO DE VENDA INICIAL ***');
     let sale;
     
     try {
@@ -253,7 +256,7 @@ Deno.serve(async (req) => {
       console.log('[DEBUG] Resultado da criação da venda:', { data, saleError });
 
       if (saleError || !data) {
-        console.error('[ERRO] Falha ao criar registro de venda:', saleError);
+        console.error('[ERRO] *** FALHA AO CRIAR REGISTRO DE VENDA ***:', saleError);
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -269,9 +272,9 @@ Deno.serve(async (req) => {
       }
 
       sale = data;
-      console.log('[DEBUG] Registro de venda criado:', sale.id);
+      console.log('[DEBUG] *** REGISTRO DE VENDA CRIADO ***:', sale.id);
     } catch (dbError) {
-      console.error('[ERRO] Erro ao criar venda no banco:', dbError);
+      console.error('[ERRO] *** ERRO AO CRIAR VENDA NO BANCO ***:', dbError);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -289,7 +292,7 @@ Deno.serve(async (req) => {
 
     // Basic Auth header for Iugu
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
-    console.log('[DEBUG] Header de autenticação criado (primeiros 20 chars):', authHeader.substring(0, 20) + '...');
+    console.log('[DEBUG] Header de autenticação criado (primeiros 30 chars):', authHeader.substring(0, 30) + '...');
 
     // Prepare items for Iugu
     const items = [{
@@ -297,14 +300,16 @@ Deno.serve(async (req) => {
       quantity: 1,
       price_cents: product.price_cents
     }];
-    console.log('[DEBUG] Items para Iugu:', items);
+    console.log('[DEBUG] *** ITEMS PARA IUGU ***:', JSON.stringify(items, null, 2));
 
     let iuguResponse;
     let updateData: any = {};
 
+    console.log('[DEBUG] *** MÉTODO DE PAGAMENTO SELECIONADO ***:', payload.payment_method_selected);
+
     // Payment method specific logic
     if (payload.payment_method_selected === 'credit_card' && payload.card_token) {
-      console.log('[DEBUG] Tentando cobrança direta com token do cartão');
+      console.log('[DEBUG] *** TENTANDO COBRANÇA DIRETA COM TOKEN DO CARTÃO ***');
       
       const chargePayload = {
         token: payload.card_token,
@@ -314,9 +319,10 @@ Deno.serve(async (req) => {
         ...(payload.iugu_customer_id && { customer_id: payload.iugu_customer_id })
       };
 
-      console.log('[DEBUG] Payload para cobrança direta:', chargePayload);
+      console.log('[DEBUG] Payload para cobrança direta:', JSON.stringify(chargePayload, null, 2));
 
       try {
+        console.log('[DEBUG] Chamando fetch para https://api.iugu.com/v1/charge');
         const chargeResponse = await fetch('https://api.iugu.com/v1/charge', {
           method: 'POST',
           headers: {
@@ -326,16 +332,17 @@ Deno.serve(async (req) => {
           body: JSON.stringify(chargePayload),
         });
 
+        console.log('[DEBUG] *** RESPOSTA DA COBRANÇA DIRETA ***');
         console.log('[DEBUG] Status da resposta de cobrança:', chargeResponse.status);
         
         const chargeText = await chargeResponse.text();
-        console.log('[DEBUG] Resposta bruta da cobrança:', chargeText);
+        console.log('[DEBUG] Resposta bruta da cobrança (length: ' + chargeText.length + '):', chargeText);
         
         const chargeData = JSON.parse(chargeText);
-        console.log('[DEBUG] Dados da cobrança parseados:', chargeData);
+        console.log('[DEBUG] *** DADOS DA COBRANÇA PARSEADOS ***:', JSON.stringify(chargeData, null, 2));
 
         if (chargeResponse.ok && chargeData.success) {
-          console.log('[DEBUG] Cobrança direta bem-sucedida');
+          console.log('[DEBUG] *** COBRANÇA DIRETA BEM-SUCEDIDA ***');
           // Direct charge successful
           updateData = {
             iugu_charge_id: chargeData.invoice_id,
@@ -345,21 +352,23 @@ Deno.serve(async (req) => {
 
           iuguResponse = chargeData;
         } else {
-          console.log('[DEBUG] Cobrança direta falhou, continuando com fatura:', chargeData);
+          console.log('[DEBUG] *** COBRANÇA DIRETA FALHOU ***:', chargeData);
           // Direct charge failed, fallback to invoice
           updateData.error_message_iugu = chargeData.errors ? JSON.stringify(chargeData.errors) : 'Falha na cobrança direta';
           
           // Continue to invoice creation below
         }
       } catch (error) {
-        console.error('[ERRO] Erro na cobrança direta:', error);
+        console.error('[ERRO] *** ERRO NA COBRANÇA DIRETA ***:', error);
         updateData.error_message_internal = 'Erro na tentativa de cobrança direta';
       }
+    } else {
+      console.log('[DEBUG] *** MÉTODO NÃO É CARTÃO DE CRÉDITO OU SEM TOKEN ***');
     }
 
     // If direct charge wasn't successful or wasn't attempted, create invoice
     if (!iuguResponse || !iuguResponse.success) {
-      console.log('[DEBUG] Criando fatura para método de pagamento:', payload.payment_method_selected);
+      console.log('[DEBUG] *** CRIANDO FATURA PARA MÉTODO DE PAGAMENTO ***:', payload.payment_method_selected);
       
       // Calculate due date
       let dueDate = new Date();
@@ -397,9 +406,10 @@ Deno.serve(async (req) => {
         };
       }
 
-      console.log('[DEBUG] Payload para criar fatura:', invoicePayload);
+      console.log('[DEBUG] *** PAYLOAD PARA CRIAR FATURA ***:', JSON.stringify(invoicePayload, null, 2));
 
       try {
+        console.log('[DEBUG] Chamando fetch para https://api.iugu.com/v1/invoices');
         const invoiceResponse = await fetch('https://api.iugu.com/v1/invoices', {
           method: 'POST',
           headers: {
@@ -409,16 +419,17 @@ Deno.serve(async (req) => {
           body: JSON.stringify(invoicePayload),
         });
 
+        console.log('[DEBUG] *** RESPOSTA DA FATURA ***');
         console.log('[DEBUG] Status da resposta da fatura:', invoiceResponse.status);
         
         const invoiceText = await invoiceResponse.text();
-        console.log('[DEBUG] Resposta bruta da fatura:', invoiceText);
+        console.log('[DEBUG] Resposta bruta da fatura (length: ' + invoiceText.length + '):', invoiceText);
         
         const invoiceData = JSON.parse(invoiceText);
-        console.log('[DEBUG] Dados da fatura parseados:', invoiceData);
+        console.log('[DEBUG] *** DADOS DA FATURA PARSEADOS ***:', JSON.stringify(invoiceData, null, 2));
 
         if (invoiceResponse.ok && invoiceData.id) {
-          console.log('[DEBUG] Fatura criada com sucesso:', invoiceData.id);
+          console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           // Invoice created successfully
           updateData = {
             ...updateData,
@@ -432,19 +443,19 @@ Deno.serve(async (req) => {
 
           iuguResponse = invoiceData;
         } else {
-          console.error('[ERRO] Criação de fatura falhou:', invoiceData);
+          console.error('[ERRO] *** CRIAÇÃO DE FATURA FALHOU ***:', invoiceData);
           updateData.error_message_iugu = invoiceData.errors ? JSON.stringify(invoiceData.errors) : 'Falha na criação da fatura';
           updateData.status = 'failed';
         }
       } catch (error) {
-        console.error('[ERRO] Erro ao criar fatura:', error);
+        console.error('[ERRO] *** ERRO AO CRIAR FATURA ***:', error);
         updateData.error_message_internal = 'Erro na criação da fatura';
         updateData.status = 'failed';
       }
     }
 
     // Update sale record with Iugu response
-    console.log('[DEBUG] Atualizando registro de venda com dados da Iugu:', updateData);
+    console.log('[DEBUG] *** ATUALIZANDO REGISTRO DE VENDA COM DADOS DA IUGU ***:', JSON.stringify(updateData, null, 2));
     
     try {
       const { error: updateError } = await supabase
@@ -455,7 +466,7 @@ Deno.serve(async (req) => {
       if (updateError) {
         console.error('[ERRO] Falha ao atualizar registro de venda:', updateError);
       } else {
-        console.log('[DEBUG] Registro de venda atualizado com sucesso');
+        console.log('[DEBUG] *** REGISTRO DE VENDA ATUALIZADO COM SUCESSO ***');
       }
     } catch (updateError) {
       console.error('[ERRO] Erro ao atualizar venda no banco:', updateError);
@@ -482,10 +493,13 @@ Deno.serve(async (req) => {
         responseData.bank_slip_barcode = updateData.iugu_bank_slip_barcode;
       }
 
-      console.log('[DEBUG] Retornando resposta de sucesso:', responseData);
+      console.log('[DEBUG] *** RETORNANDO RESPOSTA DE SUCESSO ***:', JSON.stringify(responseData, null, 2));
       return new Response(
         JSON.stringify(responseData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     } else {
       const errorResponse = { 
@@ -496,7 +510,7 @@ Deno.serve(async (req) => {
         internal_errors: updateData.error_message_internal,
         functionName: 'create-iugu-transaction'
       };
-      console.log('[DEBUG] Retornando resposta de erro:', errorResponse);
+      console.log('[DEBUG] *** RETORNANDO RESPOSTA DE ERRO ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
         JSON.stringify(errorResponse),
         { 
@@ -507,18 +521,21 @@ Deno.serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('[ERRO] Erro geral na create-iugu-transaction:', error.message);
+    console.error('[ERRO] *** ERRO GERAL NA create-iugu-transaction ***:', error.message);
     console.error('[ERRO] Stack trace:', error.stack);
     console.error('[ERRO] Erro completo:', error);
     
+    const errorResponse = {
+      success: false, 
+      error: true,
+      message: 'Erro interno do servidor', 
+      details: error.message,
+      functionName: 'create-iugu-transaction'
+    };
+    console.log('[DEBUG] *** RETORNANDO ERRO GERAL ***:', JSON.stringify(errorResponse, null, 2));
+    
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: true,
-        message: 'Erro interno do servidor', 
-        details: error.message,
-        functionName: 'create-iugu-transaction'
-      }),
+      JSON.stringify(errorResponse),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
