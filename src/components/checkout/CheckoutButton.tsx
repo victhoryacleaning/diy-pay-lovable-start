@@ -70,25 +70,29 @@ export const CheckoutButton = ({
         throw new Error('ID do cliente não retornado');
       }
 
-      // Step 2: Handle payment method specific logic
+      // Step 2: Handle payment method specific logic - ONLY for credit card
       let cardToken = null;
 
-      if (paymentMethod === 'credit_card' && cardData) {
+      if (paymentMethod === 'credit_card') {
+        if (!cardData) {
+          console.error('[ERRO] Dados do cartão não fornecidos para pagamento com cartão');
+          throw new Error('Dados do cartão são obrigatórios para pagamento com cartão de crédito');
+        }
+
         setProcessingStep("Processando cartão...");
-        console.log('[DEBUG] Passo 2: Criando token do cartão');
+        console.log('[DEBUG] Passo 2: Criando token do cartão (apenas para credit_card)');
+
+        const [firstName, ...lastNameParts] = (cardData.holderName || '').split(' ');
+        const lastName = lastNameParts.join(' ');
+        const [month, year] = (cardData.expiry || '').split('/');
 
         const tokenPayload = {
-          account_id: "test", // This will be handled by the edge function
-          method: "credit_card",
-          test: true,
-          data: {
-            number: cardData.number.replace(/\s/g, ''),
-            verification_value: cardData.cvv,
-            first_name: cardData.holderName.split(' ')[0] || '',
-            last_name: cardData.holderName.split(' ').slice(1).join(' ') || '',
-            month: cardData.expiry.split('/')[0],
-            year: cardData.expiry.split('/')[1]
-          }
+          card_number: cardData.number.replace(/\s/g, ''),
+          verification_value: cardData.cvv,
+          first_name: firstName,
+          last_name: lastName,
+          month: month,
+          year: `20${year}`
         };
 
         console.log('[DEBUG] Payload para create-iugu-payment-token:', tokenPayload);
@@ -111,6 +115,9 @@ export const CheckoutButton = ({
           console.error('[ERRO] Token do cartão não retornado');
           throw new Error('Token do cartão não retornado');
         }
+      } else {
+        console.log('[DEBUG] Passo 2: Pulando criação de token (método não é credit_card)');
+        console.log('[DEBUG] Método de pagamento é:', paymentMethod);
       }
 
       // Step 3: Create transaction
