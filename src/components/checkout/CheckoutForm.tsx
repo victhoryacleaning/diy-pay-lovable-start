@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -222,6 +221,10 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     }
   };
 
+  const handlePaymentProcess = (loading: boolean) => {
+    setIsLoading(loading);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -250,7 +253,20 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
               productPriceCents={product.price_cents}
             />
 
-            <CheckoutButton isLoading={isLoading} />
+            <CheckoutButton 
+              isLoading={isLoading}
+              onPaymentProcess={handlePaymentProcess}
+              formData={form.getValues()}
+              product={product}
+              paymentMethod={paymentMethod}
+              cardData={paymentMethod === 'credit_card' ? {
+                number: form.getValues().cardNumber || '',
+                holderName: form.getValues().cardName || '',
+                expiry: form.getValues().cardExpiry || '',
+                cvv: form.getValues().cardCvv || ''
+              } : undefined}
+              installments={form.getValues().installments}
+            />
 
             <div className="text-center pt-4 border-t">
               <p className="text-sm text-gray-500">
