@@ -19,15 +19,25 @@ interface TransactionPayload {
 }
 
 Deno.serve(async (req) => {
+  console.log('[DEBUG] Iniciando create-iugu-transaction');
+  console.log('[DEBUG] Método da requisição:', req.method);
+  console.log('[DEBUG] Headers da requisição:', Object.fromEntries(req.headers.entries()));
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('[DEBUG] Retornando resposta CORS para OPTIONS');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('[DEBUG] Iniciando processamento principal da função');
+
     // Get environment and API keys
     const appEnv = Deno.env.get('APP_ENV') || 'test';
     const isProduction = appEnv === 'production';
+    
+    console.log('[DEBUG] APP_ENV:', appEnv);
+    console.log('[DEBUG] isProduction:', isProduction);
     
     const iuguApiKey = isProduction 
       ? Deno.env.get('IUGU_API_KEY_LIVE')
@@ -39,12 +49,19 @@ Deno.serve(async (req) => {
 
     const platformFeePercentage = parseFloat(Deno.env.get('PLATFORM_FEE_PERCENTAGE') || '0.05'); // Default 5%
 
+    console.log('[DEBUG] Iugu API Key existe:', !!iuguApiKey);
+    console.log('[DEBUG] Iugu Account ID existe:', !!iuguAccountId);
+    console.log('[DEBUG] Platform fee percentage:', platformFeePercentage);
+
     if (!iuguApiKey || !iuguAccountId) {
-      console.error('Iugu API key or Account ID not found for environment:', appEnv);
+      const errorMsg = 'Configuração da API da Iugu não encontrada para ambiente: ' + appEnv;
+      console.error('[ERRO]', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Configuração da API da Iugu não encontrada' 
+          error: true,
+          message: 'Configuração da API da Iugu não encontrada',
+          functionName: 'create-iugu-transaction'
         }),
         { 
           status: 500, 
@@ -54,20 +71,75 @@ Deno.serve(async (req) => {
     }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('[DEBUG] SUPABASE_URL existe:', !!supabaseUrl);
+    console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY existe:', !!supabaseServiceKey);
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      const errorMsg = 'Variáveis de ambiente do Supabase não encontradas';
+      console.error('[ERRO]', errorMsg);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: errorMsg,
+          functionName: 'create-iugu-transaction'
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('[DEBUG] Cliente Supabase inicializado');
 
     // Parse request body
-    const payload: TransactionPayload = await req.json();
-    console.log('Processing transaction for product:', payload.product_id);
+    console.log('[DEBUG] Tentando fazer parse do body da requisição');
+    let payload: TransactionPayload;
+    
+    try {
+      const requestText = await req.text();
+      console.log('[DEBUG] Body bruto da requisição:', requestText);
+      payload = JSON.parse(requestText);
+      console.log('[DEBUG] Payload parseado:', payload);
+    } catch (parseError) {
+      const errorMsg = 'Erro ao fazer parse do JSON da requisição';
+      console.error('[ERRO]', errorMsg, parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: errorMsg,
+          functionName: 'create-iugu-transaction',
+          details: parseError.toString()
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('[DEBUG] Processando transação para produto:', payload.product_id);
 
     // Validate required fields
     if (!payload.product_id || !payload.buyer_email || !payload.payment_method_selected) {
+      const errorMsg = 'Campos obrigatórios não informados';
+      console.error('[ERRO]', errorMsg, { 
+        product_id: !!payload.product_id, 
+        buyer_email: !!payload.buyer_email, 
+        payment_method_selected: !!payload.payment_method_selected 
+      });
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Campos obrigatórios não informados' 
+          error: true,
+          message: errorMsg,
+          functionName: 'create-iugu-transaction'
         }),
         { 
           status: 400, 
@@ -77,22 +149,49 @@ Deno.serve(async (req) => {
     }
 
     // Get product data
-    const { data: product, error: productError } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', payload.product_id)
-      .eq('is_active', true)
-      .single();
+    console.log('[DEBUG] Buscando dados do produto:', payload.product_id);
+    let product;
+    
+    try {
+      const { data, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', payload.product_id)
+        .eq('is_active', true)
+        .single();
 
-    if (productError || !product) {
-      console.error('Product not found or inactive:', productError);
+      console.log('[DEBUG] Resultado da busca do produto:', { data, productError });
+
+      if (productError || !data) {
+        console.error('[ERRO] Produto não encontrado ou inativo:', productError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Produto não encontrado ou inativo',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 404, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      product = data;
+      console.log('[DEBUG] Produto encontrado:', product);
+    } catch (dbError) {
+      console.error('[ERRO] Erro ao buscar produto no banco:', dbError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Produto não encontrado ou inativo' 
+          error: true,
+          message: 'Erro ao buscar produto',
+          functionName: 'create-iugu-transaction',
+          details: dbError.toString()
         }),
         { 
-          status: 404, 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -103,13 +202,26 @@ Deno.serve(async (req) => {
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
     const producerShareCents = amountTotalCents - platformFeeCents;
 
+    console.log('[DEBUG] Cálculos de valores:', {
+      amountTotalCents,
+      platformFeeCents,
+      producerShareCents,
+      platformFeePercentage
+    });
+
     // Validate installments
     const installments = payload.installments || 1;
+    console.log('[DEBUG] Parcelas solicitadas:', installments, 'Máximo permitido:', product.max_installments_allowed);
+    
     if (installments > product.max_installments_allowed) {
+      const errorMsg = `Número máximo de parcelas permitidas: ${product.max_installments_allowed}`;
+      console.error('[ERRO]', errorMsg);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Número máximo de parcelas permitidas: ${product.max_installments_allowed}` 
+          error: true,
+          message: errorMsg,
+          functionName: 'create-iugu-transaction'
         }),
         { 
           status: 400, 
@@ -119,27 +231,54 @@ Deno.serve(async (req) => {
     }
 
     // Create initial sale record
-    const { data: sale, error: saleError } = await supabase
-      .from('sales')
-      .insert({
-        product_id: payload.product_id,
-        buyer_email: payload.buyer_email,
-        amount_total_cents: amountTotalCents,
-        platform_fee_cents: platformFeeCents,
-        producer_share_cents: producerShareCents,
-        payment_method_used: payload.payment_method_selected,
-        installments_chosen: installments,
-        status: 'pending'
-      })
-      .select()
-      .single();
+    console.log('[DEBUG] Criando registro de venda inicial');
+    let sale;
+    
+    try {
+      const { data, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          product_id: payload.product_id,
+          buyer_email: payload.buyer_email,
+          amount_total_cents: amountTotalCents,
+          platform_fee_cents: platformFeeCents,
+          producer_share_cents: producerShareCents,
+          payment_method_used: payload.payment_method_selected,
+          installments_chosen: installments,
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-    if (saleError || !sale) {
-      console.error('Failed to create sale record:', saleError);
+      console.log('[DEBUG] Resultado da criação da venda:', { data, saleError });
+
+      if (saleError || !data) {
+        console.error('[ERRO] Falha ao criar registro de venda:', saleError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Erro ao criar registro de venda',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      sale = data;
+      console.log('[DEBUG] Registro de venda criado:', sale.id);
+    } catch (dbError) {
+      console.error('[ERRO] Erro ao criar venda no banco:', dbError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Erro ao criar registro de venda' 
+          error: true,
+          message: 'Erro ao criar registro de venda',
+          functionName: 'create-iugu-transaction',
+          details: dbError.toString()
         }),
         { 
           status: 500, 
@@ -148,10 +287,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Sale record created:', sale.id);
-
     // Basic Auth header for Iugu
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
+    console.log('[DEBUG] Header de autenticação criado (primeiros 20 chars):', authHeader.substring(0, 20) + '...');
 
     // Prepare items for Iugu
     const items = [{
@@ -159,14 +297,14 @@ Deno.serve(async (req) => {
       quantity: 1,
       price_cents: product.price_cents
     }];
+    console.log('[DEBUG] Items para Iugu:', items);
 
     let iuguResponse;
     let updateData: any = {};
 
     // Payment method specific logic
     if (payload.payment_method_selected === 'credit_card' && payload.card_token) {
-      // Try direct charge first
-      console.log('Attempting direct charge with card token');
+      console.log('[DEBUG] Tentando cobrança direta com token do cartão');
       
       const chargePayload = {
         token: payload.card_token,
@@ -175,6 +313,8 @@ Deno.serve(async (req) => {
         months: installments,
         ...(payload.iugu_customer_id && { customer_id: payload.iugu_customer_id })
       };
+
+      console.log('[DEBUG] Payload para cobrança direta:', chargePayload);
 
       try {
         const chargeResponse = await fetch('https://api.iugu.com/v1/charge', {
@@ -186,10 +326,16 @@ Deno.serve(async (req) => {
           body: JSON.stringify(chargePayload),
         });
 
-        const chargeData = await chargeResponse.json();
-        console.log('Charge response:', chargeData);
+        console.log('[DEBUG] Status da resposta de cobrança:', chargeResponse.status);
+        
+        const chargeText = await chargeResponse.text();
+        console.log('[DEBUG] Resposta bruta da cobrança:', chargeText);
+        
+        const chargeData = JSON.parse(chargeText);
+        console.log('[DEBUG] Dados da cobrança parseados:', chargeData);
 
         if (chargeResponse.ok && chargeData.success) {
+          console.log('[DEBUG] Cobrança direta bem-sucedida');
           // Direct charge successful
           updateData = {
             iugu_charge_id: chargeData.invoice_id,
@@ -199,21 +345,21 @@ Deno.serve(async (req) => {
 
           iuguResponse = chargeData;
         } else {
+          console.log('[DEBUG] Cobrança direta falhou, continuando com fatura:', chargeData);
           // Direct charge failed, fallback to invoice
-          console.log('Direct charge failed, falling back to invoice:', chargeData);
           updateData.error_message_iugu = chargeData.errors ? JSON.stringify(chargeData.errors) : 'Falha na cobrança direta';
           
           // Continue to invoice creation below
         }
       } catch (error) {
-        console.error('Error in direct charge:', error);
+        console.error('[ERRO] Erro na cobrança direta:', error);
         updateData.error_message_internal = 'Erro na tentativa de cobrança direta';
       }
     }
 
     // If direct charge wasn't successful or wasn't attempted, create invoice
     if (!iuguResponse || !iuguResponse.success) {
-      console.log('Creating invoice for payment method:', payload.payment_method_selected);
+      console.log('[DEBUG] Criando fatura para método de pagamento:', payload.payment_method_selected);
       
       // Calculate due date
       let dueDate = new Date();
@@ -251,6 +397,8 @@ Deno.serve(async (req) => {
         };
       }
 
+      console.log('[DEBUG] Payload para criar fatura:', invoicePayload);
+
       try {
         const invoiceResponse = await fetch('https://api.iugu.com/v1/invoices', {
           method: 'POST',
@@ -261,10 +409,16 @@ Deno.serve(async (req) => {
           body: JSON.stringify(invoicePayload),
         });
 
-        const invoiceData = await invoiceResponse.json();
-        console.log('Invoice response status:', invoiceResponse.status);
+        console.log('[DEBUG] Status da resposta da fatura:', invoiceResponse.status);
+        
+        const invoiceText = await invoiceResponse.text();
+        console.log('[DEBUG] Resposta bruta da fatura:', invoiceText);
+        
+        const invoiceData = JSON.parse(invoiceText);
+        console.log('[DEBUG] Dados da fatura parseados:', invoiceData);
 
         if (invoiceResponse.ok && invoiceData.id) {
+          console.log('[DEBUG] Fatura criada com sucesso:', invoiceData.id);
           // Invoice created successfully
           updateData = {
             ...updateData,
@@ -278,25 +432,33 @@ Deno.serve(async (req) => {
 
           iuguResponse = invoiceData;
         } else {
-          console.error('Invoice creation failed:', invoiceData);
+          console.error('[ERRO] Criação de fatura falhou:', invoiceData);
           updateData.error_message_iugu = invoiceData.errors ? JSON.stringify(invoiceData.errors) : 'Falha na criação da fatura';
           updateData.status = 'failed';
         }
       } catch (error) {
-        console.error('Error creating invoice:', error);
+        console.error('[ERRO] Erro ao criar fatura:', error);
         updateData.error_message_internal = 'Erro na criação da fatura';
         updateData.status = 'failed';
       }
     }
 
     // Update sale record with Iugu response
-    const { error: updateError } = await supabase
-      .from('sales')
-      .update(updateData)
-      .eq('id', sale.id);
+    console.log('[DEBUG] Atualizando registro de venda com dados da Iugu:', updateData);
+    
+    try {
+      const { error: updateError } = await supabase
+        .from('sales')
+        .update(updateData)
+        .eq('id', sale.id);
 
-    if (updateError) {
-      console.error('Failed to update sale record:', updateError);
+      if (updateError) {
+        console.error('[ERRO] Falha ao atualizar registro de venda:', updateError);
+      } else {
+        console.log('[DEBUG] Registro de venda atualizado com sucesso');
+      }
+    } catch (updateError) {
+      console.error('[ERRO] Erro ao atualizar venda no banco:', updateError);
     }
 
     // Prepare response
@@ -320,19 +482,23 @@ Deno.serve(async (req) => {
         responseData.bank_slip_barcode = updateData.iugu_bank_slip_barcode;
       }
 
+      console.log('[DEBUG] Retornando resposta de sucesso:', responseData);
       return new Response(
         JSON.stringify(responseData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
+      const errorResponse = { 
+        success: false, 
+        sale_id: sale.id,
+        message: 'Falha no processamento do pagamento',
+        iugu_errors: updateData.error_message_iugu,
+        internal_errors: updateData.error_message_internal,
+        functionName: 'create-iugu-transaction'
+      };
+      console.log('[DEBUG] Retornando resposta de erro:', errorResponse);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          sale_id: sale.id,
-          message: 'Falha no processamento do pagamento',
-          iugu_errors: updateData.error_message_iugu,
-          internal_errors: updateData.error_message_internal
-        }),
+        JSON.stringify(errorResponse),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -341,12 +507,17 @@ Deno.serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error in create-iugu-transaction:', error);
+    console.error('[ERRO] Erro geral na create-iugu-transaction:', error.message);
+    console.error('[ERRO] Stack trace:', error.stack);
+    console.error('[ERRO] Erro completo:', error);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
+        error: true,
         message: 'Erro interno do servidor', 
-        details: error.message 
+        details: error.message,
+        functionName: 'create-iugu-transaction'
       }),
       { 
         status: 500, 
