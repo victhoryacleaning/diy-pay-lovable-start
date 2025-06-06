@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -26,7 +25,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Webhook received from Iugu');
+    console.log('*** DEBUG WEBHOOK: Webhook received from Iugu ***');
+    console.log('*** DEBUG WEBHOOK: Method:', req.method);
+    console.log('*** DEBUG WEBHOOK: Headers:', Object.fromEntries(req.headers.entries()));
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -36,9 +37,84 @@ Deno.serve(async (req) => {
     // Get platform fee percentage
     const platformFeePercentage = parseFloat(Deno.env.get('PLATFORM_FEE_PERCENTAGE') || '0.05');
 
-    // Parse webhook payload
-    const payload: IuguWebhookPayload = await req.json();
-    console.log('Webhook payload:', {
+    // Detect Content-Type and parse payload accordingly
+    const contentType = req.headers.get('content-type') || '';
+    console.log('*** DEBUG WEBHOOK: Content-Type detected:', contentType);
+    
+    let payload: IuguWebhookPayload;
+
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      console.log('*** DEBUG WEBHOOK: Processing form-urlencoded payload ***');
+      
+      // Read as form data
+      const formDataText = await req.text();
+      console.log('*** DEBUG WEBHOOK: Raw form data:', formDataText);
+      
+      const params = new URLSearchParams(formDataText);
+      console.log('*** DEBUG WEBHOOK: Parsed form params:', Object.fromEntries(params.entries()));
+      
+      // Extract event
+      const event = params.get('event');
+      if (!event) {
+        console.error('*** ERRO WEBHOOK: Missing event parameter in form data ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'Missing event parameter',
+            functionName: 'iugu-webhook-handler'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Reconstruct data object from form parameters
+      const data: any = {};
+      
+      // Extract all data[key] parameters
+      for (const [key, value] of params.entries()) {
+        if (key.startsWith('data[') && key.endsWith(']')) {
+          const dataKey = key.slice(5, -1); // Remove 'data[' and ']'
+          data[dataKey] = value;
+        }
+      }
+
+      console.log('*** DEBUG WEBHOOK: Extracted data object:', data);
+
+      // Create payload object
+      payload = {
+        event: event,
+        data: data,
+        webhook_id: params.get('webhook_id') || undefined
+      };
+
+      console.log('*** DEBUG WEBHOOK: Reconstructed payload from form data:', JSON.stringify(payload, null, 2));
+
+    } else if (contentType.includes('application/json')) {
+      console.log('*** DEBUG WEBHOOK: Processing JSON payload ***');
+      
+      payload = await req.json();
+      console.log('*** DEBUG WEBHOOK: Parsed JSON payload:', JSON.stringify(payload, null, 2));
+
+    } else {
+      console.error('*** ERRO WEBHOOK: Unsupported Content-Type:', contentType);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Unsupported Content-Type. Expected application/json or application/x-www-form-urlencoded',
+          contentType: contentType,
+          functionName: 'iugu-webhook-handler'
+        }),
+        { 
+          status: 415, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('*** DEBUG WEBHOOK: Final payload for processing:', {
       event: payload.event,
       data_id: payload.data?.id,
       status: payload.data?.status,
@@ -57,8 +133,9 @@ Deno.serve(async (req) => {
       try {
         const url = new URL(data.notification_url);
         saleIdFromUrl = url.searchParams.get('sale_id');
+        console.log('*** DEBUG WEBHOOK: Extracted sale_id from notification_url:', saleIdFromUrl);
       } catch (error) {
-        console.log('Could not parse notification_url:', error);
+        console.log('*** DEBUG WEBHOOK: Could not parse notification_url:', error);
       }
     }
 
@@ -82,7 +159,7 @@ Deno.serve(async (req) => {
     const { data: sale, error: saleError } = await saleQuery.single();
 
     if (saleError || !sale) {
-      console.error('Sale not found for webhook:', {
+      console.error('*** ERRO WEBHOOK: Sale not found for webhook:', {
         iuguInvoiceId,
         iuguChargeId,
         saleIdFromUrl,
@@ -93,7 +170,8 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Webhook received but sale not found in our system' 
+          message: 'Webhook received but sale not found in our system',
+          functionName: 'iugu-webhook-handler'
         }),
         { 
           status: 200, 
@@ -102,7 +180,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Found sale:', {
+    console.log('*** DEBUG WEBHOOK: Found sale:', {
       sale_id: sale.id,
       current_status: sale.status,
       new_status: data.status,
@@ -116,7 +194,7 @@ Deno.serve(async (req) => {
     } else if (event === 'invoice.refund') {
       await processRefund(supabase, sale, data, platformFeePercentage);
     } else {
-      console.log('Unhandled webhook event:', event);
+      console.log('*** DEBUG WEBHOOK: Unhandled webhook event:', event);
       // Still update the status if it's different
       if (sale.status !== data.status) {
         await supabase
@@ -132,7 +210,8 @@ Deno.serve(async (req) => {
         message: 'Webhook processed successfully',
         sale_id: sale.id,
         event: event,
-        status: data.status
+        status: data.status,
+        functionName: 'iugu-webhook-handler'
       }),
       { 
         status: 200, 
@@ -141,7 +220,9 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error('*** ERRO WEBHOOK: Error processing webhook:', error.message);
+    console.error('*** ERRO WEBHOOK: Stack trace:', error.stack);
+    console.error('*** ERRO WEBHOOK: Full error:', error);
     
     // Still return 200 to prevent unnecessary retries from Iugu
     // Log the error but don't let it cause webhook failures
@@ -149,7 +230,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: false, 
         message: 'Internal error processing webhook',
-        error: error.message 
+        error: error.message,
+        functionName: 'iugu-webhook-handler'
       }),
       { 
         status: 200, 
@@ -168,11 +250,11 @@ async function processInvoiceStatusChange(
   const newStatus = invoiceData.status;
   const currentStatus = sale.status;
 
-  console.log('Processing status change:', { currentStatus, newStatus });
+  console.log('*** DEBUG WEBHOOK: Processing status change:', { currentStatus, newStatus });
 
   // Idempotency check - if status hasn't changed, do nothing
   if (currentStatus === newStatus) {
-    console.log('Status unchanged, skipping processing');
+    console.log('*** DEBUG WEBHOOK: Status unchanged, skipping processing');
     return;
   }
 
@@ -184,7 +266,7 @@ async function processInvoiceStatusChange(
 
   // If payment is confirmed
   if (newStatus === 'paid' && currentStatus !== 'paid') {
-    console.log('Processing payment confirmation');
+    console.log('*** DEBUG WEBHOOK: Processing payment confirmation');
     
     updateData.paid_at = new Date().toISOString();
 
@@ -204,14 +286,14 @@ async function processInvoiceStatusChange(
       .eq('id', sale.id);
 
     if (updateError) {
-      console.error('Error updating sale:', updateError);
+      console.error('*** ERRO WEBHOOK: Error updating sale:', updateError);
       throw updateError;
     }
 
     // Update producer balance
     const producerId = sale.product?.producer_id;
     if (producerId) {
-      console.log('Updating producer balance:', {
+      console.log('*** DEBUG WEBHOOK: Updating producer balance:', {
         producer_id: producerId,
         amount_to_add: producerShareCents
       });
@@ -225,11 +307,11 @@ async function processInvoiceStatusChange(
         .eq('producer_id', producerId);
 
       if (balanceError) {
-        console.error('Error updating producer balance:', balanceError);
+        console.error('*** ERRO WEBHOOK: Error updating producer balance:', balanceError);
         // Don't throw here - the sale was already updated successfully
         // Log the error and potentially handle it separately
       } else {
-        console.log('Producer balance updated successfully');
+        console.log('*** DEBUG WEBHOOK: Producer balance updated successfully');
       }
     }
   } else {
@@ -240,12 +322,12 @@ async function processInvoiceStatusChange(
       .eq('id', sale.id);
 
     if (updateError) {
-      console.error('Error updating sale status:', updateError);
+      console.error('*** ERRO WEBHOOK: Error updating sale status:', updateError);
       throw updateError;
     }
   }
 
-  console.log('Status change processed successfully');
+  console.log('*** DEBUG WEBHOOK: Status change processed successfully');
 }
 
 async function processRefund(
@@ -254,11 +336,11 @@ async function processRefund(
   refundData: any, 
   platformFeePercentage: number
 ) {
-  console.log('Processing refund');
+  console.log('*** DEBUG WEBHOOK: Processing refund');
 
   // Idempotency check
   if (sale.status === 'refunded') {
-    console.log('Sale already marked as refunded, skipping');
+    console.log('*** DEBUG WEBHOOK: Sale already marked as refunded, skipping');
     return;
   }
 
@@ -274,7 +356,7 @@ async function processRefund(
     .eq('id', sale.id);
 
   if (updateError) {
-    console.error('Error updating sale to refunded:', updateError);
+    console.error('*** ERRO WEBHOOK: Error updating sale to refunded:', updateError);
     throw updateError;
   }
 
@@ -282,7 +364,7 @@ async function processRefund(
   if (wasAlreadyPaid && sale.producer_share_cents > 0) {
     const producerId = sale.product?.producer_id;
     if (producerId) {
-      console.log('Reversing producer balance for refund:', {
+      console.log('*** DEBUG WEBHOOK: Reversing producer balance for refund:', {
         producer_id: producerId,
         amount_to_subtract: sale.producer_share_cents
       });
@@ -296,13 +378,13 @@ async function processRefund(
         .eq('producer_id', producerId);
 
       if (balanceError) {
-        console.error('Error reversing producer balance:', balanceError);
+        console.error('*** ERRO WEBHOOK: Error reversing producer balance:', balanceError);
         // Log but don't throw - the refund status was already updated
       } else {
-        console.log('Producer balance reversed successfully');
+        console.log('*** DEBUG WEBHOOK: Producer balance reversed successfully');
       }
     }
   }
 
-  console.log('Refund processed successfully');
+  console.log('*** DEBUG WEBHOOK: Refund processed successfully');
 }
