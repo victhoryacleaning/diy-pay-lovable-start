@@ -47,51 +47,53 @@ export const CheckoutButton = ({
         phone: formData.phone,
       };
 
-      console.log('*** FRONTEND: Chamando get-or-create-iugu-customer com payload:', customerPayload);
+      console.log('>>> FRONTEND: PAYLOAD para get-or-create-iugu-customer:', customerPayload);
 
       try {
         const customerResponse = await supabase.functions.invoke('get-or-create-iugu-customer', {
           body: customerPayload,
         });
 
-        console.log('*** FRONTEND: Status da resposta de get-or-create-iugu-customer:', customerResponse.error ? 'COM ERRO' : 'SEM ERRO');
-        console.log('*** FRONTEND: customerResponse.error:', customerResponse.error);
-        console.log('*** FRONTEND: customerResponse.data tipo:', typeof customerResponse.data);
+        console.log('>>> FRONTEND: STATUS da resposta de get-or-create-iugu-customer:', customerResponse.error ? 'COM ERRO' : 'SEM ERRO');
+        console.log('>>> FRONTEND: customerResponse.error:', customerResponse.error);
+        console.log('>>> FRONTEND: customerResponse.data tipo:', typeof customerResponse.data);
         console.log('------------------------------------------------------');
-        console.log('*** FRONTEND: DADOS BRUTOS da resposta de get-or-create-iugu-customer ABAIXO:');
+        console.log('>>> FRONTEND: DADOS BRUTOS da resposta de get-or-create-iugu-customer ABAIXO:');
         console.log(customerResponse.data);
+        console.log('>>> FRONTEND: FIM DOS DADOS BRUTOS de get-or-create-iugu-customer.');
         console.log('------------------------------------------------------');
 
         if (customerResponse.error) {
-          console.error('*** FRONTEND: Erro na chamada da get-or-create-iugu-customer:', customerResponse.error);
+          console.error('>>> FRONTEND: ERRO HTTP ou RESPOSTA NÃO-JSON de get-or-create-iugu-customer. Resposta bruta já logada.');
+          console.error('>>> FRONTEND: Erro na chamada da get-or-create-iugu-customer:', customerResponse.error);
           
           // Try to get more details from the error
           if (typeof customerResponse.error === 'object') {
-            console.error('*** FRONTEND: Detalhes do erro:', JSON.stringify(customerResponse.error, null, 2));
+            console.error('>>> FRONTEND: Detalhes do erro:', JSON.stringify(customerResponse.error, null, 2));
           }
           
           throw new Error(`Erro ao criar cliente: ${customerResponse.error.message || JSON.stringify(customerResponse.error)}`);
         }
 
         if (!customerResponse.data) {
-          console.error('*** FRONTEND: Resposta da função não contém data');
+          console.error('>>> FRONTEND: Resposta da função não contém data');
           throw new Error('Resposta inválida da função de criação de cliente');
         }
 
-        console.log('*** FRONTEND: Dados PARSEADOS de get-or-create-iugu-customer:', customerResponse.data);
+        console.log('>>> FRONTEND: DADOS PARSEADOS de get-or-create-iugu-customer:', customerResponse.data);
 
         const iuguCustomerId = customerResponse.data?.iugu_customer_id;
-        console.log('*** FRONTEND: ID do cliente Iugu obtido:', iuguCustomerId);
+        console.log('>>> FRONTEND: ID do cliente Iugu obtido:', iuguCustomerId);
 
         if (!iuguCustomerId) {
-          console.error('*** FRONTEND: ID do cliente Iugu não retornado');
-          console.error('*** FRONTEND: Dados completos da resposta:', JSON.stringify(customerResponse.data, null, 2));
+          console.error('>>> FRONTEND: ID do cliente Iugu não retornado');
+          console.error('>>> FRONTEND: Dados completos da resposta:', JSON.stringify(customerResponse.data, null, 2));
           throw new Error('ID do cliente não retornado');
         }
 
         // Lógica para prosseguir e chamar create-iugu-transaction
         if (customerResponse.data && customerResponse.data.iugu_customer_id) {
-          console.log('*** FRONTEND: Sucesso ao obter iugu_customer_id. Preparando para chamar create-iugu-transaction...');
+          console.log('>>> FRONTEND: Sucesso ao obter iugu_customer_id. Preparando para chamar create-iugu-transaction...');
           
           // Step 2: Handle payment method specific logic - ONLY for credit card
           let cardToken = null;
@@ -165,7 +167,7 @@ export const CheckoutButton = ({
             notification_url_base: `${window.location.origin}/webhook`
           };
 
-          console.log('[DEBUG] Frontend: Payload para create-iugu-transaction:', transactionPayload);
+          console.log('>>> FRONTEND: PREPARANDO PARA CHAMAR create-iugu-transaction com payload:', transactionPayload);
 
           const transactionResponse = await supabase.functions.invoke('create-iugu-transaction', {
             body: transactionPayload,
@@ -226,17 +228,17 @@ export const CheckoutButton = ({
             }
           }
         } else {
-          console.error('*** FRONTEND: iugu_customer_id não encontrado na resposta de get-or-create-iugu-customer ou resposta inválida.');
+          console.error('>>> FRONTEND: iugu_customer_id não encontrado na resposta de get-or-create-iugu-customer ou resposta inválida.');
           throw new Error('ID do cliente não retornado pela função');
         }
 
       } catch (supabaseError) {
-        console.error('*** FRONTEND: Erro GERAL ao chamar/processar get-or-create-iugu-customer:', supabaseError);
-        console.error('*** FRONTEND: Tipo do erro do Supabase:', typeof supabaseError);
-        console.error('*** FRONTEND: Nome do erro do Supabase:', supabaseError.name);
-        console.error('*** FRONTEND: Mensagem do erro do Supabase:', supabaseError.message);
+        console.error('>>> FRONTEND: Erro GERAL ao chamar/processar get-or-create-iugu-customer:', supabaseError);
+        console.error('>>> FRONTEND: Tipo do erro do Supabase:', typeof supabaseError);
+        console.error('>>> FRONTEND: Nome do erro do Supabase:', supabaseError.name);
+        console.error('>>> FRONTEND: Mensagem do erro do Supabase:', supabaseError.message);
         if (supabaseError.stack) {
-          console.error('*** FRONTEND: Stack do erro do Supabase:', supabaseError.stack);
+          console.error('>>> FRONTEND: Stack do erro do Supabase:', supabaseError.stack);
         }
         throw supabaseError; // Re-throw to be caught by outer catch
       }
