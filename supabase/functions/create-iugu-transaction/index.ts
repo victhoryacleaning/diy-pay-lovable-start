@@ -380,15 +380,17 @@ Deno.serve(async (req) => {
         dueDate.setDate(dueDate.getDate() + 1); // D+1 for credit card invoice
       }
 
+      // Construct the correct notification URL for our webhook handler
+      const webhookUrl = `https://huakzwguwjulxhvcztuh.supabase.co/functions/v1/iugu-webhook-handler?sale_id=${sale.id}`;
+      console.log('[DEBUG] *** URL DO WEBHOOK CONFIGURADA ***:', webhookUrl);
+
       const invoicePayload: any = {
         email: payload.buyer_email,
         due_date: dueDate.toISOString().split('T')[0], // YYYY-MM-DD format
         items: items,
         payable_with: payload.payment_method_selected,
-        ...(payload.iugu_customer_id && { customer_id: payload.iugu_customer_id }),
-        ...(payload.notification_url_base && { 
-          notification_url: `${payload.notification_url_base}?sale_id=${sale.id}` 
-        })
+        notification_url: webhookUrl,
+        ...(payload.iugu_customer_id && { customer_id: payload.iugu_customer_id })
       };
 
       // Add payment method specific fields
