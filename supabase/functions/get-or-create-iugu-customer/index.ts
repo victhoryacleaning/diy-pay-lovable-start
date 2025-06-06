@@ -1,4 +1,5 @@
 
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -237,20 +238,29 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
     console.log('*** DEBUG GET_CUSTOMER: Header de autenticação criado (primeiros 30 chars) ***:', authHeader.substring(0, 30) + '...');
 
+    // Prepare fetch options for Iugu API
+    const iuguUrl = 'https://api.iugu.com/v1/customers';
+    const fetchOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+        'User-Agent': 'DIYPay-EdgeFunction/1.0'
+      },
+      body: JSON.stringify(iuguPayload),
+    };
+
     console.log('*** DEBUG GET_CUSTOMER: FAZENDO REQUISIÇÃO PARA CRIAR CLIENTE NA IUGU ***');
+    console.log('*** DEBUG GET_CUSTOMER: URL da Iugu ***:', iuguUrl);
+    console.log('*** DEBUG GET_CUSTOMER: Headers para Iugu ***:', JSON.stringify(fetchOptions.headers, null, 2));
+    console.log('*** DEBUG GET_CUSTOMER: Body para Iugu ***:', fetchOptions.body);
+
     let iuguResponse;
     let iuguData;
 
     try {
-      console.log('*** DEBUG GET_CUSTOMER: Chamando fetch para https://api.iugu.com/v1/customers ***');
-      iuguResponse = await fetch('https://api.iugu.com/v1/customers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader,
-        },
-        body: JSON.stringify(iuguPayload),
-      });
+      console.log('*** DEBUG GET_CUSTOMER: Chamando fetch para a API da Iugu ***');
+      iuguResponse = await fetch(iuguUrl, fetchOptions);
 
       console.log('*** DEBUG GET_CUSTOMER: RESPOSTA DA IUGU RECEBIDA ***');
       console.log('*** DEBUG GET_CUSTOMER: Status da resposta da Iugu ***:', iuguResponse.status);
@@ -281,13 +291,14 @@ Deno.serve(async (req) => {
       }
     } catch (fetchError) {
       console.error('*** ERRO GET_CUSTOMER: ERRO NA REQUISIÇÃO PARA A IUGU ***:', fetchError);
+      console.error('*** ERRO GET_CUSTOMER: Detalhes do erro de fetch ***:', fetchError.name, fetchError.message, fetchError.stack);
       return new Response(
         JSON.stringify({
           success: false,
           error: true, 
           message: 'Erro na comunicação com a Iugu',
           functionName: 'get-or-create-iugu-customer',
-          details: fetchError.toString()
+          details: `${fetchError.name}: ${fetchError.message}`
         }),
         { 
           status: 500, 
@@ -316,6 +327,7 @@ Deno.serve(async (req) => {
               method: 'GET',
               headers: {
                 'Authorization': authHeader,
+                'User-Agent': 'DIYPay-EdgeFunction/1.0'
               },
             });
 
@@ -508,3 +520,4 @@ async function updateProfileWithIuguId(supabaseClient: any, payload: IuguCustome
     throw error;
   }
 }
+
