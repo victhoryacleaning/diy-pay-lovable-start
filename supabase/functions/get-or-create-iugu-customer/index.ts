@@ -43,8 +43,27 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Envolver TODA a lógica em try-catch para garantir JSON sempre
   try {
     console.log('*** DEBUG GET_CUSTOMER: INICIANDO PROCESSAMENTO PRINCIPAL ***');
+
+    // Verificar se é POST
+    if (req.method !== 'POST') {
+      console.error('*** ERRO GET_CUSTOMER: Método não permitido:', req.method);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: true,
+          functionName: 'get-or-create-iugu-customer',
+          message: `Método ${req.method} não permitido. Use POST.`,
+          details: `Método recebido: ${req.method}`
+        }),
+        { 
+          status: 405, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -56,15 +75,13 @@ Deno.serve(async (req) => {
     if (!supabaseUrl || !supabaseServiceKey) {
       const errorMsg = 'Variáveis de ambiente do Supabase não encontradas';
       console.error('*** ERRO GET_CUSTOMER: CRITICAL ERROR ***:', errorMsg);
-      const errorResponse = { 
-        success: false,
-        error: true, 
-        message: errorMsg,
-        functionName: 'get-or-create-iugu-customer'
-      };
-      console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DE CONFIGURAÇÃO ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify(errorResponse),
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: errorMsg,
+          functionName: 'get-or-create-iugu-customer'
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -96,15 +113,13 @@ Deno.serve(async (req) => {
     if (!iuguApiKey) {
       const errorMsg = 'Configuração da API da Iugu não encontrada para ambiente: ' + appEnv;
       console.error('*** ERRO GET_CUSTOMER: CRITICAL ERROR ***:', errorMsg);
-      const errorResponse = { 
-        success: false,
-        error: true, 
-        message: 'Configuração da API da Iugu não encontrada',
-        functionName: 'get-or-create-iugu-customer'
-      };
-      console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DE API KEY ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify(errorResponse),
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: 'Configuração da API da Iugu não encontrada',
+          functionName: 'get-or-create-iugu-customer'
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -124,16 +139,14 @@ Deno.serve(async (req) => {
     } catch (parseError) {
       const errorMsg = 'Erro ao fazer parse do JSON da requisição';
       console.error('*** ERRO GET_CUSTOMER: PARSE ERROR ***:', errorMsg, parseError);
-      const errorResponse = { 
-        success: false,
-        error: true, 
-        message: errorMsg,
-        functionName: 'get-or-create-iugu-customer',
-        details: parseError.toString()
-      };
-      console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DE PARSE ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify(errorResponse),
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: errorMsg,
+          functionName: 'get-or-create-iugu-customer',
+          details: parseError.toString()
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -144,15 +157,13 @@ Deno.serve(async (req) => {
     if (!payload.email) {
       const errorMsg = 'Email é obrigatório';
       console.error('*** ERRO GET_CUSTOMER: VALIDATION ERROR ***:', errorMsg);
-      const errorResponse = { 
-        success: false,
-        error: true, 
-        message: errorMsg,
-        functionName: 'get-or-create-iugu-customer'
-      };
-      console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DE VALIDAÇÃO ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify(errorResponse),
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: errorMsg,
+          functionName: 'get-or-create-iugu-customer'
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -254,16 +265,14 @@ Deno.serve(async (req) => {
         console.log('*** DEBUG GET_CUSTOMER: DADOS PARSEADOS DA IUGU ***:', JSON.stringify(iuguData, null, 2));
       } catch (iuguParseError) {
         console.error('*** ERRO GET_CUSTOMER: ERRO AO FAZER PARSE DA RESPOSTA DA IUGU ***:', iuguParseError);
-        const errorResponse = {
-          success: false,
-          error: true, 
-          message: 'Resposta inválida da API da Iugu',
-          functionName: 'get-or-create-iugu-customer',
-          details: 'Resposta da Iugu: ' + responseText
-        };
-        console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DE PARSE DA IUGU ***:', JSON.stringify(errorResponse, null, 2));
         return new Response(
-          JSON.stringify(errorResponse),
+          JSON.stringify({
+            success: false,
+            error: true, 
+            message: 'Resposta inválida da API da Iugu',
+            functionName: 'get-or-create-iugu-customer',
+            details: 'Resposta da Iugu: ' + responseText
+          }),
           { 
             status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -272,16 +281,14 @@ Deno.serve(async (req) => {
       }
     } catch (fetchError) {
       console.error('*** ERRO GET_CUSTOMER: ERRO NA REQUISIÇÃO PARA A IUGU ***:', fetchError);
-      const errorResponse = {
-        success: false,
-        error: true, 
-        message: 'Erro na comunicação com a Iugu',
-        functionName: 'get-or-create-iugu-customer',
-        details: fetchError.toString()
-      };
-      console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DE FETCH ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify(errorResponse),
+        JSON.stringify({
+          success: false,
+          error: true, 
+          message: 'Erro na comunicação com a Iugu',
+          functionName: 'get-or-create-iugu-customer',
+          details: fetchError.toString()
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -346,17 +353,15 @@ Deno.serve(async (req) => {
           }
         }
 
-        const errorResponse = { 
-          success: false,
-          error: true, 
-          message: 'Erro ao criar cliente na Iugu', 
-          details: iuguData.errors,
-          iugu_errors: iuguData.errors,
-          functionName: 'get-or-create-iugu-customer'
-        };
-        console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO DA IUGU ***:', JSON.stringify(errorResponse, null, 2));
         return new Response(
-          JSON.stringify(errorResponse),
+          JSON.stringify({ 
+            success: false,
+            error: true, 
+            message: 'Erro ao criar cliente na Iugu', 
+            details: iuguData.errors,
+            iugu_errors: iuguData.errors,
+            functionName: 'get-or-create-iugu-customer'
+          }),
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -364,16 +369,14 @@ Deno.serve(async (req) => {
         );
       }
 
-      const errorResponse = { 
-        success: false,
-        error: true, 
-        message: 'Erro na comunicação com a Iugu', 
-        details: iuguData,
-        functionName: 'get-or-create-iugu-customer'
-      };
-      console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO GENÉRICO DA IUGU ***:', JSON.stringify(errorResponse, null, 2));
       return new Response(
-        JSON.stringify(errorResponse),
+        JSON.stringify({ 
+          success: false,
+          error: true, 
+          message: 'Erro na comunicação com a Iugu', 
+          details: iuguData,
+          functionName: 'get-or-create-iugu-customer'
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -414,17 +417,14 @@ Deno.serve(async (req) => {
     console.error('*** ERRO GET_CUSTOMER: Stack trace ***:', error.stack);
     console.error('*** ERRO GET_CUSTOMER: Erro completo ***:', error);
     
-    const errorResponse = {
-      success: false,
-      error: true, 
-      message: 'Erro interno do servidor', 
-      details: error.message,
-      functionName: 'get-or-create-iugu-customer'
-    };
-    console.log('*** DEBUG GET_CUSTOMER: RETORNANDO ERRO GERAL ***:', JSON.stringify(errorResponse, null, 2));
-    
     return new Response(
-      JSON.stringify(errorResponse),
+      JSON.stringify({
+        success: false,
+        error: true, 
+        message: 'Erro interno do servidor', 
+        details: error.message,
+        functionName: 'get-or-create-iugu-customer'
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
