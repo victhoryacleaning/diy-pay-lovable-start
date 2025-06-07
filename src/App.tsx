@@ -11,6 +11,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CompleteProducerProfile from "./pages/CompleteProducerProfile";
 import ProducerDashboard from "./pages/ProducerDashboard";
+import ProductsPage from "./pages/ProductsPage";
+import CreateProductPage from "./pages/CreateProductPage";
+import EditProductPage from "./pages/EditProductPage";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +44,30 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="producer">
                   <ProducerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/products" 
+              element={
+                <ProtectedRoute requiredRole="producer">
+                  <ProductsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/products/new" 
+              element={
+                <ProtectedRoute requiredRole="producer">
+                  <CreateProductPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/products/edit/:id" 
+              element={
+                <ProtectedRoute requiredRole="producer">
+                  <EditProductPage />
                 </ProtectedRoute>
               } 
             />

@@ -126,14 +126,18 @@ const ProducerDashboard = () => {
               <CardDescription>Gerencie seu negócio</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full justify-start" variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Novo Produto
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Package className="mr-2 h-4 w-4" />
-                Gerenciar Produtos
-              </Button>
+              <Link to="/products/new" className="block">
+                <Button className="w-full justify-start" variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Novo Produto
+                </Button>
+              </Link>
+              <Link to="/products" className="block">
+                <Button className="w-full justify-start" variant="outline">
+                  <Package className="mr-2 h-4 w-4" />
+                  Gerenciar Produtos
+                </Button>
+              </Link>
               <Button className="w-full justify-start" variant="outline">
                 <Eye className="mr-2 h-4 w-4" />
                 Ver Relatórios
