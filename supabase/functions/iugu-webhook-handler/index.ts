@@ -1,4 +1,5 @@
 
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -291,7 +292,7 @@ async function processInvoiceStatusChange(
       throw updateError;
     }
 
-    // Update producer balance
+    // Update producer balance using UPSERT logic
     const producerId = sale.product?.producer_id;
     if (producerId) {
       console.log('*** DEBUG WEBHOOK: Updating producer balance:', {
@@ -299,18 +300,39 @@ async function processInvoiceStatusChange(
         amount_to_add: producerShareCents
       });
 
-      // First, get current balance
+      // Try to get current balance first
       const { data: producerData, error: getBalanceError } = await supabase
         .from('producer_financials')
         .select('available_balance_cents')
         .eq('producer_id', producerId)
         .single();
 
-      if (getBalanceError && getBalanceError.code !== 'PGRST116') {
+      if (getBalanceError && getBalanceError.code === 'PGRST116') {
+        // No existing record, create new one
+        console.log('*** DEBUG WEBHOOK: Producer financials record not found, creating new one ***');
+        
+        const { error: insertError } = await supabase
+          .from('producer_financials')
+          .insert({
+            producer_id: producerId,
+            available_balance_cents: producerShareCents,
+            pending_balance_cents: 0,
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('*** ERRO WEBHOOK: Error creating producer financials record:', insertError);
+        } else {
+          console.log('*** DEBUG WEBHOOK: Producer financials record created successfully:', {
+            producer_id: producerId,
+            initial_balance: producerShareCents
+          });
+        }
+      } else if (getBalanceError) {
         console.error('*** ERRO WEBHOOK: Error getting producer balance:', getBalanceError);
-        // Don't throw here - the sale was already updated successfully
       } else {
-        const currentBalance = producerData ? producerData.available_balance_cents : 0;
+        // Record exists, update it
+        const currentBalance = producerData.available_balance_cents;
         const newBalance = currentBalance + producerShareCents;
 
         console.log('*** DEBUG WEBHOOK: Balance calculation:', {
@@ -330,8 +352,6 @@ async function processInvoiceStatusChange(
 
         if (balanceError) {
           console.error('*** ERRO WEBHOOK: Error updating producer balance:', balanceError);
-          // Don't throw here - the sale was already updated successfully
-          // Log the error and potentially handle it separately
         } else {
           console.log('*** DEBUG WEBHOOK: Producer balance updated successfully:', {
             producer_id: producerId,
@@ -432,3 +452,4 @@ async function processRefund(
 
   console.log('*** DEBUG WEBHOOK: Refund processed successfully');
 }
+

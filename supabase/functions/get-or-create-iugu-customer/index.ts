@@ -492,14 +492,18 @@ async function updateProfileWithIuguId(supabaseClient: any, payload: IuguCustome
       } else {
         console.log('*** DEBUG GET_CUSTOMER: Perfil não encontrado por email, criando novo ***');
         
-        // Create new profile for guest user
+        // Create new profile for guest user with proper ID generation
+        const profileId = crypto.randomUUID();
         const newProfile = {
+          id: profileId, // Explicitly set UUID to avoid NOT NULL constraint
           email: payload.email,
           iugu_customer_id: iuguCustomerId,
           role: 'user',
           full_name: payload.name || null,
           cpf_cnpj: payload.cpf_cnpj || null,
           phone: payload.phone || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
 
         console.log('*** DEBUG GET_CUSTOMER: Criando novo perfil ***:', newProfile);
