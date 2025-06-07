@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -298,20 +299,45 @@ async function processInvoiceStatusChange(
         amount_to_add: producerShareCents
       });
 
-      const { error: balanceError } = await supabase
+      // First, get current balance
+      const { data: producerData, error: getBalanceError } = await supabase
         .from('producer_financials')
-        .update({
-          available_balance_cents: supabase.raw(`available_balance_cents + ${producerShareCents}`),
-          updated_at: new Date().toISOString()
-        })
-        .eq('producer_id', producerId);
+        .select('available_balance_cents')
+        .eq('producer_id', producerId)
+        .single();
 
-      if (balanceError) {
-        console.error('*** ERRO WEBHOOK: Error updating producer balance:', balanceError);
+      if (getBalanceError && getBalanceError.code !== 'PGRST116') {
+        console.error('*** ERRO WEBHOOK: Error getting producer balance:', getBalanceError);
         // Don't throw here - the sale was already updated successfully
-        // Log the error and potentially handle it separately
       } else {
-        console.log('*** DEBUG WEBHOOK: Producer balance updated successfully');
+        const currentBalance = producerData ? producerData.available_balance_cents : 0;
+        const newBalance = currentBalance + producerShareCents;
+
+        console.log('*** DEBUG WEBHOOK: Balance calculation:', {
+          current_balance: currentBalance,
+          amount_to_add: producerShareCents,
+          new_balance: newBalance
+        });
+
+        // Update the balance
+        const { error: balanceError } = await supabase
+          .from('producer_financials')
+          .update({
+            available_balance_cents: newBalance,
+            updated_at: new Date().toISOString()
+          })
+          .eq('producer_id', producerId);
+
+        if (balanceError) {
+          console.error('*** ERRO WEBHOOK: Error updating producer balance:', balanceError);
+          // Don't throw here - the sale was already updated successfully
+          // Log the error and potentially handle it separately
+        } else {
+          console.log('*** DEBUG WEBHOOK: Producer balance updated successfully:', {
+            producer_id: producerId,
+            new_balance: newBalance
+          });
+        }
       }
     }
   } else {
@@ -369,19 +395,37 @@ async function processRefund(
         amount_to_subtract: sale.producer_share_cents
       });
 
-      const { error: balanceError } = await supabase
+      // First, get current balance
+      const { data: producerData, error: getBalanceError } = await supabase
         .from('producer_financials')
-        .update({
-          available_balance_cents: supabase.raw(`available_balance_cents - ${sale.producer_share_cents}`),
-          updated_at: new Date().toISOString()
-        })
-        .eq('producer_id', producerId);
+        .select('available_balance_cents')
+        .eq('producer_id', producerId)
+        .single();
 
-      if (balanceError) {
-        console.error('*** ERRO WEBHOOK: Error reversing producer balance:', balanceError);
-        // Log but don't throw - the refund status was already updated
+      if (getBalanceError && getBalanceError.code !== 'PGRST116') {
+        console.error('*** ERRO WEBHOOK: Error getting producer balance for refund:', getBalanceError);
       } else {
-        console.log('*** DEBUG WEBHOOK: Producer balance reversed successfully');
+        const currentBalance = producerData ? producerData.available_balance_cents : 0;
+        const newBalance = currentBalance - sale.producer_share_cents;
+
+        // Update the balance
+        const { error: balanceError } = await supabase
+          .from('producer_financials')
+          .update({
+            available_balance_cents: newBalance,
+            updated_at: new Date().toISOString()
+          })
+          .eq('producer_id', producerId);
+
+        if (balanceError) {
+          console.error('*** ERRO WEBHOOK: Error reversing producer balance:', balanceError);
+          // Log but don't throw - the refund status was already updated
+        } else {
+          console.log('*** DEBUG WEBHOOK: Producer balance reversed successfully:', {
+            producer_id: producerId,
+            new_balance: newBalance
+          });
+        }
       }
     }
   }
