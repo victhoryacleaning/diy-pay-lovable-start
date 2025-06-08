@@ -1,5 +1,4 @@
 
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -30,6 +29,11 @@ Deno.serve(async (req) => {
     console.log('*** DEBUG WEBHOOK: Webhook received from Iugu ***');
     console.log('*** DEBUG WEBHOOK: Method:', req.method);
     console.log('*** DEBUG WEBHOOK: Headers:', Object.fromEntries(req.headers.entries()));
+    
+    // Extract sale_id from URL query string
+    const url = new URL(req.url);
+    const saleIdFromUrl = url.searchParams.get('sale_id');
+    console.log('*** DEBUG WEBHOOK: sale_id extraído da URL:', saleIdFromUrl);
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -120,7 +124,8 @@ Deno.serve(async (req) => {
       event: payload.event,
       data_id: payload.data?.id,
       status: payload.data?.status,
-      webhook_id: payload.webhook_id
+      webhook_id: payload.webhook_id,
+      sale_id_from_url: saleIdFromUrl
     });
 
     const { event, data } = payload;
@@ -128,20 +133,8 @@ Deno.serve(async (req) => {
     // Extract identifiers
     const iuguInvoiceId = data.id;
     const iuguChargeId = data.id; // Could be charge ID if event is about charges
-    
-    // Try to extract sale_id from notification_url if available
-    let saleIdFromUrl: string | null = null;
-    if (data.notification_url) {
-      try {
-        const url = new URL(data.notification_url);
-        saleIdFromUrl = url.searchParams.get('sale_id');
-        console.log('*** DEBUG WEBHOOK: Extracted sale_id from notification_url:', saleIdFromUrl);
-      } catch (error) {
-        console.log('*** DEBUG WEBHOOK: Could not parse notification_url:', error);
-      }
-    }
 
-    // Find the sale in our database
+    // Find the sale in our database - prioritize sale_id from URL
     let saleQuery = supabase.from('sales').select(`
       *,
       product:products(
@@ -151,10 +144,12 @@ Deno.serve(async (req) => {
       )
     `);
 
-    // Use sale_id from URL if available, otherwise search by iugu_invoice_id or iugu_charge_id
+    // Use sale_id from URL if available, otherwise search by iugu identifiers
     if (saleIdFromUrl) {
+      console.log('*** DEBUG WEBHOOK: Buscando sale pelo sale_id da URL:', saleIdFromUrl);
       saleQuery = saleQuery.eq('id', saleIdFromUrl);
     } else {
+      console.log('*** DEBUG WEBHOOK: Buscando sale pelos IDs da Iugu:', { iuguInvoiceId, iuguChargeId });
       saleQuery = saleQuery.or(`iugu_invoice_id.eq.${iuguInvoiceId},iugu_charge_id.eq.${iuguChargeId}`);
     }
 
@@ -266,6 +261,12 @@ async function processInvoiceStatusChange(
     updated_at: new Date().toISOString()
   };
 
+  // For invoice.created event, update iugu_invoice_id if not already set
+  if (invoiceData.id && !sale.iugu_invoice_id) {
+    updateData.iugu_invoice_id = invoiceData.id;
+    console.log('*** DEBUG WEBHOOK: Updating iugu_invoice_id:', invoiceData.id);
+  }
+
   // If payment is confirmed
   if (newStatus === 'paid' && currentStatus !== 'paid') {
     console.log('*** DEBUG WEBHOOK: Processing payment confirmation');
@@ -361,7 +362,7 @@ async function processInvoiceStatusChange(
       }
     }
   } else {
-    // For other status changes (canceled, expired, failed, etc.)
+    // For other status changes (canceled, expired, failed, etc.) or invoice.created
     const { error: updateError } = await supabase
       .from('sales')
       .update(updateData)
@@ -452,4 +453,3 @@ async function processRefund(
 
   console.log('*** DEBUG WEBHOOK: Refund processed successfully');
 }
-

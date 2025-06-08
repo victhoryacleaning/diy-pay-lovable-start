@@ -119,9 +119,10 @@ Deno.serve(async (req) => {
     let buyerProfile;
     try {
       const { data, error } = await supabase
-        .from('buyer_profiles')
+        .from('profiles')
         .select('*')
         .eq('email', payload.email)
+        .eq('role', 'buyer')
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -140,8 +141,8 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          customer_id: buyerProfile.iugu_customer_id,
-          existing: true
+          iugu_customer_id: buyerProfile.iugu_customer_id,
+          exists_in_iugu: true
         }),
         { 
           status: 200,
@@ -235,8 +236,8 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         };
 
-        if (payload.name && !buyerProfile.name) {
-          updateData.name = payload.name;
+        if (payload.name && !buyerProfile.full_name) {
+          updateData.full_name = payload.name;
         }
 
         if (payload.cpf_cnpj && !buyerProfile.cpf_cnpj) {
@@ -244,7 +245,7 @@ Deno.serve(async (req) => {
         }
 
         const { error: updateError } = await supabase
-          .from('buyer_profiles')
+          .from('profiles')
           .update(updateData)
           .eq('id', buyerProfile.id);
 
@@ -254,15 +255,24 @@ Deno.serve(async (req) => {
           console.log('[DEBUG] *** PERFIL DO COMPRADOR ATUALIZADO ***');
         }
       } else {
-        // Create new profile - não referenciar auth.users
+        // Create new profile with generated UUID
         console.log('[DEBUG] *** CRIANDO NOVO PERFIL DE COMPRADOR ***');
+        
+        // Generate a new UUID for the profile since this is a guest buyer
+        const profileId = crypto.randomUUID();
+        console.log('[DEBUG] UUID gerado para novo perfil:', profileId);
+        
         const { error: insertError } = await supabase
-          .from('buyer_profiles')
+          .from('profiles')
           .insert({
+            id: profileId,
             email: payload.email,
-            name: payload.name || null,
+            full_name: payload.name || null,
             cpf_cnpj: payload.cpf_cnpj || null,
-            iugu_customer_id: iuguCustomerId
+            role: 'buyer',
+            iugu_customer_id: iuguCustomerId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
 
         if (insertError) {
@@ -276,8 +286,8 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          customer_id: iuguCustomerId,
-          existing: false
+          iugu_customer_id: iuguCustomerId,
+          exists_in_iugu: false
         }),
         { 
           status: 200,
