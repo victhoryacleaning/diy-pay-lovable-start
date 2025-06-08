@@ -20,35 +20,83 @@ const PaymentConfirmation = () => {
         throw new Error('Sale ID is required');
       }
 
-      const { data, error } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          products!inner(name, price_cents)
-        `)
-        .eq('id', saleId)
-        .single();
+      console.log('[DEBUG] Buscando venda com ID:', saleId);
 
-      if (error) {
-        console.error('Error fetching sale:', error);
-        throw new Error('Sale not found');
+      // Try multiple approaches to fetch the sale data
+      try {
+        // First attempt: Try with maybeSingle to avoid the 406 error
+        const { data, error } = await supabase
+          .from('sales')
+          .select(`
+            *,
+            products!inner(name, price_cents)
+          `)
+          .eq('id', saleId)
+          .maybeSingle();
+
+        console.log('[DEBUG] Resultado da busca (maybeSingle):', { data, error });
+
+        if (error) {
+          console.error('[ERRO] Erro na busca da venda:', error);
+          throw new Error(`Database error: ${error.message}`);
+        }
+
+        if (!data) {
+          console.log('[DEBUG] Nenhuma venda encontrada, tentando busca sem join');
+          
+          // Second attempt: Try without the join to see if the sale exists
+          const { data: saleOnly, error: saleError } = await supabase
+            .from('sales')
+            .select('*')
+            .eq('id', saleId)
+            .maybeSingle();
+
+          console.log('[DEBUG] Resultado da busca sem join:', { saleOnly, saleError });
+
+          if (saleError) {
+            throw new Error(`Database error: ${saleError.message}`);
+          }
+
+          if (!saleOnly) {
+            throw new Error('Sale not found');
+          }
+
+          // If sale exists, try to get product separately
+          const { data: product, error: productError } = await supabase
+            .from('products')
+            .select('name, price_cents')
+            .eq('id', saleOnly.product_id)
+            .maybeSingle();
+
+          console.log('[DEBUG] Resultado da busca do produto:', { product, productError });
+
+          return {
+            ...saleOnly,
+            products: product || { name: 'Produto', price_cents: saleOnly.amount_total_cents }
+          };
+        }
+
+        return data;
+      } catch (fetchError) {
+        console.error('[ERRO] Erro geral na busca:', fetchError);
+        throw fetchError;
       }
-
-      return data;
     },
     enabled: !!saleId,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   useEffect(() => {
     if (error) {
+      console.error('[DEBUG] Erro na query:', error);
       toast({
-        title: "Pedido não encontrado",
-        description: "O pedido que você está tentando acessar não foi encontrado.",
+        title: "Problema ao carregar pedido",
+        description: "Estamos tendo dificuldades para carregar os detalhes do seu pedido. Tente recarregar a página.",
         variant: "destructive",
       });
-      navigate('/');
     }
-  }, [error, navigate]);
+  }, [error]);
 
   const handleCopyPixCode = async () => {
     if (sale?.iugu_pix_qr_code_text) {
@@ -94,8 +142,43 @@ const PaymentConfirmation = () => {
     );
   }
 
-  if (!sale) {
-    return null;
+  if (error || !sale) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-red-600 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.863-.833-2.634 0L4.232 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Pedido não encontrado</h1>
+          <p className="text-gray-600 mb-6">
+            Não foi possível encontrar os detalhes do seu pedido. Isso pode acontecer se:
+          </p>
+          <ul className="text-sm text-gray-500 text-left mb-6 space-y-1">
+            <li>• O link ainda está sendo processado (tente recarregar em alguns segundos)</li>
+            <li>• O pedido expirou ou foi cancelado</li>
+            <li>• Houve um problema temporário no sistema</li>
+          </ul>
+          <div className="space-y-3">
+            <Button
+              onClick={() => window.location.reload()}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              Tentar Novamente
+            </Button>
+            <Button
+              onClick={() => navigate('/')}
+              variant="outline"
+              className="w-full"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao Início
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const product = sale.products as any;

@@ -262,24 +262,34 @@ Deno.serve(async (req) => {
         const profileId = crypto.randomUUID();
         console.log('[DEBUG] UUID gerado para novo perfil:', profileId);
         
-        const { error: insertError } = await supabase
+        const newProfileData = {
+          id: profileId,
+          email: payload.email,
+          full_name: payload.name || null,
+          cpf_cnpj: payload.cpf_cnpj || null,
+          role: 'buyer',
+          iugu_customer_id: iuguCustomerId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('[DEBUG] Dados do novo perfil a serem inseridos:', JSON.stringify(newProfileData, null, 2));
+        
+        const { error: insertError, data: insertData } = await supabase
           .from('profiles')
-          .insert({
-            id: profileId,
-            email: payload.email,
-            full_name: payload.name || null,
-            cpf_cnpj: payload.cpf_cnpj || null,
-            role: 'buyer',
-            iugu_customer_id: iuguCustomerId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
+          .insert(newProfileData)
+          .select()
+          .single();
 
         if (insertError) {
           console.error('[ERRO] Falha ao criar perfil do comprador:', insertError);
+          console.error('[ERRO] Código do erro:', insertError.code);
+          console.error('[ERRO] Detalhes do erro:', insertError.details);
+          console.error('[ERRO] Mensagem do erro:', insertError.message);
           // Não falhar aqui, pois o cliente Iugu foi criado com sucesso
         } else {
           console.log('[DEBUG] *** NOVO PERFIL DE COMPRADOR CRIADO ***');
+          console.log('[DEBUG] Dados inseridos:', insertData);
         }
       }
 
