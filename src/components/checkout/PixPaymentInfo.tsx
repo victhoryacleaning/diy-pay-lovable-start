@@ -13,8 +13,8 @@ export const PixPaymentInfo = () => {
       </div>
       
       <p className="text-gray-700">
-        Ao clicar em <strong>"Pagar agora"</strong>, você será direcionado para a página com o QR Code 
-        e o código PIX Copia e Cola para finalizar seu pagamento.
+        Ao clicar em <strong>"Pagar agora"</strong>, você será direcionado para uma página 
+        com o QR Code e o código PIX Copia e Cola para finalizar seu pagamento.
       </p>
       
       <div className="mt-4 p-3 bg-white rounded border border-green-200">

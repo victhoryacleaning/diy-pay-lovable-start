@@ -15,6 +15,7 @@ import ProductsPage from "./pages/ProductsPage";
 import CreateProductPage from "./pages/CreateProductPage";
 import EditProductPage from "./pages/EditProductPage";
 import Checkout from "./pages/Checkout";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/checkout/:slug" element={<Checkout />} />
+            <Route path="/payment-confirmation/:saleId" element={<PaymentConfirmation />} />
             <Route 
               path="/complete-producer-profile" 
               element={
@@ -71,9 +73,6 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            {/* Rotas futuras */}
-            {/* <Route path="/member-area" element={<ProtectedRoute requiredRole="user"><MemberArea /></ProtectedRoute>} /> */}
-            {/* <Route path="/admin-dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} /> */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

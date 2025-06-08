@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -24,6 +25,7 @@ export const CheckoutButton = ({
   installments
 }: CheckoutButtonProps) => {
   const [processingStep, setProcessingStep] = useState<string>("");
+  const navigate = useNavigate();
 
   const handlePayment = async () => {
     console.log('[DEBUG] *** FRONTEND: INICIANDO PROCESSO DE PAGAMENTO ***');
@@ -200,23 +202,11 @@ export const CheckoutButton = ({
               title: "Pagamento aprovado!",
               description: "Seu pagamento foi processado com sucesso.",
             });
-          } else if (paymentMethod === 'pix' && transactionData.pix_qr_code_text) {
-            console.log('[DEBUG] Frontend: PIX gerado com sucesso');
-            // Show PIX QR code and instructions
-            console.log('[DEBUG] Frontend: PIX QR Code:', transactionData.pix_qr_code_text);
-            toast({
-              title: "PIX gerado!",
-              description: "Use o código PIX para finalizar o pagamento.",
-            });
-          } else if (paymentMethod === 'bank_slip' && transactionData.secure_url) {
-            console.log('[DEBUG] Frontend: Boleto gerado com sucesso');
-            // Redirect to bank slip
-            console.log('[DEBUG] Frontend: URL do boleto:', transactionData.secure_url);
-            window.open(transactionData.secure_url, '_blank');
-            toast({
-              title: "Boleto gerado!",
-              description: "Você será redirecionado para o boleto.",
-            });
+          } else if (paymentMethod === 'pix' || paymentMethod === 'bank_slip') {
+            console.log('[DEBUG] Frontend: PIX/Boleto gerado, redirecionando para página de confirmação');
+            // Redirect to our confirmation page instead of opening Iugu URL
+            navigate(`/payment-confirmation/${transactionData.sale_id}`);
+            return; // Exit early to prevent further processing
           } else {
             console.log('[DEBUG] Frontend: Pagamento iniciado, redirecionando se necessário');
             toast({
