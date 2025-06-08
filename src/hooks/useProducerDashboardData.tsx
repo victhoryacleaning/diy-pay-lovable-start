@@ -13,7 +13,8 @@ interface DashboardData {
     buyer_email: string;
     product_name: string;
     amount: number;
-    paid_at: string;
+    created_at: string;
+    status: string;
   }>;
 }
 
@@ -55,7 +56,7 @@ export const useProducerDashboardData = () => {
         const productIds = products?.map(p => p.id) || [];
 
         if (productIds.length > 0) {
-          // Buscar vendas pagas do mês atual
+          // Buscar vendas pagas do mês atual para cálculo de vendas e clientes únicos
           const { data: salesThisMonth } = await supabase
             .from('sales')
             .select('producer_share_cents, buyer_email')
@@ -63,28 +64,36 @@ export const useProducerDashboardData = () => {
             .eq('status', 'paid')
             .gte('paid_at', startOfMonth.toISOString());
 
-          // Buscar transações recentes
+          // Buscar vendas pendentes para cálculo do saldo pendente
+          const { data: pendingSales } = await supabase
+            .from('sales')
+            .select('producer_share_cents')
+            .in('product_id', productIds)
+            .eq('status', 'pending');
+
+          // Buscar transações recentes (todas as vendas criadas recentemente, não apenas pagas)
           const { data: recentSales } = await supabase
             .from('sales')
             .select(`
               id,
               buyer_email,
               producer_share_cents,
-              paid_at,
+              created_at,
+              status,
               products!inner(name)
             `)
             .in('product_id', productIds)
-            .eq('status', 'paid')
-            .order('paid_at', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(10);
 
           // Calcular métricas
           const totalSalesThisMonth = salesThisMonth?.reduce((sum, sale) => sum + sale.producer_share_cents, 0) || 0;
           const uniqueEmails = new Set(salesThisMonth?.map(sale => sale.buyer_email) || []);
+          const totalPendingBalance = pendingSales?.reduce((sum, sale) => sum + sale.producer_share_cents, 0) || 0;
 
           setData({
             availableBalance: financialData?.available_balance_cents || 0,
-            pendingBalance: financialData?.pending_balance_cents || 0,
+            pendingBalance: financialData?.pending_balance_cents || totalPendingBalance,
             totalSalesThisMonth,
             uniqueCustomersThisMonth: uniqueEmails.size,
             recentTransactions: recentSales?.map(sale => ({
@@ -92,7 +101,8 @@ export const useProducerDashboardData = () => {
               buyer_email: sale.buyer_email,
               product_name: (sale.products as any)?.name || 'Produto',
               amount: sale.producer_share_cents,
-              paid_at: sale.paid_at || ''
+              created_at: sale.created_at || '',
+              status: sale.status
             })) || []
           });
         }

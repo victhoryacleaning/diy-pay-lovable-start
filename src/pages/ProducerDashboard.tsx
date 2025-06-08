@@ -29,15 +29,25 @@ const ProducerDashboard = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-100 text-green-800">Concluído</Badge>;
+      case 'paid':
+        return <Badge className="bg-green-100 text-green-800">Paga</Badge>;
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+      case 'failed':
+        return <Badge className="bg-red-100 text-red-800">Falhada</Badge>;
+      case 'authorized':
+        return <Badge className="bg-blue-100 text-blue-800">Autorizada</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -95,7 +105,7 @@ const ProducerDashboard = () => {
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      Processando
+                      Aguardando processamento
                     </p>
                   </CardContent>
                 </Card>
@@ -174,7 +184,7 @@ const ProducerDashboard = () => {
                 <Card className="lg:col-span-2">
                   <CardHeader>
                     <CardTitle>Transações Recentes</CardTitle>
-                    <CardDescription>Suas vendas mais recentes</CardDescription>
+                    <CardDescription>Suas vendas mais recentes (todas as criadas)</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
@@ -200,13 +210,13 @@ const ProducerDashboard = () => {
                               <div className="flex-1">
                                 <p className="font-medium">{transaction.buyer_email}</p>
                                 <p className="text-sm text-gray-500">{transaction.product_name}</p>
-                                <p className="text-xs text-gray-400">{formatDate(transaction.paid_at)}</p>
+                                <p className="text-xs text-gray-400">Criada em: {formatDate(transaction.created_at)}</p>
                               </div>
                               <div className="flex items-center gap-3">
                                 <span className="font-semibold">
                                   {formatCurrency(transaction.amount)}
                                 </span>
-                                {getStatusBadge('completed')}
+                                {getStatusBadge(transaction.status)}
                               </div>
                             </div>
                           ))
@@ -241,7 +251,7 @@ const ProducerDashboard = () => {
                       </div>
                       <div>
                         <h4 className="font-semibold mb-2">Prazo de Recebimento</h4>
-                        <p className="text-gray-600">D+1 para PIX, D+30 para cartão</p>
+                        <p className="text-gray-600">Imediato para cartão, D+1 para PIX, D+30 para boleto</p>
                       </div>
                       <div>
                         <h4 className="font-semibold mb-2">Suporte</h4>

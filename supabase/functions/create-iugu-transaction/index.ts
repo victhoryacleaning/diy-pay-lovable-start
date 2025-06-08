@@ -18,6 +18,67 @@ interface TransactionPayload {
   notification_url_base?: string;
 }
 
+// Função para atualizar o saldo do produtor
+async function updateProducerFinancials(supabase: any, producerId: string, producerShareCents: number) {
+  console.log('[DEBUG] *** ATUALIZANDO SALDO DO PRODUTOR ***:', { producerId, producerShareCents });
+  
+  try {
+    // Buscar saldo atual do produtor
+    const { data: currentFinancials, error: fetchError } = await supabase
+      .from('producer_financials')
+      .select('available_balance_cents, pending_balance_cents')
+      .eq('producer_id', producerId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('[ERRO] Erro ao buscar saldo atual do produtor:', fetchError);
+      return;
+    }
+
+    const currentAvailableBalance = currentFinancials?.available_balance_cents || 0;
+    const currentPendingBalance = currentFinancials?.pending_balance_cents || 0;
+    const newAvailableBalance = currentAvailableBalance + producerShareCents;
+
+    if (currentFinancials) {
+      // Atualizar saldo existente
+      const { error: updateError } = await supabase
+        .from('producer_financials')
+        .update({
+          available_balance_cents: newAvailableBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('producer_id', producerId);
+
+      if (updateError) {
+        console.error('[ERRO] Erro ao atualizar saldo do produtor:', updateError);
+      } else {
+        console.log('[DEBUG] *** SALDO DO PRODUTOR ATUALIZADO ***:', { 
+          producerId, 
+          oldBalance: currentAvailableBalance, 
+          newBalance: newAvailableBalance 
+        });
+      }
+    } else {
+      // Criar registro inicial
+      const { error: insertError } = await supabase
+        .from('producer_financials')
+        .insert({
+          producer_id: producerId,
+          available_balance_cents: producerShareCents,
+          pending_balance_cents: 0
+        });
+
+      if (insertError) {
+        console.error('[ERRO] Erro ao criar saldo inicial do produtor:', insertError);
+      } else {
+        console.log('[DEBUG] *** SALDO INICIAL DO PRODUTOR CRIADO ***:', { producerId, balance: producerShareCents });
+      }
+    }
+  } catch (error) {
+    console.error('[ERRO] Erro geral ao atualizar saldo do produtor:', error);
+  }
+}
+
 Deno.serve(async (req) => {
   console.log('[DEBUG] *** INÍCIO DA FUNÇÃO create-iugu-transaction ***');
   console.log('[DEBUG] Método da requisição:', req.method);
@@ -343,12 +404,25 @@ Deno.serve(async (req) => {
 
         if (chargeResponse.ok && chargeData.success) {
           console.log('[DEBUG] *** COBRANÇA DIRETA BEM-SUCEDIDA ***');
+          
+          // Verificar se o status indica pagamento autorizado/capturado
+          const iuguStatus = chargeData.status;
+          const isPaid = iuguStatus === 'authorized' || iuguStatus === 'captured' || iuguStatus === 'paid';
+          
+          console.log('[DEBUG] *** STATUS DA COBRANÇA ***:', { iuguStatus, isPaid });
+
           // Direct charge successful
           updateData = {
             iugu_charge_id: chargeData.invoice_id,
-            status: chargeData.status === 'paid' ? 'paid' : 'authorized',
-            paid_at: chargeData.status === 'paid' ? new Date().toISOString() : null
+            status: isPaid ? 'paid' : chargeData.status,
+            paid_at: isPaid ? new Date().toISOString() : null
           };
+
+          // Se o pagamento foi autorizado/capturado, atualizar saldo do produtor imediatamente
+          if (isPaid) {
+            console.log('[DEBUG] *** PAGAMENTO AUTORIZADO/CAPTURADO - ATUALIZANDO SALDO DO PRODUTOR ***');
+            await updateProducerFinancials(supabase, product.producer_id, producerShareCents);
+          }
 
           iuguResponse = chargeData;
         } else {
