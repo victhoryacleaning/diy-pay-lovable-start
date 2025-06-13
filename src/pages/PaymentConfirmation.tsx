@@ -98,6 +98,21 @@ const PaymentConfirmation = () => {
     }
   }, [error]);
 
+  useEffect(() => {
+    if (sale) {
+      console.log('[DEBUG] Dados da venda carregados:', {
+        id: sale.id,
+        payment_method: sale.payment_method_used,
+        has_pix_qr_code_base64: !!sale.iugu_pix_qr_code_base64,
+        has_pix_qr_code_text: !!sale.iugu_pix_qr_code_text,
+        has_bank_slip_barcode: !!sale.iugu_bank_slip_barcode,
+        has_secure_url: !!sale.iugu_invoice_secure_url,
+        pix_qr_code_base64_length: sale.iugu_pix_qr_code_base64?.length || 0,
+        pix_qr_code_text_length: sale.iugu_pix_qr_code_text?.length || 0
+      });
+    }
+  }, [sale]);
+
   const handleCopyPixCode = async () => {
     if (sale?.iugu_pix_qr_code_text) {
       try {
@@ -191,11 +206,7 @@ const PaymentConfirmation = () => {
     hasPixQrCodeBase64: !!sale.iugu_pix_qr_code_base64,
     hasPixQrCodeText: !!sale.iugu_pix_qr_code_text,
     hasBankSlipBarcode: !!sale.iugu_bank_slip_barcode,
-    hasSecureUrl: !!sale.iugu_invoice_secure_url,
-    pixQrCodeBase64: sale.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
-    pixQrCodeText: sale.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
-    bankSlipBarcode: sale.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE',
-    secureUrl: sale.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
+    hasSecureUrl: !!sale.iugu_invoice_secure_url
   });
 
   return (
@@ -261,7 +272,7 @@ const PaymentConfirmation = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500">QR Code não disponível</p>
+                  <p className="text-gray-500">QR Code PIX em processamento...</p>
                 </div>
               )}
               
@@ -290,7 +301,7 @@ const PaymentConfirmation = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500">Código PIX não disponível</p>
+                  <p className="text-gray-500">Código PIX em processamento...</p>
                 </div>
               )}
 
@@ -340,7 +351,7 @@ const PaymentConfirmation = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500">Linha digitável não disponível</p>
+                  <p className="text-gray-500">Linha digitável em processamento...</p>
                 </div>
               )}
 

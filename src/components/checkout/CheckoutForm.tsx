@@ -143,23 +143,27 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       hasCardToken: !!cardToken
     });
 
+    const transactionPayload = {
+      product_id: product.id,
+      buyer_email: data.email,
+      iugu_customer_id: iuguCustomerId,
+      buyer_profile_id: buyerProfileId, // Make sure this is included
+      payment_method_selected: data.paymentMethod,
+      card_token: cardToken,
+      installments: data.installments,
+      buyer_name: data.fullName,
+      buyer_cpf_cnpj: data.cpfCnpj,
+      notification_url_base: `${window.location.origin}/api/webhook/iugu`,
+    };
+
+    console.log('[DEBUG] Payload para create-iugu-transaction:', transactionPayload);
+
     const response = await fetch('/api/functions/v1/create-iugu-transaction', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        product_id: product.id,
-        buyer_email: data.email,
-        iugu_customer_id: iuguCustomerId,
-        buyer_profile_id: buyerProfileId, // Pass the buyer profile ID
-        payment_method_selected: data.paymentMethod,
-        card_token: cardToken,
-        installments: data.installments,
-        buyer_name: data.fullName,
-        buyer_cpf_cnpj: data.cpfCnpj,
-        notification_url_base: `${window.location.origin}/api/webhook/iugu`,
-      }),
+      body: JSON.stringify(transactionPayload),
     });
 
     if (!response.ok) {

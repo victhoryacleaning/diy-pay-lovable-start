@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -10,6 +9,7 @@ interface TransactionPayload {
   product_id: string;
   buyer_email: string;
   iugu_customer_id?: string;
+  buyer_profile_id?: string; // Add this field
   payment_method_selected: 'credit_card' | 'pix' | 'bank_slip';
   card_token?: string;
   installments?: number;
@@ -187,6 +187,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('[DEBUG] *** PROCESSANDO TRANSAÇÃO PARA PRODUTO ***:', payload.product_id);
+    console.log('[DEBUG] *** BUYER_PROFILE_ID RECEBIDO ***:', payload.buyer_profile_id);
 
     // Validate required fields
     if (!payload.product_id || !payload.buyer_email || !payload.payment_method_selected) {
@@ -294,8 +295,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create initial sale record
+    // Create initial sale record with buyer_profile_id
     console.log('[DEBUG] *** CRIANDO REGISTRO DE VENDA INICIAL ***');
+    console.log('[DEBUG] *** INCLUINDO BUYER_PROFILE_ID ***:', payload.buyer_profile_id);
     let sale;
     
     try {
@@ -304,6 +306,7 @@ Deno.serve(async (req) => {
         .insert({
           product_id: payload.product_id,
           buyer_email: payload.buyer_email,
+          buyer_profile_id: payload.buyer_profile_id, // Include this field
           amount_total_cents: amountTotalCents,
           platform_fee_cents: platformFeeCents,
           producer_share_cents: producerShareCents,
@@ -334,6 +337,7 @@ Deno.serve(async (req) => {
 
       sale = data;
       console.log('[DEBUG] *** REGISTRO DE VENDA CRIADO ***:', sale.id);
+      console.log('[DEBUG] *** BUYER_PROFILE_ID NA VENDA ***:', sale.buyer_profile_id);
     } catch (dbError) {
       console.error('[ERRO] *** ERRO AO CRIAR VENDA NO BANCO ***:', dbError);
       return new Response(
