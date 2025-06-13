@@ -22,65 +22,32 @@ const PaymentConfirmation = () => {
 
       console.log('[DEBUG] Buscando venda com ID:', saleId);
 
-      // Try multiple approaches to fetch the sale data
-      try {
-        // First attempt: Try with maybeSingle to avoid the 406 error
-        const { data, error } = await supabase
-          .from('sales')
-          .select(`
-            *,
-            products!inner(name, price_cents)
-          `)
-          .eq('id', saleId)
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          products!inner(name, price_cents)
+        `)
+        .eq('id', saleId)
+        .maybeSingle();
 
-        console.log('[DEBUG] Resultado da busca (maybeSingle):', { data, error });
+      console.log('[DEBUG] Resultado da busca da venda:', { data, error });
+      console.log('[DEBUG] PIX QR Code Base64 presente:', !!data?.iugu_pix_qr_code_base64);
+      console.log('[DEBUG] PIX QR Code Text presente:', !!data?.iugu_pix_qr_code_text);
+      console.log('[DEBUG] Bank Slip Barcode presente:', !!data?.iugu_bank_slip_barcode);
+      console.log('[DEBUG] Invoice Secure URL presente:', !!data?.iugu_invoice_secure_url);
+      console.log('[DEBUG] Payment method:', data?.payment_method_used);
 
-        if (error) {
-          console.error('[ERRO] Erro na busca da venda:', error);
-          throw new Error(`Database error: ${error.message}`);
-        }
-
-        if (!data) {
-          console.log('[DEBUG] Nenhuma venda encontrada, tentando busca sem join');
-          
-          // Second attempt: Try without the join to see if the sale exists
-          const { data: saleOnly, error: saleError } = await supabase
-            .from('sales')
-            .select('*')
-            .eq('id', saleId)
-            .maybeSingle();
-
-          console.log('[DEBUG] Resultado da busca sem join:', { saleOnly, saleError });
-
-          if (saleError) {
-            throw new Error(`Database error: ${saleError.message}`);
-          }
-
-          if (!saleOnly) {
-            throw new Error('Sale not found');
-          }
-
-          // If sale exists, try to get product separately
-          const { data: product, error: productError } = await supabase
-            .from('products')
-            .select('name, price_cents')
-            .eq('id', saleOnly.product_id)
-            .maybeSingle();
-
-          console.log('[DEBUG] Resultado da busca do produto:', { product, productError });
-
-          return {
-            ...saleOnly,
-            products: product || { name: 'Produto', price_cents: saleOnly.amount_total_cents }
-          };
-        }
-
-        return data;
-      } catch (fetchError) {
-        console.error('[ERRO] Erro geral na busca:', fetchError);
-        throw fetchError;
+      if (error) {
+        console.error('[ERRO] Erro na busca da venda:', error);
+        throw new Error(`Database error: ${error.message}`);
       }
+
+      if (!data) {
+        throw new Error('Sale not found');
+      }
+
+      return data;
     },
     enabled: !!saleId,
     retry: 3,
@@ -103,12 +70,10 @@ const PaymentConfirmation = () => {
       console.log('[DEBUG] Dados da venda carregados:', {
         id: sale.id,
         payment_method: sale.payment_method_used,
-        has_pix_qr_code_base64: !!sale.iugu_pix_qr_code_base64,
-        has_pix_qr_code_text: !!sale.iugu_pix_qr_code_text,
-        has_bank_slip_barcode: !!sale.iugu_bank_slip_barcode,
-        has_secure_url: !!sale.iugu_invoice_secure_url,
-        pix_qr_code_base64_length: sale.iugu_pix_qr_code_base64?.length || 0,
-        pix_qr_code_text_length: sale.iugu_pix_qr_code_text?.length || 0
+        iugu_pix_qr_code_base64: sale.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
+        iugu_pix_qr_code_text: sale.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
+        iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE',
+        iugu_invoice_secure_url: sale.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
       });
     }
   }, [sale]);
@@ -168,13 +133,8 @@ const PaymentConfirmation = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Pedido não encontrado</h1>
           <p className="text-gray-600 mb-6">
-            Não foi possível encontrar os detalhes do seu pedido. Isso pode acontecer se:
+            Não foi possível encontrar os detalhes do seu pedido.
           </p>
-          <ul className="text-sm text-gray-500 text-left mb-6 space-y-1">
-            <li>• O link ainda está sendo processado (tente recarregar em alguns segundos)</li>
-            <li>• O pedido expirou ou foi cancelado</li>
-            <li>• Houve um problema temporário no sistema</li>
-          </ul>
           <div className="space-y-3">
             <Button
               onClick={() => window.location.reload()}
@@ -200,13 +160,13 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  console.log('[DEBUG] Dados da venda para renderização:', {
+  console.log('[DEBUG] Renderização - PIX/Boleto:', {
     isPix,
     isBankSlip,
-    hasPixQrCodeBase64: !!sale.iugu_pix_qr_code_base64,
-    hasPixQrCodeText: !!sale.iugu_pix_qr_code_text,
-    hasBankSlipBarcode: !!sale.iugu_bank_slip_barcode,
-    hasSecureUrl: !!sale.iugu_invoice_secure_url
+    qrCodeBase64: sale.iugu_pix_qr_code_base64 ? 'EXISTE' : 'NÃO EXISTE',
+    qrCodeText: sale.iugu_pix_qr_code_text ? 'EXISTE' : 'NÃO EXISTE',
+    bankSlipBarcode: sale.iugu_bank_slip_barcode ? 'EXISTE' : 'NÃO EXISTE',
+    secureUrl: sale.iugu_invoice_secure_url ? 'EXISTE' : 'NÃO EXISTE'
   });
 
   return (

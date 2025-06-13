@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -9,7 +10,7 @@ interface TransactionPayload {
   product_id: string;
   buyer_email: string;
   iugu_customer_id?: string;
-  buyer_profile_id?: string; // Add this field
+  buyer_profile_id?: string;
   payment_method_selected: 'credit_card' | 'pix' | 'bank_slip';
   card_token?: string;
   installments?: number;
@@ -301,19 +302,23 @@ Deno.serve(async (req) => {
     let sale;
     
     try {
+      const saleToInsert = {
+        product_id: payload.product_id,
+        buyer_email: payload.buyer_email,
+        buyer_profile_id: payload.buyer_profile_id, // GARANTIR QUE ESTE ESTEJA AQUI
+        amount_total_cents: amountTotalCents,
+        platform_fee_cents: platformFeeCents,
+        producer_share_cents: producerShareCents,
+        payment_method_used: payload.payment_method_selected,
+        installments_chosen: installments,
+        status: 'pending'
+      };
+
+      console.log('[DEBUG] *** OBJETO DE INSERÇÃO DA VENDA ***:', JSON.stringify(saleToInsert, null, 2));
+
       const { data, error: saleError } = await supabase
         .from('sales')
-        .insert({
-          product_id: payload.product_id,
-          buyer_email: payload.buyer_email,
-          buyer_profile_id: payload.buyer_profile_id, // Include this field
-          amount_total_cents: amountTotalCents,
-          platform_fee_cents: platformFeeCents,
-          producer_share_cents: producerShareCents,
-          payment_method_used: payload.payment_method_selected,
-          installments_chosen: installments,
-          status: 'pending'
-        })
+        .insert(saleToInsert)
         .select()
         .single();
 
