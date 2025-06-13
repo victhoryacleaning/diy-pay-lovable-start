@@ -10,6 +10,7 @@ interface CustomerPayload {
   email: string;
   name?: string;
   cpf_cnpj?: string;
+  phone?: string;
 }
 
 Deno.serve(async (req) => {
@@ -130,6 +131,9 @@ Deno.serve(async (req) => {
       } else {
         buyerProfile = data;
         console.log('[DEBUG] Perfil do comprador encontrado:', buyerProfile ? 'SIM' : 'NÃO');
+        if (buyerProfile) {
+          console.log('[DEBUG] ID do perfil encontrado:', buyerProfile.id);
+        }
       }
     } catch (dbError) {
       console.error('[ERRO] Erro na busca do perfil do comprador:', dbError);
@@ -142,6 +146,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: true,
           iugu_customer_id: buyerProfile.iugu_customer_id,
+          buyer_profile_id: buyerProfile.id,
           exists_in_iugu: true
         }),
         { 
@@ -227,6 +232,8 @@ Deno.serve(async (req) => {
         }
       }
 
+      let finalBuyerProfileId = null;
+
       // Save or update buyer profile
       if (buyerProfile) {
         // Update existing profile
@@ -244,6 +251,10 @@ Deno.serve(async (req) => {
           updateData.cpf_cnpj = payload.cpf_cnpj;
         }
 
+        if (payload.phone && !buyerProfile.phone) {
+          updateData.phone = payload.phone;
+        }
+
         const { error: updateError } = await supabase
           .from('profiles')
           .update(updateData)
@@ -253,6 +264,7 @@ Deno.serve(async (req) => {
           console.error('[ERRO] Falha ao atualizar perfil do comprador:', updateError);
         } else {
           console.log('[DEBUG] *** PERFIL DO COMPRADOR ATUALIZADO ***');
+          finalBuyerProfileId = buyerProfile.id;
         }
       } else {
         // Create new profile with generated UUID
@@ -267,6 +279,7 @@ Deno.serve(async (req) => {
           email: payload.email,
           full_name: payload.name || null,
           cpf_cnpj: payload.cpf_cnpj || null,
+          phone: payload.phone || null,
           role: 'buyer',
           iugu_customer_id: iuguCustomerId,
           created_at: new Date().toISOString(),
@@ -286,17 +299,24 @@ Deno.serve(async (req) => {
           console.error('[ERRO] Código do erro:', insertError.code);
           console.error('[ERRO] Detalhes do erro:', insertError.details);
           console.error('[ERRO] Mensagem do erro:', insertError.message);
-          // Não falhar aqui, pois o cliente Iugu foi criado com sucesso
+          // Continue without failing, as the Iugu customer was created successfully
+          console.log('[AVISO] Continuando sem perfil local, mas com cliente Iugu criado');
         } else {
           console.log('[DEBUG] *** NOVO PERFIL DE COMPRADOR CRIADO ***');
           console.log('[DEBUG] Dados inseridos:', insertData);
+          finalBuyerProfileId = insertData.id;
         }
       }
+
+      console.log('[DEBUG] *** RETORNANDO RESPOSTA FINAL ***');
+      console.log('[DEBUG] iugu_customer_id:', iuguCustomerId);
+      console.log('[DEBUG] buyer_profile_id:', finalBuyerProfileId);
 
       return new Response(
         JSON.stringify({
           success: true,
           iugu_customer_id: iuguCustomerId,
+          buyer_profile_id: finalBuyerProfileId,
           exists_in_iugu: false
         }),
         { 

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,6 +83,7 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
   };
 
   const createIuguCustomer = async (data: CheckoutFormData) => {
+    console.log('[DEBUG] Criando cliente Iugu...');
     const response = await fetch('/api/functions/v1/get-or-create-iugu-customer', {
       method: 'POST',
       headers: {
@@ -100,7 +102,8 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     }
 
     const result = await response.json();
-    return result.iugu_customer_id;
+    console.log('[DEBUG] Resultado criar cliente:', result);
+    return result;
   };
 
   const createPaymentToken = async (data: CheckoutFormData) => {
@@ -133,7 +136,13 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     return result.id;
   };
 
-  const createTransaction = async (data: CheckoutFormData, iuguCustomerId: string, cardToken?: string) => {
+  const createTransaction = async (data: CheckoutFormData, iuguCustomerId: string, buyerProfileId: string | null, cardToken?: string) => {
+    console.log('[DEBUG] Criando transação com:', {
+      iuguCustomerId,
+      buyerProfileId,
+      hasCardToken: !!cardToken
+    });
+
     const response = await fetch('/api/functions/v1/create-iugu-transaction', {
       method: 'POST',
       headers: {
@@ -143,6 +152,7 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
         product_id: product.id,
         buyer_email: data.email,
         iugu_customer_id: iuguCustomerId,
+        buyer_profile_id: buyerProfileId, // Pass the buyer profile ID
         payment_method_selected: data.paymentMethod,
         card_token: cardToken,
         installments: data.installments,
@@ -166,7 +176,16 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
 
     try {
       // Step 1: Create/get Iugu customer
-      const iuguCustomerId = await createIuguCustomer(data);
+      const customerResult = await createIuguCustomer(data);
+      
+      if (!customerResult.success) {
+        throw new Error(customerResult.message || 'Erro ao criar cliente');
+      }
+
+      const iuguCustomerId = customerResult.iugu_customer_id;
+      const buyerProfileId = customerResult.buyer_profile_id || null;
+
+      console.log('[DEBUG] Cliente criado:', { iuguCustomerId, buyerProfileId });
 
       // Step 2: Create payment token (for credit card only)
       let cardToken = null;
@@ -175,36 +194,12 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       }
 
       // Step 3: Create transaction
-      const result = await createTransaction(data, iuguCustomerId, cardToken);
+      const result = await createTransaction(data, iuguCustomerId, buyerProfileId, cardToken);
 
       if (result.success) {
-        // Handle different payment methods
-        if (data.paymentMethod === "pix" && result.pix_qr_code_text) {
-          // Show PIX payment details
-          toast({
-            title: "Pagamento PIX gerado!",
-            description: "Escaneie o QR Code ou copie o código PIX.",
-          });
-          // Could redirect to a PIX payment page or show modal
-        } else if (data.paymentMethod === "bank_slip" && result.secure_url) {
-          // Redirect to bank slip
-          window.open(result.secure_url, '_blank');
-          toast({
-            title: "Boleto gerado!",
-            description: "Seu boleto foi aberto em uma nova aba.",
-          });
-        } else if (data.paymentMethod === "credit_card") {
-          if (result.iugu_status === "paid") {
-            toast({
-              title: "Pagamento aprovado!",
-              description: "Seu pagamento foi processado com sucesso.",
-            });
-            // Redirect to success page
-          } else if (result.secure_url) {
-            // Redirect for 3DS authentication
-            window.location.href = result.secure_url;
-          }
-        }
+        // Redirect to our internal payment confirmation page
+        const saleId = result.sale_id;
+        window.location.href = `/payment-confirmation/${saleId}`;
       } else {
         throw new Error(result.message || 'Erro no processamento do pagamento');
       }

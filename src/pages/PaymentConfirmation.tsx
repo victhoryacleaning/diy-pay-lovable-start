@@ -185,6 +185,19 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
+  console.log('[DEBUG] Dados da venda para renderização:', {
+    isPix,
+    isBankSlip,
+    hasPixQrCodeBase64: !!sale.iugu_pix_qr_code_base64,
+    hasPixQrCodeText: !!sale.iugu_pix_qr_code_text,
+    hasBankSlipBarcode: !!sale.iugu_bank_slip_barcode,
+    hasSecureUrl: !!sale.iugu_invoice_secure_url,
+    pixQrCodeBase64: sale.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
+    pixQrCodeText: sale.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
+    bankSlipBarcode: sale.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE',
+    secureUrl: sale.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
@@ -228,25 +241,31 @@ const PaymentConfirmation = () => {
         </Card>
 
         {/* PIX Payment */}
-        {isPix && sale.iugu_pix_qr_code_base64 && (
+        {isPix && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Pagar com PIX</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center">
-                <img 
-                  src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
-                  alt="QR Code PIX"
-                  className="mx-auto mb-4 border rounded-lg"
-                  style={{ maxWidth: '200px', height: 'auto' }}
-                />
-                <p className="text-sm text-gray-600 mb-4">
-                  Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
-                </p>
-              </div>
+              {sale.iugu_pix_qr_code_base64 ? (
+                <div className="text-center">
+                  <img 
+                    src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
+                    alt="QR Code PIX"
+                    className="mx-auto mb-4 border rounded-lg"
+                    style={{ maxWidth: '200px', height: 'auto' }}
+                  />
+                  <p className="text-sm text-gray-600 mb-4">
+                    Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">QR Code não disponível</p>
+                </div>
+              )}
               
-              {sale.iugu_pix_qr_code_text && (
+              {sale.iugu_pix_qr_code_text ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Código PIX (Copia e Cola):
@@ -269,6 +288,10 @@ const PaymentConfirmation = () => {
                     </Button>
                   </div>
                 </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Código PIX não disponível</p>
+                </div>
               )}
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -290,18 +313,20 @@ const PaymentConfirmation = () => {
               <CardTitle>Pagar com Boleto Bancário</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center">
-                <Button
-                  onClick={handleOpenBankSlip}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-                  size="lg"
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Visualizar e Imprimir Boleto
-                </Button>
-              </div>
+              {sale.iugu_invoice_secure_url && (
+                <div className="text-center">
+                  <Button
+                    onClick={handleOpenBankSlip}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Visualizar e Imprimir Boleto
+                  </Button>
+                </div>
+              )}
 
-              {sale.iugu_bank_slip_barcode && (
+              {sale.iugu_bank_slip_barcode ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Linha Digitável:
@@ -312,6 +337,10 @@ const PaymentConfirmation = () => {
                     readOnly
                     className="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-gray-50"
                   />
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Linha digitável não disponível</p>
                 </div>
               )}
 
