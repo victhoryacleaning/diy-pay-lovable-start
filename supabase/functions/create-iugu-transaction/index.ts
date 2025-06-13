@@ -515,16 +515,24 @@ Deno.serve(async (req) => {
 
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
-          // Invoice created successfully
+          // Invoice created successfully - EXTRAIR OS CAMPOS PIX/BOLETO
           updateData = {
             ...updateData,
             iugu_invoice_id: invoiceData.id,
             status: 'pending',
             iugu_invoice_secure_url: invoiceData.secure_url,
-            iugu_pix_qr_code_text: invoiceData.pix?.qr_code,
+            // EXTRAIR CAMPOS PIX
+            iugu_pix_qr_code_text: invoiceData.pix?.qrcode_text,
             iugu_pix_qr_code_base64: invoiceData.pix?.qr_code_base64,
+            // EXTRAIR CAMPO BOLETO
             iugu_bank_slip_barcode: invoiceData.bank_slip?.barcode
           };
+
+          console.log('[DEBUG] *** CAMPOS PIX/BOLETO EXTRAÍDOS ***:', {
+            pix_qr_code_text: updateData.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
+            pix_qr_code_base64: updateData.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
+            bank_slip_barcode: updateData.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE'
+          });
 
           iuguResponse = invoiceData;
         } else {
