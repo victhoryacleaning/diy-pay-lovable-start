@@ -173,6 +173,17 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
+  // LOG CRÍTICO: Dados da venda ANTES da renderização condicional
+  console.log(">>> PAYMENT_CONFIRMATION_PAGE: Dados da venda ANTES da renderização condicional:", {
+    sale,
+    isPix,
+    isBankSlip,
+    pixQrCodeBase64: sale.iugu_pix_qr_code_base64,
+    pixQrCodeText: sale.iugu_pix_qr_code_text,
+    bankSlipBarcode: sale.iugu_bank_slip_barcode,
+    secureUrl: sale.iugu_invoice_secure_url
+  });
+
   // Verificações mais robustas para dados PIX/Boleto
   const hasValidPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && 
     sale.iugu_pix_qr_code_base64.trim() !== '' && 
@@ -207,6 +218,52 @@ const PaymentConfirmation = () => {
             Finalize seu pagamento para acessar o produto
           </p>
         </div>
+
+        {/* BLOCO DE TESTE DE RENDERIZAÇÃO DO QR CODE */}
+        {sale && sale.iugu_pix_qr_code_base64 && (
+          <div style={{
+            backgroundColor: "#ffcccc",
+            border: "3px solid red",
+            padding: "20px",
+            margin: "20px 0",
+            borderRadius: "10px"
+          }}>
+            <p style={{color: "red", fontWeight: "bold", fontSize: "18px"}}>🔴 TESTE RENDER QR CODE:</p>
+            <p style={{color: "red", fontWeight: "bold"}}>Valor do campo: {sale.iugu_pix_qr_code_base64.substring(0, 100)}...</p>
+            <img 
+              src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
+              alt="PIX QR Code Teste" 
+              style={{border: "2px solid red", maxWidth: "200px"}} 
+            />
+            <p style={{color: "red", fontWeight: "bold", fontSize: "18px"}}>🔴 FIM TESTE RENDER QR CODE</p>
+          </div>
+        )}
+
+        {/* BLOCO DE TESTE DE RENDERIZAÇÃO DO CÓDIGO PIX TEXTO */}
+        {sale && sale.iugu_pix_qr_code_text && (
+          <div style={{
+            backgroundColor: "#ccffcc",
+            border: "3px solid green",
+            padding: "20px",
+            margin: "20px 0",
+            borderRadius: "10px"
+          }}>
+            <p style={{color: "green", fontWeight: "bold", fontSize: "18px"}}>🟢 TESTE RENDER CÓDIGO PIX TEXTO:</p>
+            <p style={{color: "green", fontWeight: "bold"}}>Valor do campo: {sale.iugu_pix_qr_code_text}</p>
+            <textarea 
+              value={sale.iugu_pix_qr_code_text}
+              readOnly
+              style={{
+                width: "100%",
+                height: "100px",
+                border: "2px solid green",
+                fontSize: "12px",
+                fontFamily: "monospace"
+              }}
+            />
+            <p style={{color: "green", fontWeight: "bold", fontSize: "18px"}}>🟢 FIM TESTE RENDER CÓDIGO PIX TEXTO</p>
+          </div>
+        )}
 
         {/* Detalhes do Pedido */}
         <Card className="mb-6">
