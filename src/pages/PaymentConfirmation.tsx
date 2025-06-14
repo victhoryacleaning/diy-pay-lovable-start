@@ -75,6 +75,14 @@ const PaymentConfirmation = () => {
         iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE',
         iugu_invoice_secure_url: sale.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
       });
+      
+      // Logs específicos dos valores reais para debugar renderização
+      console.log('[DEBUG] Valores reais dos campos PIX/Boleto:', {
+        iugu_pix_qr_code_base64: sale.iugu_pix_qr_code_base64,
+        iugu_pix_qr_code_text: sale.iugu_pix_qr_code_text,
+        iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode,
+        iugu_invoice_secure_url: sale.iugu_invoice_secure_url
+      });
     }
   }, [sale]);
 
@@ -218,24 +226,26 @@ const PaymentConfirmation = () => {
               <CardTitle>Pagar com PIX</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {sale.iugu_pix_qr_code_base64 ? (
-                <div className="text-center">
+              {/* QR Code PIX */}
+              <div className="text-center">
+                {sale.iugu_pix_qr_code_base64 ? (
                   <img 
                     src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
                     alt="QR Code PIX"
                     className="mx-auto mb-4 border rounded-lg"
                     style={{ maxWidth: '200px', height: 'auto' }}
                   />
-                  <p className="text-sm text-gray-600 mb-4">
-                    Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">QR Code PIX em processamento...</p>
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500">QR Code PIX em processamento...</p>
+                  </div>
+                )}
+                <p className="text-sm text-gray-600 mb-4">
+                  Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
+                </p>
+              </div>
               
+              {/* Código PIX Copia e Cola */}
               {sale.iugu_pix_qr_code_text ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
@@ -284,6 +294,7 @@ const PaymentConfirmation = () => {
               <CardTitle>Pagar com Boleto Bancário</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Botão para visualizar boleto */}
               {sale.iugu_invoice_secure_url && (
                 <div className="text-center">
                   <Button
@@ -297,6 +308,7 @@ const PaymentConfirmation = () => {
                 </div>
               )}
 
+              {/* Linha digitável do boleto */}
               {sale.iugu_bank_slip_barcode ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
