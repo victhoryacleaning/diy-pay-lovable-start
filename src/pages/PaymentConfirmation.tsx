@@ -185,6 +185,11 @@ const PaymentConfirmation = () => {
     secureUrl: sale.iugu_invoice_secure_url
   });
 
+  // LOG ESPECÍFICO para o código PIX "copia e cola"
+  console.log(">>> PAYMENT_CONFIRMATION_PAGE - Valor de sale.iugu_pix_qr_code_text:", sale.iugu_pix_qr_code_text);
+  console.log(">>> PAYMENT_CONFIRMATION_PAGE - Tipo de sale.iugu_pix_qr_code_text:", typeof sale.iugu_pix_qr_code_text);
+  console.log(">>> PAYMENT_CONFIRMATION_PAGE - sale.iugu_pix_qr_code_text é truthy?", !!sale.iugu_pix_qr_code_text);
+
   // Verificações mais robustas para dados PIX/Boleto
   const hasValidPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && 
     sale.iugu_pix_qr_code_base64.trim() !== '' && 
