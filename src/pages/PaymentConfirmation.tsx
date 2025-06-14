@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, Copy, Download, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -219,52 +220,6 @@ const PaymentConfirmation = () => {
           </p>
         </div>
 
-        {/* BLOCO DE TESTE DE RENDERIZAÇÃO DO QR CODE */}
-        {sale && sale.iugu_pix_qr_code_base64 && (
-          <div style={{
-            backgroundColor: "#ffcccc",
-            border: "3px solid red",
-            padding: "20px",
-            margin: "20px 0",
-            borderRadius: "10px"
-          }}>
-            <p style={{color: "red", fontWeight: "bold", fontSize: "18px"}}>🔴 TESTE RENDER QR CODE:</p>
-            <p style={{color: "red", fontWeight: "bold"}}>Valor do campo: {sale.iugu_pix_qr_code_base64.substring(0, 100)}...</p>
-            <img 
-              src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
-              alt="PIX QR Code Teste" 
-              style={{border: "2px solid red", maxWidth: "200px"}} 
-            />
-            <p style={{color: "red", fontWeight: "bold", fontSize: "18px"}}>🔴 FIM TESTE RENDER QR CODE</p>
-          </div>
-        )}
-
-        {/* BLOCO DE TESTE DE RENDERIZAÇÃO DO CÓDIGO PIX TEXTO */}
-        {sale && sale.iugu_pix_qr_code_text && (
-          <div style={{
-            backgroundColor: "#ccffcc",
-            border: "3px solid green",
-            padding: "20px",
-            margin: "20px 0",
-            borderRadius: "10px"
-          }}>
-            <p style={{color: "green", fontWeight: "bold", fontSize: "18px"}}>🟢 TESTE RENDER CÓDIGO PIX TEXTO:</p>
-            <p style={{color: "green", fontWeight: "bold"}}>Valor do campo: {sale.iugu_pix_qr_code_text}</p>
-            <textarea 
-              value={sale.iugu_pix_qr_code_text}
-              readOnly
-              style={{
-                width: "100%",
-                height: "100px",
-                border: "2px solid green",
-                fontSize: "12px",
-                fontFamily: "monospace"
-              }}
-            />
-            <p style={{color: "green", fontWeight: "bold", fontSize: "18px"}}>🟢 FIM TESTE RENDER CÓDIGO PIX TEXTO</p>
-          </div>
-        )}
-
         {/* Detalhes do Pedido */}
         <Card className="mb-6">
           <CardHeader>
@@ -302,7 +257,7 @@ const PaymentConfirmation = () => {
             <CardHeader>
               <CardTitle>Pagar com PIX</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {/* QR Code PIX */}
               <div className="text-center">
                 {hasValidPixQrCodeBase64 ? (
@@ -323,32 +278,27 @@ const PaymentConfirmation = () => {
               </div>
               
               {/* Código PIX Copia e Cola */}
-              {hasValidPixQrCodeText ? (
-                <div className="space-y-2">
+              {hasValidPixQrCodeText && (
+                <div className="space-y-3">
                   <label className="text-sm font-medium text-gray-700">
                     Código PIX (Copia e Cola):
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={sale.iugu_pix_qr_code_text}
-                      readOnly
-                      className="flex-1 p-2 border border-gray-300 rounded text-xs font-mono bg-gray-50"
-                    />
+                  <Textarea
+                    value={sale.iugu_pix_qr_code_text}
+                    readOnly
+                    className="text-xs font-mono bg-gray-50 resize-none"
+                    rows={4}
+                  />
+                  <div className="flex justify-center">
                     <Button
                       onClick={handleCopyPixCode}
                       variant="outline"
-                      size="sm"
-                      className="flex-shrink-0"
+                      className="w-full max-w-xs"
                     >
-                      <Copy className="w-4 h-4 mr-1" />
-                      {copiedPix ? 'Copiado!' : 'Copiar'}
+                      <Copy className="w-4 h-4 mr-2" />
+                      {copiedPix ? 'Copiado!' : 'Copiar Código PIX'}
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">Código PIX em processamento...</p>
                 </div>
               )}
 
