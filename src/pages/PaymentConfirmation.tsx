@@ -197,7 +197,7 @@ const PaymentConfirmation = () => {
 
   const hasValidPixQrCodeText = sale.iugu_pix_qr_code_text && 
     sale.iugu_pix_qr_code_text.trim() !== '' && 
-    !sale.iugu_pix_qr_code_text.startsWith('http');
+    sale.iugu_pix_qr_code_text.length > 10; // PIX code should be reasonably long
 
   const hasValidBankSlipBarcode = sale.iugu_bank_slip_barcode && 
     sale.iugu_bank_slip_barcode.trim() !== '';
@@ -304,6 +304,16 @@ const PaymentConfirmation = () => {
                       {copiedPix ? 'Copiado!' : 'Copiar Código PIX'}
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {/* Fallback case - Debug info when PIX code is not available */}
+              {!hasValidPixQrCodeText && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Código PIX em processamento...</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Debug: {sale.iugu_pix_qr_code_text ? `Valor recebido: "${sale.iugu_pix_qr_code_text.substring(0, 50)}..."` : 'Nenhum valor recebido'}
+                  </p>
                 </div>
               )}
 
