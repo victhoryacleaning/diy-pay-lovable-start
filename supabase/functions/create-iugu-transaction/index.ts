@@ -515,6 +515,35 @@ Deno.serve(async (req) => {
 
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
+          
+          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU
+          console.log('[DEBUG] *** VERIFICANDO ESTRUTURA DA RESPOSTA PARA EXTRAÇÃO DOS CAMPOS PIX/BOLETO ***');
+          console.log('[DEBUG] PIX object na resposta:', invoiceData.pix);
+          console.log('[DEBUG] bank_slip object na resposta:', invoiceData.bank_slip);
+          
+          // Extract PIX fields
+          let pixQrCodeBase64 = null;
+          let pixQrCodeText = null;
+          if (invoiceData.pix) {
+            // Verifique diferentes estruturas possíveis
+            pixQrCodeBase64 = invoiceData.pix.qr_code_base64 || invoiceData.pix.qrcode_base64;
+            pixQrCodeText = invoiceData.pix.qrcode_text || invoiceData.pix.qr_code_text;
+            
+            console.log('[DEBUG] *** CAMPOS PIX EXTRAÍDOS ***:', {
+              pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE' : 'AUSENTE',
+              pixQrCodeText: pixQrCodeText ? 'PRESENTE' : 'AUSENTE'
+            });
+          }
+          
+          // Extract bank slip fields
+          let bankSlipBarcode = null;
+          if (invoiceData.bank_slip) {
+            bankSlipBarcode = invoiceData.bank_slip.barcode || invoiceData.bank_slip.digitavel_line;
+            console.log('[DEBUG] *** CAMPO BOLETO EXTRAÍDO ***:', {
+              bankSlipBarcode: bankSlipBarcode ? 'PRESENTE' : 'AUSENTE'
+            });
+          }
+          
           // Invoice created successfully - EXTRAIR OS CAMPOS PIX/BOLETO
           updateData = {
             ...updateData,
@@ -522,17 +551,13 @@ Deno.serve(async (req) => {
             status: 'pending',
             iugu_invoice_secure_url: invoiceData.secure_url,
             // EXTRAIR CAMPOS PIX
-            iugu_pix_qr_code_text: invoiceData.pix?.qrcode_text,
-            iugu_pix_qr_code_base64: invoiceData.pix?.qr_code_base64,
+            iugu_pix_qr_code_text: pixQrCodeText,
+            iugu_pix_qr_code_base64: pixQrCodeBase64,
             // EXTRAIR CAMPO BOLETO
-            iugu_bank_slip_barcode: invoiceData.bank_slip?.barcode
+            iugu_bank_slip_barcode: bankSlipBarcode
           };
 
-          console.log('[DEBUG] *** CAMPOS PIX/BOLETO EXTRAÍDOS ***:', {
-            pix_qr_code_text: updateData.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
-            pix_qr_code_base64: updateData.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
-            bank_slip_barcode: updateData.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE'
-          });
+          console.log('[DEBUG] *** CREATE_TRANSACTION: Objeto para ATUALIZAR sales com dados da Iugu ***:', JSON.stringify(updateData, null, 2));
 
           iuguResponse = invoiceData;
         } else {
@@ -560,6 +585,18 @@ Deno.serve(async (req) => {
         console.error('[ERRO] Falha ao atualizar registro de venda:', updateError);
       } else {
         console.log('[DEBUG] *** REGISTRO DE VENDA ATUALIZADO COM SUCESSO ***');
+        
+        // Verificar se o update realmente salvou os campos PIX/Boleto
+        const { data: updatedSale, error: verifyError } = await supabase
+          .from('sales')
+          .select('iugu_pix_qr_code_base64, iugu_pix_qr_code_text, iugu_bank_slip_barcode')
+          .eq('id', sale.id)
+          .single();
+          
+        console.log('[DEBUG] *** VERIFICAÇÃO PÓS-UPDATE DOS CAMPOS PIX/BOLETO ***:', {
+          verifyError,
+          updatedSale
+        });
       }
     } catch (updateError) {
       console.error('[ERRO] Erro ao atualizar venda no banco:', updateError);
