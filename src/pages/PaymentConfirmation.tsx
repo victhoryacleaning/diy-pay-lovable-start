@@ -174,21 +174,11 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  // LOG CRÍTICO: Dados da venda ANTES da renderização condicional
-  console.log(">>> PAYMENT_CONFIRMATION_PAGE: Dados da venda ANTES da renderização condicional:", {
-    sale,
-    isPix,
-    isBankSlip,
-    pixQrCodeBase64: sale.iugu_pix_qr_code_base64,
-    pixQrCodeText: sale.iugu_pix_qr_code_text,
-    bankSlipBarcode: sale.iugu_bank_slip_barcode,
-    secureUrl: sale.iugu_invoice_secure_url
-  });
-
-  // LOG ESPECÍFICO para o código PIX "copia e cola"
-  console.log(">>> PAYMENT_CONFIRMATION_PAGE - Valor de sale.iugu_pix_qr_code_text:", sale.iugu_pix_qr_code_text);
-  console.log(">>> PAYMENT_CONFIRMATION_PAGE - Tipo de sale.iugu_pix_qr_code_text:", typeof sale.iugu_pix_qr_code_text);
-  console.log(">>> PAYMENT_CONFIRMATION_PAGE - sale.iugu_pix_qr_code_text é truthy?", !!sale.iugu_pix_qr_code_text);
+  // LOG CRÍTICO: Valores específicos para debug no frontend
+  console.log(">>> DEBUG PaymentConfirmation - VALOR BRUTO DE sale.iugu_pix_qr_code_text:", sale?.iugu_pix_qr_code_text);
+  console.log(">>> DEBUG PaymentConfirmation - VALOR BRUTO DE sale.iugu_pix_qr_code_base64 existe?", !!sale?.iugu_pix_qr_code_base64);
+  console.log(">>> DEBUG PaymentConfirmation - Tipo de sale.iugu_pix_qr_code_text:", typeof sale?.iugu_pix_qr_code_text);
+  console.log(">>> DEBUG PaymentConfirmation - Length de sale.iugu_pix_qr_code_text:", sale?.iugu_pix_qr_code_text?.length);
 
   // Verificações mais robustas para dados PIX/Boleto
   const hasValidPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && 
@@ -197,7 +187,8 @@ const PaymentConfirmation = () => {
 
   const hasValidPixQrCodeText = sale.iugu_pix_qr_code_text && 
     sale.iugu_pix_qr_code_text.trim() !== '' && 
-    sale.iugu_pix_qr_code_text.length > 10; // PIX code should be reasonably long
+    sale.iugu_pix_qr_code_text.length > 10 && // PIX code should be reasonably long
+    (sale.iugu_pix_qr_code_text.startsWith('0002') || sale.iugu_pix_qr_code_text.length > 50); // Aceitar códigos que começam com 0002 ou são longos
 
   const hasValidBankSlipBarcode = sale.iugu_bank_slip_barcode && 
     sale.iugu_bank_slip_barcode.trim() !== '';
@@ -283,7 +274,7 @@ const PaymentConfirmation = () => {
               </div>
               
               {/* Código PIX Copia e Cola */}
-              {hasValidPixQrCodeText && (
+              {hasValidPixQrCodeText ? (
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-gray-700">
                     Código PIX (Copia e Cola):
@@ -305,10 +296,7 @@ const PaymentConfirmation = () => {
                     </Button>
                   </div>
                 </div>
-              )}
-
-              {/* Fallback case - Debug info when PIX code is not available */}
-              {!hasValidPixQrCodeText && (
+              ) : (
                 <div className="text-center py-4">
                   <p className="text-gray-500">Código PIX em processamento...</p>
                   <p className="text-xs text-gray-400 mt-2">

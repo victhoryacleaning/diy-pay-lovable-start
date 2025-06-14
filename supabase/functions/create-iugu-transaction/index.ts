@@ -516,56 +516,22 @@ Deno.serve(async (req) => {
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           
-          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM LÓGICA CORRIGIDA
-          console.log('[DEBUG] *** INICIANDO EXTRAÇÃO CORRIGIDA DOS CAMPOS PIX/BOLETO ***');
+          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM LÓGICA ESPECÍFICA PARA PIX "COPIA E COLA"
+          console.log('[DEBUG] *** INICIANDO EXTRAÇÃO ESPECÍFICA DOS CAMPOS PIX/BOLETO ***');
           
-          // Extract PIX fields - Múltiplas tentativas baseadas na documentação Iugu
+          // Extract PIX fields - FOCO NO CÓDIGO "COPIA E COLA" VERDADEIRO
           let pixQrCodeBase64 = null;
           let pixQrCodeText = null;
           
-          // Tentativa 1: Verificar se existem campos diretos na resposta principal
+          // EXTRAÇÃO DO QR CODE BASE64 - pode vir de várias propriedades
           if (invoiceData.pix_qr_code_base64) {
             pixQrCodeBase64 = invoiceData.pix_qr_code_base64;
             console.log('[DEBUG] PIX QR Code Base64 encontrado no campo direto pix_qr_code_base64');
           } else if (invoiceData.qr_code_base64) {
             pixQrCodeBase64 = invoiceData.qr_code_base64;
             console.log('[DEBUG] PIX QR Code Base64 encontrado no campo direto qr_code_base64');
-          }
-
-          if (invoiceData.pix_qr_code_text) {
-            pixQrCodeText = invoiceData.pix_qr_code_text;
-            console.log('[DEBUG] PIX QR Code Text encontrado no campo direto pix_qr_code_text');
-          } else if (invoiceData.qr_code_text) {
-            pixQrCodeText = invoiceData.qr_code_text;
-            console.log('[DEBUG] PIX QR Code Text encontrado no campo direto qr_code_text');
-          }
-          
-          // Tentativa 2: Verificar objeto 'pix' na resposta
-          if (invoiceData.pix && typeof invoiceData.pix === 'object') {
-            console.log('[DEBUG] Objeto PIX encontrado na resposta:', invoiceData.pix);
-            
-            // Se pix é um array
-            if (Array.isArray(invoiceData.pix) && invoiceData.pix.length > 0) {
-              const pixData = invoiceData.pix[0];
-              if (!pixQrCodeBase64) {
-                pixQrCodeBase64 = pixData.qr_code_base64 || pixData.qrcode_base64 || pixData.base64;
-              }
-              if (!pixQrCodeText) {
-                pixQrCodeText = pixData.qr_code_text || pixData.qrcode_text || pixData.emv || pixData.code;
-              }
-            } else {
-              // Se pix é um objeto simples
-              if (!pixQrCodeBase64) {
-                pixQrCodeBase64 = invoiceData.pix.qr_code_base64 || invoiceData.pix.qrcode_base64 || invoiceData.pix.base64;
-              }
-              if (!pixQrCodeText) {
-                pixQrCodeText = invoiceData.pix.qr_code_text || invoiceData.pix.qrcode_text || invoiceData.pix.emv || invoiceData.pix.code;
-              }
-            }
-          }
-
-          // Tentativa 3: Buscar QR Code através de URL (se necessário)
-          if (!pixQrCodeBase64 && invoiceData.pix && invoiceData.pix.qrcode && invoiceData.pix.qrcode.startsWith('http')) {
+          } else if (invoiceData.pix && invoiceData.pix.qrcode && invoiceData.pix.qrcode.startsWith('http')) {
+            // Se o campo é uma URL, buscar o Base64 através dela
             console.log('[DEBUG] Tentando buscar QR Code Base64 através da URL:', invoiceData.pix.qrcode);
             try {
               const qrCodeResponse = await fetch(invoiceData.pix.qrcode);
@@ -579,6 +545,51 @@ Deno.serve(async (req) => {
               console.error('[ERRO] Erro ao buscar QR Code da URL:', fetchError);
             }
           }
+
+          // EXTRAÇÃO CRÍTICA DO CÓDIGO PIX "COPIA E COLA" - BUSCAR PELOS CAMPOS CORRETOS
+          console.log('[DEBUG] *** BUSCANDO CÓDIGO PIX COPIA E COLA CORRETO ***');
+          
+          // Tentativa 1: Campos diretos conhecidos para código "copia e cola"
+          if (invoiceData.pix_qr_code_text && invoiceData.pix_qr_code_text.startsWith('0002')) {
+            pixQrCodeText = invoiceData.pix_qr_code_text;
+            console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo direto pix_qr_code_text:', pixQrCodeText.substring(0, 50) + '...');
+          } else if (invoiceData.qr_code_text && invoiceData.qr_code_text.startsWith('0002')) {
+            pixQrCodeText = invoiceData.qr_code_text;
+            console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo direto qr_code_text:', pixQrCodeText.substring(0, 50) + '...');
+          }
+          
+          // Tentativa 2: Objeto pix aninhado - FOCAR NO CÓDIGO EMV VERDADEIRO
+          if (!pixQrCodeText && invoiceData.pix && typeof invoiceData.pix === 'object') {
+            console.log('[DEBUG] Examinando objeto PIX para código copia e cola:', invoiceData.pix);
+            
+            // Possíveis campos onde pode estar o código "copia e cola" real
+            const possiblePixCodeFields = ['emv', 'qrcode_text', 'qr_code_text', 'pix_code', 'codigo_pix'];
+            
+            for (const field of possiblePixCodeFields) {
+              if (invoiceData.pix[field] && typeof invoiceData.pix[field] === 'string' && invoiceData.pix[field].startsWith('0002')) {
+                pixQrCodeText = invoiceData.pix[field];
+                console.log(`[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo pix.${field}:`, pixQrCodeText.substring(0, 50) + '...');
+                break;
+              }
+            }
+          }
+
+          // Tentativa 3: Buscar em possíveis campos alternativos na resposta principal
+          if (!pixQrCodeText) {
+            const alternativeFields = ['emv_code', 'pix_emv', 'qr_code_emv', 'brcode'];
+            for (const field of alternativeFields) {
+              if (invoiceData[field] && typeof invoiceData[field] === 'string' && invoiceData[field].startsWith('0002')) {
+                pixQrCodeText = invoiceData[field];
+                console.log(`[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo alternativo ${field}:`, pixQrCodeText.substring(0, 50) + '...');
+                break;
+              }
+            }
+          }
+
+          // LOG CRÍTICO DO RESULTADO DA BUSCA PIX COPIA E COLA
+          console.log('[DEBUG] *** RESULTADO FINAL DA BUSCA PIX COPIA E COLA ***:');
+          console.log('[DEBUG] pixQrCodeText encontrado:', pixQrCodeText ? `SIM (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 20)}...)` : 'NÃO');
+          console.log('[DEBUG] pixQrCodeBase64 encontrado:', pixQrCodeBase64 ? `SIM (length: ${pixQrCodeBase64.length})` : 'NÃO');
 
           // Extract bank slip fields
           let bankSlipBarcode = null;
@@ -602,37 +613,26 @@ Deno.serve(async (req) => {
           }
           
           // Log dos valores finais extraídos
-          console.log('[DEBUG] *** VALORES FINAIS EXTRAÍDOS APÓS CORREÇÃO ***:', {
-            pixQrCodeBase64: pixQrCodeBase64 ? `PRESENTE (tipo: ${typeof pixQrCodeBase64}, length: ${pixQrCodeBase64.length})` : 'NULO',
+          console.log('[DEBUG] *** VALORES FINAIS EXTRAÍDOS ***:', {
+            pixQrCodeBase64: pixQrCodeBase64 ? `PRESENTE (length: ${pixQrCodeBase64.length})` : 'NULO',
             pixQrCodeText: pixQrCodeText ? `PRESENTE (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 20)}...)` : 'NULO',
             bankSlipBarcode: bankSlipBarcode ? `PRESENTE (length: ${bankSlipBarcode.length})` : 'NULO'
           });
-
-          // Validação adicional para PIX QR Code Text - deve começar com "0002" para ser código copia e cola válido
-          if (pixQrCodeText && !pixQrCodeText.startsWith('0002') && !pixQrCodeText.startsWith('00020')) {
-            console.log('[DEBUG] *** ATENÇÃO: PIX QR Code Text não parece ser código copia e cola válido (não começa com 0002) ***');
-            console.log('[DEBUG] Valor atual:', pixQrCodeText.substring(0, 100));
-            // Se for um URL, vamos marcar como nulo para que não seja salvo incorretamente
-            if (pixQrCodeText.startsWith('http')) {
-              console.log('[DEBUG] PIX QR Code Text é um URL, marcando como nulo');
-              pixQrCodeText = null;
-            }
-          }
           
-          // Invoice created successfully - MONTAR OBJETO DE UPDATE COM OS CAMPOS CORRIGIDOS
+          // Invoice created successfully - MONTAR OBJETO DE UPDATE COM OS CAMPOS EXTRAÍDOS
           updateData = {
             ...updateData,
             iugu_invoice_id: invoiceData.id,
             status: 'pending',
             iugu_invoice_secure_url: invoiceData.secure_url,
-            // CAMPOS PIX EXTRAÍDOS COM LÓGICA CORRIGIDA
+            // CAMPOS PIX EXTRAÍDOS
             iugu_pix_qr_code_text: pixQrCodeText,
             iugu_pix_qr_code_base64: pixQrCodeBase64,
             // CAMPO BOLETO EXTRAÍDO
             iugu_bank_slip_barcode: bankSlipBarcode
           };
 
-          console.log('[DEBUG] *** OBJETO FINAL PARA UPDATE COM CAMPOS PIX/BOLETO CORRIGIDOS ***:', JSON.stringify(updateData, null, 2));
+          console.log('[DEBUG] *** OBJETO FINAL PARA UPDATE ***:', JSON.stringify(updateData, null, 2));
 
           iuguResponse = invoiceData;
         } else {
@@ -668,7 +668,7 @@ Deno.serve(async (req) => {
           .eq('id', sale.id)
           .single();
           
-        console.log('[DEBUG] *** VERIFICAÇÃO PÓS-UPDATE DOS CAMPOS IMPORTANTES (PÓS-CORREÇÃO) ***:', {
+        console.log('[DEBUG] *** VERIFICAÇÃO PÓS-UPDATE DOS CAMPOS IMPORTANTES ***:', {
           verifyError,
           updatedSale: {
             buyer_profile_id: updatedSale?.buyer_profile_id,
@@ -703,7 +703,7 @@ Deno.serve(async (req) => {
         responseData.bank_slip_barcode = updateData.iugu_bank_slip_barcode;
       }
 
-      console.log('[DEBUG] *** RETORNANDO RESPOSTA DE SUCESSO COM CAMPOS CORRIGIDOS ***:', JSON.stringify(responseData, null, 2));
+      console.log('[DEBUG] *** RETORNANDO RESPOSTA DE SUCESSO ***:', JSON.stringify(responseData, null, 2));
       return new Response(
         JSON.stringify(responseData),
         { 
