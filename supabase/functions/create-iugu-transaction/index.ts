@@ -298,14 +298,14 @@ Deno.serve(async (req) => {
 
     // Create initial sale record with buyer_profile_id
     console.log('[DEBUG] *** CRIANDO REGISTRO DE VENDA INICIAL ***');
-    console.log('[DEBUG] *** INCLUINDO BUYER_PROFILE_ID ***:', payload.buyer_profile_id);
+    console.log('[DEBUG] *** GARANTINDO INCLUSÃO DO BUYER_PROFILE_ID ***:', payload.buyer_profile_id);
     let sale;
     
     try {
       const saleToInsert = {
         product_id: payload.product_id,
         buyer_email: payload.buyer_email,
-        buyer_profile_id: payload.buyer_profile_id, // GARANTIR QUE ESTE ESTEJA AQUI
+        buyer_profile_id: payload.buyer_profile_id || null, // GARANTIR QUE SEJA EXPLICITAMENTE MAPEADO
         amount_total_cents: amountTotalCents,
         platform_fee_cents: platformFeeCents,
         producer_share_cents: producerShareCents,
@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
         status: 'pending'
       };
 
-      console.log('[DEBUG] *** OBJETO DE INSERÇÃO DA VENDA (COM BUYER_PROFILE_ID) ***:', JSON.stringify(saleToInsert, null, 2));
+      console.log('[DEBUG] *** OBJETO EXATO PARA INSERT DA VENDA (COM BUYER_PROFILE_ID EXPLÍCITO) ***:', JSON.stringify(saleToInsert, null, 2));
 
       const { data, error: saleError } = await supabase
         .from('sales')
@@ -341,8 +341,8 @@ Deno.serve(async (req) => {
       }
 
       sale = data;
-      console.log('[DEBUG] *** REGISTRO DE VENDA CRIADO ***:', sale.id);
-      console.log('[DEBUG] *** BUYER_PROFILE_ID NA VENDA ***:', sale.buyer_profile_id);
+      console.log('[DEBUG] *** REGISTRO DE VENDA CRIADO COM ID ***:', sale.id);
+      console.log('[DEBUG] *** BUYER_PROFILE_ID SALVO NA VENDA ***:', sale.buyer_profile_id);
     } catch (dbError) {
       console.error('[ERRO] *** ERRO AO CRIAR VENDA NO BANCO ***:', dbError);
       return new Response(
@@ -516,43 +516,50 @@ Deno.serve(async (req) => {
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           
-          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM MÚLTIPLAS TENTATIVAS
-          console.log('[DEBUG] *** VERIFICANDO ESTRUTURA DA RESPOSTA PARA EXTRAÇÃO DOS CAMPOS PIX/BOLETO ***');
-          console.log('[DEBUG] PIX object na resposta:', invoiceData.pix);
-          console.log('[DEBUG] bank_slip object na resposta:', invoiceData.bank_slip);
+          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM VERIFICAÇÃO MAIS ROBUSTA
+          console.log('[DEBUG] *** INICIANDO EXTRAÇÃO DETALHADA DOS CAMPOS PIX/BOLETO ***');
           
-          // Extract PIX fields - Tentar múltiplas estruturas possíveis
+          // Extract PIX fields - Verificar múltiplas possibilidades
           let pixQrCodeBase64 = null;
           let pixQrCodeText = null;
+          
           if (invoiceData.pix) {
+            console.log('[DEBUG] Objeto PIX encontrado na resposta:', invoiceData.pix);
             // Primeira tentativa: campos diretos no objeto pix
-            pixQrCodeBase64 = invoiceData.pix.qr_code_base64 || invoiceData.pix.qrcode_base64 || invoiceData.pix.qrcode;
-            pixQrCodeText = invoiceData.pix.qrcode_text || invoiceData.pix.qr_code_text;
+            pixQrCodeBase64 = invoiceData.pix.qr_code_base64 || 
+                            invoiceData.pix.qrcode_base64 || 
+                            invoiceData.pix.qrcode;
+            pixQrCodeText = invoiceData.pix.qrcode_text || 
+                          invoiceData.pix.qr_code_text ||
+                          invoiceData.pix.code ||
+                          invoiceData.pix.payment_code;
             
-            console.log('[DEBUG] *** CAMPOS PIX EXTRAÍDOS (primeira tentativa) ***:', {
+            console.log('[DEBUG] *** CAMPOS PIX EXTRAÍDOS DO OBJETO PIX ***:', {
               pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE (length: ' + pixQrCodeBase64.length + ')' : 'AUSENTE',
               pixQrCodeText: pixQrCodeText ? 'PRESENTE (length: ' + pixQrCodeText.length + ')' : 'AUSENTE'
             });
           }
           
           // Segunda tentativa: verificar se os campos PIX estão no nível raiz da resposta
-          if (!pixQrCodeBase64 && invoiceData.qr_code_base64) {
-            pixQrCodeBase64 = invoiceData.qr_code_base64;
+          if (!pixQrCodeBase64 && (invoiceData.qr_code_base64 || invoiceData.qrcode_base64)) {
+            pixQrCodeBase64 = invoiceData.qr_code_base64 || invoiceData.qrcode_base64;
             console.log('[DEBUG] *** PIX QR Code Base64 encontrado no nível raiz ***');
           }
-          if (!pixQrCodeText && invoiceData.qrcode_text) {
-            pixQrCodeText = invoiceData.qrcode_text;
+          if (!pixQrCodeText && (invoiceData.qrcode_text || invoiceData.qr_code_text)) {
+            pixQrCodeText = invoiceData.qrcode_text || invoiceData.qr_code_text;
             console.log('[DEBUG] *** PIX QR Code Text encontrado no nível raiz ***');
           }
           
-          // Extract bank slip fields - Tentar múltiplas estruturas possíveis
+          // Extract bank slip fields - Verificar múltiplas possibilidades
           let bankSlipBarcode = null;
           if (invoiceData.bank_slip) {
+            console.log('[DEBUG] Objeto bank_slip encontrado na resposta:', invoiceData.bank_slip);
             // Tentar diferentes campos possíveis para linha digitável
             bankSlipBarcode = invoiceData.bank_slip.barcode || 
                             invoiceData.bank_slip.digitavel_line || 
                             invoiceData.bank_slip.digitable_line ||
-                            invoiceData.bank_slip.barcode_data;
+                            invoiceData.bank_slip.barcode_data ||
+                            invoiceData.bank_slip.digitable_line;
             
             console.log('[DEBUG] *** CAMPO BOLETO EXTRAÍDO ***:', {
               bankSlipBarcode: bankSlipBarcode ? 'PRESENTE (length: ' + bankSlipBarcode.length + ')' : 'AUSENTE'
@@ -561,25 +568,25 @@ Deno.serve(async (req) => {
           
           // Log dos valores extraídos para debug
           console.log('[DEBUG] *** VALORES FINAIS EXTRAÍDOS PARA SALVAR ***:', {
-            pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE' : 'NULO',
-            pixQrCodeText: pixQrCodeText ? 'PRESENTE' : 'NULO',
-            bankSlipBarcode: bankSlipBarcode ? 'PRESENTE' : 'NULO'
+            pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE (primeiros 50 chars): ' + pixQrCodeBase64.substring(0, 50) : 'NULO',
+            pixQrCodeText: pixQrCodeText ? 'PRESENTE (primeiros 50 chars): ' + pixQrCodeText.substring(0, 50) : 'NULO',
+            bankSlipBarcode: bankSlipBarcode ? 'PRESENTE (primeiros 50 chars): ' + bankSlipBarcode.substring(0, 50) : 'NULO'
           });
           
-          // Invoice created successfully - EXTRAIR OS CAMPOS PIX/BOLETO
+          // Invoice created successfully - MONTAR OBJETO DE UPDATE COM OS CAMPOS EXTRAÍDOS
           updateData = {
             ...updateData,
             iugu_invoice_id: invoiceData.id,
             status: 'pending',
             iugu_invoice_secure_url: invoiceData.secure_url,
-            // EXTRAIR CAMPOS PIX
+            // CAMPOS PIX EXTRAÍDOS
             iugu_pix_qr_code_text: pixQrCodeText,
             iugu_pix_qr_code_base64: pixQrCodeBase64,
-            // EXTRAIR CAMPO BOLETO
+            // CAMPO BOLETO EXTRAÍDO
             iugu_bank_slip_barcode: bankSlipBarcode
           };
 
-          console.log('[DEBUG] *** CREATE_TRANSACTION: Objeto FINAL para ATUALIZAR sales com dados da Iugu ***:', JSON.stringify(updateData, null, 2));
+          console.log('[DEBUG] *** OBJETO FINAL PARA UPDATE COM CAMPOS PIX/BOLETO ***:', JSON.stringify(updateData, null, 2));
 
           iuguResponse = invoiceData;
         } else {
@@ -619,9 +626,9 @@ Deno.serve(async (req) => {
           verifyError,
           updatedSale: {
             buyer_profile_id: updatedSale?.buyer_profile_id,
-            iugu_pix_qr_code_base64: updatedSale?.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'NULO',
-            iugu_pix_qr_code_text: updatedSale?.iugu_pix_qr_code_text ? 'PRESENTE' : 'NULO',
-            iugu_bank_slip_barcode: updatedSale?.iugu_bank_slip_barcode ? 'PRESENTE' : 'NULO'
+            iugu_pix_qr_code_base64: updatedSale?.iugu_pix_qr_code_base64 ? 'PRESENTE (length: ' + updatedSale.iugu_pix_qr_code_base64.length + ')' : 'NULO',
+            iugu_pix_qr_code_text: updatedSale?.iugu_pix_qr_code_text ? 'PRESENTE (length: ' + updatedSale.iugu_pix_qr_code_text.length + ')' : 'NULO',
+            iugu_bank_slip_barcode: updatedSale?.iugu_bank_slip_barcode ? 'PRESENTE (length: ' + updatedSale.iugu_bank_slip_barcode.length + ')' : 'NULO'
           }
         });
       }

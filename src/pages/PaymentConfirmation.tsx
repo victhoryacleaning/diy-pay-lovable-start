@@ -70,6 +70,7 @@ const PaymentConfirmation = () => {
       console.log('[DEBUG] Dados da venda carregados:', {
         id: sale.id,
         payment_method: sale.payment_method_used,
+        buyer_profile_id: sale.buyer_profile_id,
         iugu_pix_qr_code_base64: sale.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
         iugu_pix_qr_code_text: sale.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
         iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE',
@@ -168,12 +169,17 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  console.log('[DEBUG] Renderização - PIX/Boleto:', {
+  // CORREÇÃO PRINCIPAL: Verificar se os dados estão realmente disponíveis
+  const hasPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && sale.iugu_pix_qr_code_base64 !== null && sale.iugu_pix_qr_code_base64.trim() !== '';
+  const hasPixQrCodeText = sale.iugu_pix_qr_code_text && sale.iugu_pix_qr_code_text !== null && sale.iugu_pix_qr_code_text.trim() !== '';
+  const hasBankSlipBarcode = sale.iugu_bank_slip_barcode && sale.iugu_bank_slip_barcode !== null && sale.iugu_bank_slip_barcode.trim() !== '';
+
+  console.log('[DEBUG] Renderização - PIX/Boleto verificação de disponibilidade:', {
     isPix,
     isBankSlip,
-    qrCodeBase64: sale.iugu_pix_qr_code_base64 ? 'EXISTE' : 'NÃO EXISTE',
-    qrCodeText: sale.iugu_pix_qr_code_text ? 'EXISTE' : 'NÃO EXISTE',
-    bankSlipBarcode: sale.iugu_bank_slip_barcode ? 'EXISTE' : 'NÃO EXISTE',
+    hasPixQrCodeBase64,
+    hasPixQrCodeText,
+    hasBankSlipBarcode,
     secureUrl: sale.iugu_invoice_secure_url ? 'EXISTE' : 'NÃO EXISTE'
   });
 
@@ -228,7 +234,7 @@ const PaymentConfirmation = () => {
             <CardContent className="space-y-4">
               {/* QR Code PIX */}
               <div className="text-center">
-                {sale.iugu_pix_qr_code_base64 ? (
+                {hasPixQrCodeBase64 ? (
                   <img 
                     src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
                     alt="QR Code PIX"
@@ -246,7 +252,7 @@ const PaymentConfirmation = () => {
               </div>
               
               {/* Código PIX Copia e Cola */}
-              {sale.iugu_pix_qr_code_text ? (
+              {hasPixQrCodeText ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Código PIX (Copia e Cola):
@@ -309,7 +315,7 @@ const PaymentConfirmation = () => {
               )}
 
               {/* Linha digitável do boleto */}
-              {sale.iugu_bank_slip_barcode ? (
+              {hasBankSlipBarcode ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Linha Digitável:
