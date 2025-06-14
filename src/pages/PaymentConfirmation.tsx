@@ -12,6 +12,7 @@ const PaymentConfirmation = () => {
   const { saleId } = useParams<{ saleId: string }>();
   const navigate = useNavigate();
   const [copiedPix, setCopiedPix] = useState(false);
+  const [copiedBarcode, setCopiedBarcode] = useState(false);
 
   const { data: sale, isLoading, error } = useQuery({
     queryKey: ['sale', saleId],
@@ -32,11 +33,6 @@ const PaymentConfirmation = () => {
         .maybeSingle();
 
       console.log('[DEBUG] Resultado da busca da venda:', { data, error });
-      console.log('[DEBUG] PIX QR Code Base64 presente:', !!data?.iugu_pix_qr_code_base64);
-      console.log('[DEBUG] PIX QR Code Text presente:', !!data?.iugu_pix_qr_code_text);
-      console.log('[DEBUG] Bank Slip Barcode presente:', !!data?.iugu_bank_slip_barcode);
-      console.log('[DEBUG] Invoice Secure URL presente:', !!data?.iugu_invoice_secure_url);
-      console.log('[DEBUG] Payment method:', data?.payment_method_used);
 
       if (error) {
         console.error('[ERRO] Erro na busca da venda:', error);
@@ -46,6 +42,16 @@ const PaymentConfirmation = () => {
       if (!data) {
         throw new Error('Sale not found');
       }
+
+      console.log('[DEBUG] Dados da venda carregados:', {
+        id: data.id,
+        payment_method: data.payment_method_used,
+        buyer_profile_id: data.buyer_profile_id,
+        iugu_pix_qr_code_base64: data.iugu_pix_qr_code_base64 ? 'PRESENTE (length: ' + data.iugu_pix_qr_code_base64.length + ')' : 'AUSENTE',
+        iugu_pix_qr_code_text: data.iugu_pix_qr_code_text ? 'PRESENTE (length: ' + data.iugu_pix_qr_code_text.length + ')' : 'AUSENTE',
+        iugu_bank_slip_barcode: data.iugu_bank_slip_barcode ? 'PRESENTE (length: ' + data.iugu_bank_slip_barcode.length + ')' : 'AUSENTE',
+        iugu_invoice_secure_url: data.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
+      });
 
       return data;
     },
@@ -65,28 +71,6 @@ const PaymentConfirmation = () => {
     }
   }, [error]);
 
-  useEffect(() => {
-    if (sale) {
-      console.log('[DEBUG] Dados da venda carregados:', {
-        id: sale.id,
-        payment_method: sale.payment_method_used,
-        buyer_profile_id: sale.buyer_profile_id,
-        iugu_pix_qr_code_base64: sale.iugu_pix_qr_code_base64 ? 'PRESENTE' : 'AUSENTE',
-        iugu_pix_qr_code_text: sale.iugu_pix_qr_code_text ? 'PRESENTE' : 'AUSENTE',
-        iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode ? 'PRESENTE' : 'AUSENTE',
-        iugu_invoice_secure_url: sale.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
-      });
-      
-      // Logs específicos dos valores reais para debugar renderização
-      console.log('[DEBUG] Valores reais dos campos PIX/Boleto:', {
-        iugu_pix_qr_code_base64: sale.iugu_pix_qr_code_base64,
-        iugu_pix_qr_code_text: sale.iugu_pix_qr_code_text,
-        iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode,
-        iugu_invoice_secure_url: sale.iugu_invoice_secure_url
-      });
-    }
-  }, [sale]);
-
   const handleCopyPixCode = async () => {
     if (sale?.iugu_pix_qr_code_text) {
       try {
@@ -101,6 +85,26 @@ const PaymentConfirmation = () => {
         toast({
           title: "Erro ao copiar",
           description: "Não foi possível copiar o código PIX. Tente selecionar e copiar manualmente.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleCopyBarcode = async () => {
+    if (sale?.iugu_bank_slip_barcode) {
+      try {
+        await navigator.clipboard.writeText(sale.iugu_bank_slip_barcode);
+        setCopiedBarcode(true);
+        toast({
+          title: "Linha digitável copiada!",
+          description: "A linha digitável foi copiada para sua área de transferência.",
+        });
+        setTimeout(() => setCopiedBarcode(false), 3000);
+      } catch (err) {
+        toast({
+          title: "Erro ao copiar",
+          description: "Não foi possível copiar a linha digitável. Tente selecionar e copiar manualmente.",
           variant: "destructive",
         });
       }
@@ -169,17 +173,27 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  // CORREÇÃO PRINCIPAL: Verificar se os dados estão realmente disponíveis
-  const hasPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && sale.iugu_pix_qr_code_base64 !== null && sale.iugu_pix_qr_code_base64.trim() !== '';
-  const hasPixQrCodeText = sale.iugu_pix_qr_code_text && sale.iugu_pix_qr_code_text !== null && sale.iugu_pix_qr_code_text.trim() !== '';
-  const hasBankSlipBarcode = sale.iugu_bank_slip_barcode && sale.iugu_bank_slip_barcode !== null && sale.iugu_bank_slip_barcode.trim() !== '';
+  // Verificações mais robustas para dados PIX/Boleto
+  const hasValidPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && 
+    sale.iugu_pix_qr_code_base64.trim() !== '' && 
+    !sale.iugu_pix_qr_code_base64.startsWith('http');
 
-  console.log('[DEBUG] Renderização - PIX/Boleto verificação de disponibilidade:', {
+  const hasValidPixQrCodeText = sale.iugu_pix_qr_code_text && 
+    sale.iugu_pix_qr_code_text.trim() !== '' && 
+    !sale.iugu_pix_qr_code_text.startsWith('http');
+
+  const hasValidBankSlipBarcode = sale.iugu_bank_slip_barcode && 
+    sale.iugu_bank_slip_barcode.trim() !== '';
+
+  console.log('[DEBUG] Renderização - Verificações de dados PIX/Boleto:', {
     isPix,
     isBankSlip,
-    hasPixQrCodeBase64,
-    hasPixQrCodeText,
-    hasBankSlipBarcode,
+    hasValidPixQrCodeBase64,
+    hasValidPixQrCodeText,
+    hasValidBankSlipBarcode,
+    pixQrCodeBase64Value: sale.iugu_pix_qr_code_base64 ? sale.iugu_pix_qr_code_base64.substring(0, 50) + '...' : 'NULO',
+    pixQrCodeTextValue: sale.iugu_pix_qr_code_text ? sale.iugu_pix_qr_code_text.substring(0, 50) + '...' : 'NULO',
+    bankSlipBarcodeValue: sale.iugu_bank_slip_barcode ? sale.iugu_bank_slip_barcode.substring(0, 50) + '...' : 'NULO',
     secureUrl: sale.iugu_invoice_secure_url ? 'EXISTE' : 'NÃO EXISTE'
   });
 
@@ -234,7 +248,7 @@ const PaymentConfirmation = () => {
             <CardContent className="space-y-4">
               {/* QR Code PIX */}
               <div className="text-center">
-                {hasPixQrCodeBase64 ? (
+                {hasValidPixQrCodeBase64 ? (
                   <img 
                     src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
                     alt="QR Code PIX"
@@ -252,7 +266,7 @@ const PaymentConfirmation = () => {
               </div>
               
               {/* Código PIX Copia e Cola */}
-              {hasPixQrCodeText ? (
+              {hasValidPixQrCodeText ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Código PIX (Copia e Cola):
@@ -315,17 +329,28 @@ const PaymentConfirmation = () => {
               )}
 
               {/* Linha digitável do boleto */}
-              {hasBankSlipBarcode ? (
+              {hasValidBankSlipBarcode ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Linha Digitável:
                   </label>
-                  <input
-                    type="text"
-                    value={sale.iugu_bank_slip_barcode}
-                    readOnly
-                    className="w-full p-2 border border-gray-300 rounded text-sm font-mono bg-gray-50"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={sale.iugu_bank_slip_barcode}
+                      readOnly
+                      className="flex-1 p-2 border border-gray-300 rounded text-sm font-mono bg-gray-50"
+                    />
+                    <Button
+                      onClick={handleCopyBarcode}
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      {copiedBarcode ? 'Copiado!' : 'Copiar'}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-4">

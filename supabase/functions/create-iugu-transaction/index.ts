@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -188,7 +187,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('[DEBUG] *** PROCESSANDO TRANSAÇÃO PARA PRODUTO ***:', payload.product_id);
-    console.log('[DEBUG] *** BUYER_PROFILE_ID RECEBIDO ***:', payload.buyer_profile_id);
+    console.log('[DEBUG] *** BUYER_PROFILE_ID RECEBIDO NO PAYLOAD ***:', payload.buyer_profile_id);
 
     // Validate required fields
     if (!payload.product_id || !payload.buyer_email || !payload.payment_method_selected) {
@@ -298,14 +297,14 @@ Deno.serve(async (req) => {
 
     // Create initial sale record with buyer_profile_id
     console.log('[DEBUG] *** CRIANDO REGISTRO DE VENDA INICIAL ***');
-    console.log('[DEBUG] *** GARANTINDO INCLUSÃO DO BUYER_PROFILE_ID ***:', payload.buyer_profile_id);
+    console.log('[DEBUG] *** GARANTINDO INCLUSÃO EXPLÍCITA DO BUYER_PROFILE_ID ***:', payload.buyer_profile_id);
     let sale;
     
     try {
       const saleToInsert = {
         product_id: payload.product_id,
         buyer_email: payload.buyer_email,
-        buyer_profile_id: payload.buyer_profile_id || null, // GARANTIR QUE SEJA EXPLICITAMENTE MAPEADO
+        buyer_profile_id: payload.buyer_profile_id || null, // EXPLICITAMENTE MAPEAR
         amount_total_cents: amountTotalCents,
         platform_fee_cents: platformFeeCents,
         producer_share_cents: producerShareCents,
@@ -516,31 +515,57 @@ Deno.serve(async (req) => {
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           
-          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM VERIFICAÇÃO MAIS ROBUSTA
+          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM VERIFICAÇÃO ROBUSTA
           console.log('[DEBUG] *** INICIANDO EXTRAÇÃO DETALHADA DOS CAMPOS PIX/BOLETO ***');
           
-          // Extract PIX fields - Verificar múltiplas possibilidades
+          // Extract PIX fields - Verificar múltiplas possibilidades na estrutura da resposta
           let pixQrCodeBase64 = null;
           let pixQrCodeText = null;
           
           if (invoiceData.pix) {
             console.log('[DEBUG] Objeto PIX encontrado na resposta:', invoiceData.pix);
-            // Primeira tentativa: campos diretos no objeto pix
-            pixQrCodeBase64 = invoiceData.pix.qr_code_base64 || 
-                            invoiceData.pix.qrcode_base64 || 
-                            invoiceData.pix.qrcode;
-            pixQrCodeText = invoiceData.pix.qrcode_text || 
-                          invoiceData.pix.qr_code_text ||
-                          invoiceData.pix.code ||
-                          invoiceData.pix.payment_code;
+            
+            // Verificar diferentes campos possíveis para QR Code Base64
+            if (invoiceData.pix.qr_code_base64) {
+              pixQrCodeBase64 = invoiceData.pix.qr_code_base64;
+            } else if (invoiceData.pix.qrcode_base64) {
+              pixQrCodeBase64 = invoiceData.pix.qrcode_base64;
+            } else if (invoiceData.pix.qrcode && invoiceData.pix.qrcode.includes('base64')) {
+              // Se o campo qrcode contém 'base64' na URL, é provavelmente um link para a imagem
+              // Neste caso, vamos buscar a imagem e converter para base64
+              try {
+                const qrCodeResponse = await fetch(invoiceData.pix.qrcode);
+                if (qrCodeResponse.ok) {
+                  const qrCodeArrayBuffer = await qrCodeResponse.arrayBuffer();
+                  const qrCodeBase64String = btoa(String.fromCharCode(...new Uint8Array(qrCodeArrayBuffer)));
+                  pixQrCodeBase64 = qrCodeBase64String;
+                  console.log('[DEBUG] QR Code Base64 obtido via fetch da URL:', invoiceData.pix.qrcode);
+                }
+              } catch (fetchError) {
+                console.error('[ERRO] Erro ao buscar QR Code da URL:', fetchError);
+                // Em caso de erro, usar a URL como fallback
+                pixQrCodeBase64 = invoiceData.pix.qrcode;
+              }
+            }
+            
+            // Verificar diferentes campos possíveis para QR Code Text (copia e cola)
+            if (invoiceData.pix.qrcode_text) {
+              pixQrCodeText = invoiceData.pix.qrcode_text;
+            } else if (invoiceData.pix.qr_code_text) {
+              pixQrCodeText = invoiceData.pix.qr_code_text;
+            } else if (invoiceData.pix.code) {
+              pixQrCodeText = invoiceData.pix.code;
+            } else if (invoiceData.pix.payment_code) {
+              pixQrCodeText = invoiceData.pix.payment_code;
+            }
             
             console.log('[DEBUG] *** CAMPOS PIX EXTRAÍDOS DO OBJETO PIX ***:', {
-              pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE (length: ' + pixQrCodeBase64.length + ')' : 'AUSENTE',
+              pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE (length: ' + (typeof pixQrCodeBase64 === 'string' ? pixQrCodeBase64.length : 'N/A') + ')' : 'AUSENTE',
               pixQrCodeText: pixQrCodeText ? 'PRESENTE (length: ' + pixQrCodeText.length + ')' : 'AUSENTE'
             });
           }
           
-          // Segunda tentativa: verificar se os campos PIX estão no nível raiz da resposta
+          // Verificar se os campos PIX estão no nível raiz da resposta (fallback)
           if (!pixQrCodeBase64 && (invoiceData.qr_code_base64 || invoiceData.qrcode_base64)) {
             pixQrCodeBase64 = invoiceData.qr_code_base64 || invoiceData.qrcode_base64;
             console.log('[DEBUG] *** PIX QR Code Base64 encontrado no nível raiz ***');
@@ -550,7 +575,7 @@ Deno.serve(async (req) => {
             console.log('[DEBUG] *** PIX QR Code Text encontrado no nível raiz ***');
           }
           
-          // Extract bank slip fields - Verificar múltiplas possibilidades
+          // Extract bank slip fields
           let bankSlipBarcode = null;
           if (invoiceData.bank_slip) {
             console.log('[DEBUG] Objeto bank_slip encontrado na resposta:', invoiceData.bank_slip);
@@ -568,7 +593,7 @@ Deno.serve(async (req) => {
           
           // Log dos valores extraídos para debug
           console.log('[DEBUG] *** VALORES FINAIS EXTRAÍDOS PARA SALVAR ***:', {
-            pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE (primeiros 50 chars): ' + pixQrCodeBase64.substring(0, 50) : 'NULO',
+            pixQrCodeBase64: pixQrCodeBase64 ? 'PRESENTE (tipo: ' + typeof pixQrCodeBase64 + ', primeiros 50 chars): ' + String(pixQrCodeBase64).substring(0, 50) : 'NULO',
             pixQrCodeText: pixQrCodeText ? 'PRESENTE (primeiros 50 chars): ' + pixQrCodeText.substring(0, 50) : 'NULO',
             bankSlipBarcode: bankSlipBarcode ? 'PRESENTE (primeiros 50 chars): ' + bankSlipBarcode.substring(0, 50) : 'NULO'
           });
@@ -615,7 +640,7 @@ Deno.serve(async (req) => {
       } else {
         console.log('[DEBUG] *** REGISTRO DE VENDA ATUALIZADO COM SUCESSO ***');
         
-        // Verificar se o update realmente salvou os campos PIX/Boleto
+        // Verificar se o update realmente salvou os campos importantes
         const { data: updatedSale, error: verifyError } = await supabase
           .from('sales')
           .select('iugu_pix_qr_code_base64, iugu_pix_qr_code_text, iugu_bank_slip_barcode, buyer_profile_id')
