@@ -516,103 +516,7 @@ Deno.serve(async (req) => {
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           
-          // FUNÇÃO ESPECÍFICA PARA EXTRAIR CÓDIGO PIX VÁLIDO
-          const extractValidPixCode = (data: any): string | null => {
-            console.log('[DEBUG] *** INICIANDO EXTRAÇÃO ESPECÍFICA DO CÓDIGO PIX COPIA E COLA ***');
-            
-            // Função para validar se é um código PIX válido
-            const isValidPixCode = (code: string): boolean => {
-              if (!code || typeof code !== 'string') return false;
-              
-              // Verificar se é HTML (contém tags HTML)
-              if (code.includes('<') && code.includes('>')) {
-                console.log('[DEBUG] Código rejeitado por conter HTML:', code.substring(0, 100) + '...');
-                return false;
-              }
-              
-              // Verificar se é URL
-              if (code.startsWith('http://') || code.startsWith('https://')) {
-                console.log('[DEBUG] Código rejeitado por ser URL:', code);
-                return false;
-              }
-              
-              // Verificar se começa com 0002 (padrão BR Code PIX)
-              if (code.startsWith('0002')) {
-                console.log('[DEBUG] Código PIX válido encontrado (começa com 0002):', code.substring(0, 50) + '...');
-                return true;
-              }
-              
-              // Verificar se é uma string longa (mais de 100 caracteres) que pode ser PIX
-              if (code.length > 100 && !code.includes(' ') && !code.includes('\n')) {
-                console.log('[DEBUG] Possível código PIX encontrado (string longa sem espaços):', code.substring(0, 50) + '...');
-                return true;
-              }
-              
-              console.log('[DEBUG] Código rejeitado (não atende critérios):', typeof code, code.length, code.substring(0, 50) + '...');
-              return false;
-            };
-            
-            // Lista de campos onde pode estar o código PIX válido
-            const possibleFields = [
-              // Campos diretos
-              'pix_qr_code_text',
-              'qr_code_text', 
-              'pix_code',
-              'codigo_pix',
-              'brcode',
-              'emv_code',
-              'pix_emv',
-              'qr_code_emv',
-              'pix_brcode',
-              
-              // Campos aninhados em pix
-              'pix.qrcode_text',
-              'pix.emv',
-              'pix.qrcode_emv',
-              'pix.pix_code',
-              'pix.codigo_pix',
-              'pix.brcode',
-              'pix.qr_code_text',
-              'pix[0].qrcode_text',
-              'pix[0].emv',
-              'pix[0].qr_code_text'
-            ];
-            
-            // Buscar nos campos diretos
-            for (const field of possibleFields) {
-              let value;
-              
-              if (field.includes('.')) {
-                // Campo aninhado
-                const parts = field.split('.');
-                value = data;
-                for (const part of parts) {
-                  if (part.includes('[') && part.includes(']')) {
-                    // Array access
-                    const arrayField = part.split('[')[0];
-                    const index = parseInt(part.split('[')[1].split(']')[0]);
-                    value = value?.[arrayField]?.[index];
-                  } else {
-                    value = value?.[part];
-                  }
-                  if (!value) break;
-                }
-              } else {
-                // Campo direto
-                value = data[field];
-              }
-              
-              if (value && isValidPixCode(value)) {
-                console.log(`[DEBUG] *** CÓDIGO PIX VÁLIDO ENCONTRADO NO CAMPO ${field} ***:`, value.substring(0, 50) + '...');
-                return value;
-              }
-            }
-            
-            console.log('[DEBUG] *** NENHUM CÓDIGO PIX VÁLIDO ENCONTRADO NOS CAMPOS CONHECIDOS ***');
-            return null;
-          };
-
-          // Extrair dados PIX/Boleto com validação rigorosa
+          // EXTRAÇÃO RIGOROSA DOS DADOS PIX/BOLETO
           console.log('[DEBUG] *** INICIANDO EXTRAÇÃO DOS DADOS PIX/BOLETO ***');
           
           // Extract PIX QR Code Base64 (para a imagem)
@@ -628,31 +532,17 @@ Deno.serve(async (req) => {
             console.log('[DEBUG] PIX QR Code Base64 encontrado em pix.qrcode_base64');
           }
 
-          // Extract PIX "copia e cola" code com validação rigorosa
-          let pixQrCodeText = extractValidPixCode(invoiceData);
-          
-          // Se não encontrou nos campos diretos, tentar buscar via API específica
-          if (!pixQrCodeText && invoiceData.id) {
-            console.log('[DEBUG] Tentando buscar código PIX via endpoint específico da fatura');
-            try {
-              const pixDetailsResponse = await fetch(`https://api.iugu.com/v1/invoices/${invoiceData.id}`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': authHeader,
-                },
-              });
-              
-              if (pixDetailsResponse.ok) {
-                const pixDetailsText = await pixDetailsResponse.text();
-                const pixDetailsData = JSON.parse(pixDetailsText);
-                console.log('[DEBUG] Detalhes da fatura para busca de PIX:', JSON.stringify(pixDetailsData, null, 2));
-                
-                // Tentar extrair código PIX dos detalhes
-                pixQrCodeText = extractValidPixCode(pixDetailsData);
-              }
-            } catch (fetchError) {
-              console.error('[ERRO] Erro ao buscar detalhes da fatura para PIX:', fetchError);
-            }
+          // Extract PIX "copia e cola" code
+          let pixQrCodeText = null;
+          if (invoiceData.pix_qr_code_text) {
+            pixQrCodeText = invoiceData.pix_qr_code_text;
+            console.log('[DEBUG] PIX QR Code Text encontrado no campo direto pix_qr_code_text');
+          } else if (invoiceData.qr_code_text) {
+            pixQrCodeText = invoiceData.qr_code_text;
+            console.log('[DEBUG] PIX QR Code Text encontrado no campo direto qr_code_text');
+          } else if (invoiceData.pix && invoiceData.pix.qrcode_text) {
+            pixQrCodeText = invoiceData.pix.qrcode_text;
+            console.log('[DEBUG] PIX QR Code Text encontrado em pix.qrcode_text');
           }
 
           // Extract bank slip barcode
@@ -671,33 +561,26 @@ Deno.serve(async (req) => {
                             invoiceData.bank_slip.barcode_data;
           }
           
-          // LOG CRÍTICO DOS VALORES FINAIS ANTES DE SALVAR
-          console.log('[DEBUG] *** VALORES FINAIS EXTRAÍDOS PARA SALVAR ***:', {
-            'QR Code Base64': pixQrCodeBase64 ? `PRESENTE (length: ${pixQrCodeBase64.length})` : 'NULO',
-            'Código Copia e Cola': pixQrCodeText ? `PRESENTE (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 30)}...)` : 'NULO',
-            'Bank Slip Barcode': bankSlipBarcode ? `PRESENTE (length: ${bankSlipBarcode.length})` : 'NULO'
+          // LOG CRÍTICO DOS VALORES EXTRAÍDOS
+          console.log('[DEBUG] *** VALORES EXTRAÍDOS DA RESPOSTA IUGU ***:', {
+            'QR Code Base64': pixQrCodeBase64 ? `STRING (length: ${pixQrCodeBase64.length})` : 'NULL',
+            'Código Copia e Cola': pixQrCodeText ? `STRING (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 30)}...)` : 'NULL',
+            'Bank Slip Barcode': bankSlipBarcode ? `STRING (length: ${bankSlipBarcode.length})` : 'NULL'
           });
           
-          // Validação final antes de salvar
-          if (pixQrCodeText && (pixQrCodeText.includes('<') || pixQrCodeText.includes('>'))) {
-            console.log('[DEBUG] *** ATENÇÃO: CÓDIGO PIX CONTÉM HTML - DESCARTANDO ***');
-            pixQrCodeText = null;
-          }
-          
-          // Invoice created successfully - MONTAR OBJETO DE UPDATE COM OS CAMPOS EXTRAÍDOS
+          // MONTAR OBJETO DE UPDATE COM OS CAMPOS EXTRAÍDOS
           updateData = {
             ...updateData,
             iugu_invoice_id: invoiceData.id,
             status: 'pending',
             iugu_invoice_secure_url: invoiceData.secure_url,
-            // CAMPOS PIX EXTRAÍDOS COM VALIDAÇÃO
+            // CAMPOS PIX/BOLETO EXTRAÍDOS
             iugu_pix_qr_code_text: pixQrCodeText,
             iugu_pix_qr_code_base64: pixQrCodeBase64,
-            // CAMPO BOLETO EXTRAÍDO
             iugu_bank_slip_barcode: bankSlipBarcode
           };
 
-          console.log('[DEBUG] *** OBJETO FINAL PARA UPDATE COM VALIDAÇÃO ***:', JSON.stringify(updateData, null, 2));
+          console.log('[DEBUG] >>> CREATE_TRANSACTION: OBJETO FINAL SENDO USADO PARA O UPDATE NA SALES:', JSON.stringify(updateData, null, 2));
 
           iuguResponse = invoiceData;
         } else {
@@ -713,34 +596,30 @@ Deno.serve(async (req) => {
     }
 
     // Update sale record with Iugu response
-    console.log('[DEBUG] *** ATUALIZANDO REGISTRO DE VENDA COM DADOS DA IUGU ***:', JSON.stringify(updateData, null, 2));
+    console.log('[DEBUG] *** EXECUTANDO UPDATE NA TABELA SALES ***');
     
     try {
-      const { error: updateError } = await supabase
+      const { data: updateResult, error: updateDbError } = await supabase
         .from('sales')
         .update(updateData)
-        .eq('id', sale.id);
+        .eq('id', sale.id)
+        .select()
+        .single();
 
-      if (updateError) {
-        console.error('[ERRO] Falha ao atualizar registro de venda:', updateError);
+      console.log('[DEBUG] >>> CREATE_TRANSACTION: Resultado do UPDATE na sales - Data:', updateResult);
+      console.log('[DEBUG] >>> CREATE_TRANSACTION: Resultado do UPDATE na sales - Error:', updateDbError);
+
+      if (updateDbError) {
+        console.error('[ERRO] Falha ao atualizar registro de venda:', updateDbError);
       } else {
         console.log('[DEBUG] *** REGISTRO DE VENDA ATUALIZADO COM SUCESSO ***');
         
-        // Verificar se o update realmente salvou os campos importantes
-        const { data: updatedSale, error: verifyError } = await supabase
-          .from('sales')
-          .select('iugu_pix_qr_code_base64, iugu_pix_qr_code_text, iugu_bank_slip_barcode, buyer_profile_id')
-          .eq('id', sale.id)
-          .single();
-          
-        console.log('[DEBUG] *** VERIFICAÇÃO PÓS-UPDATE DOS CAMPOS IMPORTANTES ***:', {
-          verifyError,
-          updatedSale: {
-            buyer_profile_id: updatedSale?.buyer_profile_id,
-            iugu_pix_qr_code_base64: updatedSale?.iugu_pix_qr_code_base64 ? `PRESENTE (length: ${updatedSale.iugu_pix_qr_code_base64.length})` : 'NULO',
-            iugu_pix_qr_code_text: updatedSale?.iugu_pix_qr_code_text ? `PRESENTE (length: ${updatedSale.iugu_pix_qr_code_text.length}, começa com: ${updatedSale.iugu_pix_qr_code_text.substring(0, 30)}...)` : 'NULO',
-            iugu_bank_slip_barcode: updatedSale?.iugu_bank_slip_barcode ? `PRESENTE (length: ${updatedSale.iugu_bank_slip_barcode.length})` : 'NULO'
-          }
+        // VERIFICAÇÃO FINAL DOS CAMPOS IMPORTANTES
+        console.log('[DEBUG] *** VERIFICAÇÃO FINAL DOS CAMPOS PIX APÓS UPDATE ***:', {
+          sale_id: updateResult?.id,
+          iugu_pix_qr_code_base64: updateResult?.iugu_pix_qr_code_base64 ? `PRESENTE (length: ${updateResult.iugu_pix_qr_code_base64.length})` : 'NULL',
+          iugu_pix_qr_code_text: updateResult?.iugu_pix_qr_code_text ? `PRESENTE (length: ${updateResult.iugu_pix_qr_code_text.length}, começa com: ${updateResult.iugu_pix_qr_code_text.substring(0, 30)}...)` : 'NULL',
+          iugu_bank_slip_barcode: updateResult?.iugu_bank_slip_barcode ? `PRESENTE (length: ${updateResult.iugu_bank_slip_barcode.length})` : 'NULL'
         });
       }
     } catch (updateError) {
