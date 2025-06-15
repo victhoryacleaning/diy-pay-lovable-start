@@ -516,43 +516,55 @@ Deno.serve(async (req) => {
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           
-          // EXTRAÇÃO RIGOROSA DOS DADOS PIX/BOLETO
-          console.log('[DEBUG] *** INICIANDO EXTRAÇÃO DOS DADOS PIX/BOLETO ***');
+          // EXTRAÇÃO CORRIGIDA DOS DADOS PIX/BOLETO
+          console.log('[DEBUG] *** INICIANDO EXTRAÇÃO CORRIGIDA DOS DADOS PIX/BOLETO ***');
           
-          // Extract PIX QR Code Base64 (para a imagem)
+          // Extract PIX QR Code Base64 (para a imagem do QR Code)
           let pixQrCodeBase64 = null;
-          if (invoiceData.pix_qr_code_base64) {
-            pixQrCodeBase64 = invoiceData.pix_qr_code_base64;
-            console.log('[DEBUG] PIX QR Code Base64 encontrado no campo direto pix_qr_code_base64');
-          } else if (invoiceData.qr_code_base64) {
-            pixQrCodeBase64 = invoiceData.qr_code_base64;
-            console.log('[DEBUG] PIX QR Code Base64 encontrado no campo direto qr_code_base64');
-          } else if (invoiceData.pix && invoiceData.pix.qrcode_base64) {
-            pixQrCodeBase64 = invoiceData.pix.qrcode_base64;
-            console.log('[DEBUG] PIX QR Code Base64 encontrado em pix.qrcode_base64');
+          
+          // Tentar diferentes caminhos para encontrar o Base64 do QR Code
+          if (invoiceData.pix && typeof invoiceData.pix === 'object') {
+            console.log('[DEBUG] Objeto PIX encontrado na resposta:', invoiceData.pix);
+            pixQrCodeBase64 = invoiceData.pix.qrcode_base64 || 
+                            invoiceData.pix.qr_code_base64 || 
+                            invoiceData.pix.base64;
+          }
+          
+          // Fallbacks para campos diretos na resposta
+          if (!pixQrCodeBase64) {
+            pixQrCodeBase64 = invoiceData.pix_qr_code_base64 || 
+                            invoiceData.qr_code_base64 || 
+                            invoiceData.qrcode_base64;
           }
 
-          // Extract PIX "copia e cola" code
+          // Extract PIX "copia e cola" code (string longa começando com "0002...")
           let pixQrCodeText = null;
-          if (invoiceData.pix_qr_code_text) {
-            pixQrCodeText = invoiceData.pix_qr_code_text;
-            console.log('[DEBUG] PIX QR Code Text encontrado no campo direto pix_qr_code_text');
-          } else if (invoiceData.qr_code_text) {
-            pixQrCodeText = invoiceData.qr_code_text;
-            console.log('[DEBUG] PIX QR Code Text encontrado no campo direto qr_code_text');
-          } else if (invoiceData.pix && invoiceData.pix.qrcode_text) {
-            pixQrCodeText = invoiceData.pix.qrcode_text;
-            console.log('[DEBUG] PIX QR Code Text encontrado em pix.qrcode_text');
+          
+          // Tentar diferentes caminhos para encontrar o código copia e cola
+          if (invoiceData.pix && typeof invoiceData.pix === 'object') {
+            console.log('[DEBUG] Procurando código copia e cola no objeto PIX...');
+            pixQrCodeText = invoiceData.pix.qrcode_text || 
+                          invoiceData.pix.qr_code_text || 
+                          invoiceData.pix.emv || 
+                          invoiceData.pix.code ||
+                          invoiceData.pix.text;
+          }
+          
+          // Fallbacks para campos diretos na resposta
+          if (!pixQrCodeText) {
+            pixQrCodeText = invoiceData.pix_qr_code_text || 
+                          invoiceData.qr_code_text || 
+                          invoiceData.pix_emv || 
+                          invoiceData.emv ||
+                          invoiceData.pix_code;
           }
 
           // Extract bank slip barcode
           let bankSlipBarcode = null;
           if (invoiceData.bank_slip_barcode) {
             bankSlipBarcode = invoiceData.bank_slip_barcode;
-            console.log('[DEBUG] Bank slip barcode encontrado no campo direto bank_slip_barcode');
           } else if (invoiceData.digitable_line) {
             bankSlipBarcode = invoiceData.digitable_line;
-            console.log('[DEBUG] Bank slip barcode encontrado no campo direto digitable_line');
           } else if (invoiceData.bank_slip && typeof invoiceData.bank_slip === 'object') {
             console.log('[DEBUG] Objeto bank_slip encontrado na resposta:', invoiceData.bank_slip);
             bankSlipBarcode = invoiceData.bank_slip.barcode || 
@@ -562,25 +574,37 @@ Deno.serve(async (req) => {
           }
           
           // LOG CRÍTICO DOS VALORES EXTRAÍDOS
-          console.log('[DEBUG] *** VALORES EXTRAÍDOS DA RESPOSTA IUGU ***:', {
-            'QR Code Base64': pixQrCodeBase64 ? `STRING (length: ${pixQrCodeBase64.length})` : 'NULL',
-            'Código Copia e Cola': pixQrCodeText ? `STRING (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 30)}...)` : 'NULL',
+          console.log('[DEBUG] *** DEBUG CREATE_TRANSACTION: VALORES FINAIS EXTRAÍDOS PARA SALVAR ***:', {
+            'QR Code Base64 (imagem)': pixQrCodeBase64 ? `STRING (length: ${pixQrCodeBase64.length})` : 'NULL',
+            'Código Copia e Cola (0002...)': pixQrCodeText ? `STRING (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 30)}...)` : 'NULL',
             'Bank Slip Barcode': bankSlipBarcode ? `STRING (length: ${bankSlipBarcode.length})` : 'NULL'
           });
           
-          // MONTAR OBJETO DE UPDATE COM OS CAMPOS EXTRAÍDOS
+          // VERIFICAR SE O QUE TEMOS É REALMENTE O CÓDIGO COPIA E COLA (deve começar com "0002" para PIX)
+          if (pixQrCodeText && payload.payment_method_selected === 'pix') {
+            if (pixQrCodeText.startsWith('http')) {
+              console.log('[ERRO] *** ATENÇÃO: O CAMPO pix_qr_code_text CONTÉM UM LINK, NÃO O CÓDIGO COPIA E COLA ***');
+              console.log('[DEBUG] Link encontrado em vez do código:', pixQrCodeText);
+              // Não usar este valor se for um link
+              pixQrCodeText = null;
+            } else if (!pixQrCodeText.startsWith('0002')) {
+              console.log('[AVISO] *** CÓDIGO PIX NÃO COMEÇA COM "0002" ***:', pixQrCodeText.substring(0, 50));
+            }
+          }
+          
+          // MONTAR OBJETO DE UPDATE COM OS CAMPOS CORRIGIDOS
           updateData = {
             ...updateData,
             iugu_invoice_id: invoiceData.id,
             status: 'pending',
             iugu_invoice_secure_url: invoiceData.secure_url,
-            // CAMPOS PIX/BOLETO EXTRAÍDOS
+            // CAMPOS PIX/BOLETO CORRIGIDOS
             iugu_pix_qr_code_text: pixQrCodeText,
             iugu_pix_qr_code_base64: pixQrCodeBase64,
             iugu_bank_slip_barcode: bankSlipBarcode
           };
 
-          console.log('[DEBUG] >>> CREATE_TRANSACTION: OBJETO FINAL SENDO USADO PARA O UPDATE NA SALES:', JSON.stringify(updateData, null, 2));
+          console.log('[DEBUG] *** DEBUG CREATE_TRANSACTION: OBJETO SENDO USADO PARA ATUALIZAR SALES ***:', JSON.stringify(updateData, null, 2));
 
           iuguResponse = invoiceData;
         } else {
