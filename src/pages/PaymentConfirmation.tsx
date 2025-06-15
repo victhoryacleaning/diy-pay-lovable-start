@@ -44,16 +44,6 @@ const PaymentConfirmation = () => {
         throw new Error('Sale not found');
       }
 
-      console.log('[DEBUG] Dados da venda carregados:', {
-        id: data.id,
-        payment_method: data.payment_method_used,
-        buyer_profile_id: data.buyer_profile_id,
-        iugu_pix_qr_code_base64: data.iugu_pix_qr_code_base64 ? 'PRESENTE (length: ' + data.iugu_pix_qr_code_base64.length + ')' : 'AUSENTE',
-        iugu_pix_qr_code_text: data.iugu_pix_qr_code_text ? 'PRESENTE (length: ' + data.iugu_pix_qr_code_text.length + ')' : 'AUSENTE',
-        iugu_bank_slip_barcode: data.iugu_bank_slip_barcode ? 'PRESENTE (length: ' + data.iugu_bank_slip_barcode.length + ')' : 'AUSENTE',
-        iugu_invoice_secure_url: data.iugu_invoice_secure_url ? 'PRESENTE' : 'AUSENTE'
-      });
-
       return data;
     },
     enabled: !!saleId,
@@ -174,32 +164,45 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  // LOGS CRÍTICOS PARA DEBUG
+  // LOGS CRÍTICOS PARA DEBUG DOS VALORES BRUTOS
   console.log(">>> PaymentConfirmation COMPONENT: sale.iugu_pix_qr_code_base64 RAW:", sale?.iugu_pix_qr_code_base64);
   console.log(">>> PaymentConfirmation COMPONENT: sale.iugu_pix_qr_code_text RAW:", sale?.iugu_pix_qr_code_text);
+  console.log(">>> PaymentConfirmation COMPONENT: Type check base64:", typeof sale?.iugu_pix_qr_code_base64);
+  console.log(">>> PaymentConfirmation COMPONENT: Type check text:", typeof sale?.iugu_pix_qr_code_text);
 
-  // Validações CORRIGIDAS e SIMPLIFICADAS
-  const hasValidPixQrCodeBase64 = !!(sale?.iugu_pix_qr_code_base64 && 
+  // Validações SIMPLIFICADAS e CORRIGIDAS
+  const hasValidPixQrCodeBase64 = Boolean(
+    sale?.iugu_pix_qr_code_base64 && 
     typeof sale.iugu_pix_qr_code_base64 === 'string' && 
-    sale.iugu_pix_qr_code_base64.length > 10);
+    sale.iugu_pix_qr_code_base64.trim().length > 0 &&
+    !sale.iugu_pix_qr_code_base64.startsWith('http')
+  );
 
-  const hasValidPixQrCodeText = !!(sale?.iugu_pix_qr_code_text && 
+  const hasValidPixQrCodeText = Boolean(
+    sale?.iugu_pix_qr_code_text && 
     typeof sale.iugu_pix_qr_code_text === 'string' && 
-    sale.iugu_pix_qr_code_text.length > 10);
+    sale.iugu_pix_qr_code_text.trim().length > 0
+  );
 
-  const hasValidBankSlipBarcode = !!(sale?.iugu_bank_slip_barcode && 
+  const hasValidBankSlipBarcode = Boolean(
+    sale?.iugu_bank_slip_barcode && 
     typeof sale.iugu_bank_slip_barcode === 'string' && 
-    sale.iugu_bank_slip_barcode.length > 0);
+    sale.iugu_bank_slip_barcode.trim().length > 0
+  );
 
   // LOGS DE DEBUG DAS VALIDAÇÕES
   console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidPixQrCodeBase64:", hasValidPixQrCodeBase64);
   console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidPixQrCodeText:", hasValidPixQrCodeText);
-  console.log(">>> PaymentConfirmation: Dados para debug:", {
+  console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidBankSlipBarcode:", hasValidBankSlipBarcode);
+
+  console.log(">>> PaymentConfirmation: Dados finais para debug:", {
     isPix,
     hasValidPixQrCodeBase64,
     hasValidPixQrCodeText,
     pixQrCodeBase64Length: sale?.iugu_pix_qr_code_base64?.length || 0,
-    pixQrCodeTextLength: sale?.iugu_pix_qr_code_text?.length || 0
+    pixQrCodeTextLength: sale?.iugu_pix_qr_code_text?.length || 0,
+    base64StartsWith: sale?.iugu_pix_qr_code_base64?.substring(0, 20) || 'N/A',
+    textStartsWith: sale?.iugu_pix_qr_code_text?.substring(0, 20) || 'N/A'
   });
 
   return (
@@ -269,7 +272,9 @@ const PaymentConfirmation = () => {
                   <div className="text-center py-4">
                     <p className="text-gray-500">QR Code PIX em processamento...</p>
                     <p className="text-xs text-gray-400 mt-2">
-                      Debug: {sale?.iugu_pix_qr_code_base64 ? `Valor recebido (${sale.iugu_pix_qr_code_base64.length} chars)` : 'Nenhum valor recebido'}
+                      Debug: Base64 válido: {hasValidPixQrCodeBase64 ? 'SIM' : 'NÃO'} | 
+                      Tipo: {typeof sale?.iugu_pix_qr_code_base64} | 
+                      Tamanho: {sale?.iugu_pix_qr_code_base64?.length || 0}
                     </p>
                   </div>
                 )}
@@ -302,7 +307,10 @@ const PaymentConfirmation = () => {
                 <div className="text-center py-4">
                   <p className="text-gray-500">Código PIX em processamento...</p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Debug: {sale?.iugu_pix_qr_code_text ? `Valor recebido (${sale.iugu_pix_qr_code_text.length} chars): "${sale.iugu_pix_qr_code_text.substring(0, 30)}..."` : 'Nenhum valor recebido'}
+                    Debug: Texto válido: {hasValidPixQrCodeText ? 'SIM' : 'NÃO'} | 
+                    Tipo: {typeof sale?.iugu_pix_qr_code_text} | 
+                    Tamanho: {sale?.iugu_pix_qr_code_text?.length || 0} |
+                    Início: {sale?.iugu_pix_qr_code_text?.substring(0, 10) || 'N/A'}
                   </p>
                 </div>
               )}
