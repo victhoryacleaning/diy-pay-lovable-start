@@ -180,18 +180,21 @@ const PaymentConfirmation = () => {
   console.log(">>> DEBUG PaymentConfirmation - Tipo de sale.iugu_pix_qr_code_text:", typeof sale?.iugu_pix_qr_code_text);
   console.log(">>> DEBUG PaymentConfirmation - Length de sale.iugu_pix_qr_code_text:", sale?.iugu_pix_qr_code_text?.length);
 
-  // Verificações CORRIGIDAS para dados PIX/Boleto
-  const hasValidPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && 
+  // Validações SIMPLIFICADAS e FUNCIONAIS para dados PIX/Boleto
+  const hasValidPixQrCodeBase64 = typeof sale.iugu_pix_qr_code_base64 === 'string' && 
     sale.iugu_pix_qr_code_base64.trim() !== '' && 
     !sale.iugu_pix_qr_code_base64.startsWith('http');
 
-  const hasValidPixQrCodeText = sale.iugu_pix_qr_code_text && 
+  const hasValidPixQrCodeText = typeof sale.iugu_pix_qr_code_text === 'string' && 
     sale.iugu_pix_qr_code_text.trim() !== '' && 
-    sale.iugu_pix_qr_code_text.startsWith('0002') && 
-    sale.iugu_pix_qr_code_text.length > 50;
+    sale.iugu_pix_qr_code_text.startsWith('0002');
 
   const hasValidBankSlipBarcode = sale.iugu_bank_slip_barcode && 
     sale.iugu_bank_slip_barcode.trim() !== '';
+
+  // LOGS DE DEBUG DAS VALIDAÇÕES
+  console.log(">>> PaymentConfirmation: Testando hasValidPixQrCodeBase64. Valor de sale.iugu_pix_qr_code_base64:", sale.iugu_pix_qr_code_base64, "Resultado:", hasValidPixQrCodeBase64);
+  console.log(">>> PaymentConfirmation: Testando hasValidPixQrCodeText. Valor de sale.iugu_pix_qr_code_text:", sale.iugu_pix_qr_code_text, "Resultado:", hasValidPixQrCodeText);
 
   console.log('[DEBUG] Renderização - Verificações de dados PIX/Boleto:', {
     isPix,
