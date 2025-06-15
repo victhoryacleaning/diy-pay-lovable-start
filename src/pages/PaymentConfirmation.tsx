@@ -164,37 +164,23 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  // LOGS CRÍTICOS PARA DEBUG DOS VALORES BRUTOS
-  console.log(">>> PaymentConfirmation COMPONENT: sale.iugu_pix_qr_code_base64 RAW:", sale?.iugu_pix_qr_code_base64);
-  console.log(">>> PaymentConfirmation COMPONENT: sale.iugu_pix_qr_code_text RAW:", sale?.iugu_pix_qr_code_text);
-  console.log(">>> PaymentConfirmation COMPONENT: Type check base64:", typeof sale?.iugu_pix_qr_code_base64);
-  console.log(">>> PaymentConfirmation COMPONENT: Type check text:", typeof sale?.iugu_pix_qr_code_text);
+  // **VALIDAÇÕES SIMPLIFICADAS PARA DEBUG**
+  const pixQrCodeBase64_VAL = sale?.iugu_pix_qr_code_base64;
+  const pixQrCodeText_VAL = sale?.iugu_pix_qr_code_text;
 
-  // Validações CORRIGIDAS - Verificação mais permissiva
-  const pixQrCodeBase64 = sale?.iugu_pix_qr_code_base64;
-  const pixQrCodeText = sale?.iugu_pix_qr_code_text;
+  console.log(">>> RAW DATA CHECK: pixQrCodeBase64_VAL:", pixQrCodeBase64_VAL);
+  console.log(">>> RAW DATA CHECK: typeof pixQrCodeBase64_VAL:", typeof pixQrCodeBase64_VAL);
+  console.log(">>> RAW DATA CHECK: pixQrCodeText_VAL:", pixQrCodeText_VAL);
+  console.log(">>> RAW DATA CHECK: typeof pixQrCodeText_VAL:", typeof pixQrCodeText_VAL);
+
+  const hasValidPixQrCodeBase64 = typeof pixQrCodeBase64_VAL === 'string' && pixQrCodeBase64_VAL.trim() !== '';
+  const hasValidPixQrCodeText = typeof pixQrCodeText_VAL === 'string' && pixQrCodeText_VAL.trim() !== '';
+
+  console.log(">>> SIMPLIFIED VALIDATION RESULT: hasValidPixQrCodeBase64:", hasValidPixQrCodeBase64);
+  console.log(">>> SIMPLIFIED VALIDATION RESULT: hasValidPixQrCodeText:", hasValidPixQrCodeText);
+
+  // Validação do código de barras do boleto (mantida igual)
   const bankSlipBarcode = sale?.iugu_bank_slip_barcode;
-
-  // Validação do QR Code Base64 - aceita qualquer string não vazia que não seja "NULO" ou URL
-  const hasValidPixQrCodeBase64 = !!(
-    pixQrCodeBase64 && 
-    pixQrCodeBase64 !== 'NULO' && 
-    pixQrCodeBase64 !== 'null' &&
-    typeof pixQrCodeBase64 === 'string' && 
-    pixQrCodeBase64.trim().length > 10 &&
-    !pixQrCodeBase64.startsWith('http')
-  );
-
-  // Validação do Código PIX Texto - aceita qualquer string não vazia que não seja "NULO"
-  const hasValidPixQrCodeText = !!(
-    pixQrCodeText && 
-    pixQrCodeText !== 'NULO' && 
-    pixQrCodeText !== 'null' &&
-    typeof pixQrCodeText === 'string' && 
-    pixQrCodeText.trim().length > 10
-  );
-
-  // Validação do código de barras do boleto
   const hasValidBankSlipBarcode = !!(
     bankSlipBarcode && 
     bankSlipBarcode !== 'NULO' && 
@@ -202,21 +188,6 @@ const PaymentConfirmation = () => {
     typeof bankSlipBarcode === 'string' && 
     bankSlipBarcode.trim().length > 10
   );
-
-  // LOGS DE DEBUG DAS VALIDAÇÕES
-  console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidPixQrCodeBase64:", hasValidPixQrCodeBase64);
-  console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidPixQrCodeText:", hasValidPixQrCodeText);
-  console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidBankSlipBarcode:", hasValidBankSlipBarcode);
-
-  console.log(">>> PaymentConfirmation: Dados finais para debug:", {
-    isPix,
-    hasValidPixQrCodeBase64,
-    hasValidPixQrCodeText,
-    pixQrCodeBase64Length: pixQrCodeBase64?.length || 0,
-    pixQrCodeTextLength: pixQrCodeText?.length || 0,
-    base64Value: pixQrCodeBase64,
-    textValue: pixQrCodeText
-  });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -272,7 +243,7 @@ const PaymentConfirmation = () => {
                 {hasValidPixQrCodeBase64 ? (
                   <div>
                     <img 
-                      src={`data:image/png;base64,${pixQrCodeBase64}`}
+                      src={`data:image/png;base64,${pixQrCodeBase64_VAL}`}
                       alt="QR Code PIX"
                       className="mx-auto mb-4 border rounded-lg"
                       style={{ maxWidth: '200px', height: 'auto' }}
@@ -286,8 +257,8 @@ const PaymentConfirmation = () => {
                     <p className="text-gray-500">QR Code PIX em processamento...</p>
                     <p className="text-xs text-gray-400 mt-2">
                       Debug: Base64 válido: {hasValidPixQrCodeBase64 ? 'SIM' : 'NÃO'} | 
-                      Tipo: {typeof pixQrCodeBase64} | 
-                      Tamanho: {pixQrCodeBase64?.length || 0}
+                      Tipo: {typeof pixQrCodeBase64_VAL} | 
+                      Tamanho: {pixQrCodeBase64_VAL?.length || 0}
                     </p>
                   </div>
                 )}
@@ -300,7 +271,7 @@ const PaymentConfirmation = () => {
                     Código PIX (Copia e Cola):
                   </label>
                   <Textarea
-                    value={pixQrCodeText}
+                    value={pixQrCodeText_VAL}
                     readOnly
                     className="text-xs font-mono bg-gray-50 resize-none"
                     rows={4}
@@ -321,9 +292,9 @@ const PaymentConfirmation = () => {
                   <p className="text-gray-500">Código PIX em processamento...</p>
                   <p className="text-xs text-gray-400 mt-2">
                     Debug: Texto válido: {hasValidPixQrCodeText ? 'SIM' : 'NÃO'} | 
-                    Tipo: {typeof pixQrCodeText} | 
-                    Tamanho: {pixQrCodeText?.length || 0} |
-                    Início: {pixQrCodeText?.substring(0, 10) || 'N/A'}
+                    Tipo: {typeof pixQrCodeText_VAL} | 
+                    Tamanho: {pixQrCodeText_VAL?.length || 0} |
+                    Início: {pixQrCodeText_VAL?.substring(0, 10) || 'N/A'}
                   </p>
                 </div>
               )}
