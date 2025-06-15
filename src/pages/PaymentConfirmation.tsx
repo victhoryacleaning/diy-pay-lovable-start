@@ -170,24 +170,37 @@ const PaymentConfirmation = () => {
   console.log(">>> PaymentConfirmation COMPONENT: Type check base64:", typeof sale?.iugu_pix_qr_code_base64);
   console.log(">>> PaymentConfirmation COMPONENT: Type check text:", typeof sale?.iugu_pix_qr_code_text);
 
-  // Validações SIMPLIFICADAS e CORRIGIDAS
-  const hasValidPixQrCodeBase64 = Boolean(
-    sale?.iugu_pix_qr_code_base64 && 
-    typeof sale.iugu_pix_qr_code_base64 === 'string' && 
-    sale.iugu_pix_qr_code_base64.trim().length > 0 &&
-    !sale.iugu_pix_qr_code_base64.startsWith('http')
+  // Validações CORRIGIDAS - Verificação mais permissiva
+  const pixQrCodeBase64 = sale?.iugu_pix_qr_code_base64;
+  const pixQrCodeText = sale?.iugu_pix_qr_code_text;
+  const bankSlipBarcode = sale?.iugu_bank_slip_barcode;
+
+  // Validação do QR Code Base64 - aceita qualquer string não vazia que não seja "NULO" ou URL
+  const hasValidPixQrCodeBase64 = !!(
+    pixQrCodeBase64 && 
+    pixQrCodeBase64 !== 'NULO' && 
+    pixQrCodeBase64 !== 'null' &&
+    typeof pixQrCodeBase64 === 'string' && 
+    pixQrCodeBase64.trim().length > 10 &&
+    !pixQrCodeBase64.startsWith('http')
   );
 
-  const hasValidPixQrCodeText = Boolean(
-    sale?.iugu_pix_qr_code_text && 
-    typeof sale.iugu_pix_qr_code_text === 'string' && 
-    sale.iugu_pix_qr_code_text.trim().length > 0
+  // Validação do Código PIX Texto - aceita qualquer string não vazia que não seja "NULO"
+  const hasValidPixQrCodeText = !!(
+    pixQrCodeText && 
+    pixQrCodeText !== 'NULO' && 
+    pixQrCodeText !== 'null' &&
+    typeof pixQrCodeText === 'string' && 
+    pixQrCodeText.trim().length > 10
   );
 
-  const hasValidBankSlipBarcode = Boolean(
-    sale?.iugu_bank_slip_barcode && 
-    typeof sale.iugu_bank_slip_barcode === 'string' && 
-    sale.iugu_bank_slip_barcode.trim().length > 0
+  // Validação do código de barras do boleto
+  const hasValidBankSlipBarcode = !!(
+    bankSlipBarcode && 
+    bankSlipBarcode !== 'NULO' && 
+    bankSlipBarcode !== 'null' &&
+    typeof bankSlipBarcode === 'string' && 
+    bankSlipBarcode.trim().length > 10
   );
 
   // LOGS DE DEBUG DAS VALIDAÇÕES
@@ -199,10 +212,10 @@ const PaymentConfirmation = () => {
     isPix,
     hasValidPixQrCodeBase64,
     hasValidPixQrCodeText,
-    pixQrCodeBase64Length: sale?.iugu_pix_qr_code_base64?.length || 0,
-    pixQrCodeTextLength: sale?.iugu_pix_qr_code_text?.length || 0,
-    base64StartsWith: sale?.iugu_pix_qr_code_base64?.substring(0, 20) || 'N/A',
-    textStartsWith: sale?.iugu_pix_qr_code_text?.substring(0, 20) || 'N/A'
+    pixQrCodeBase64Length: pixQrCodeBase64?.length || 0,
+    pixQrCodeTextLength: pixQrCodeText?.length || 0,
+    base64Value: pixQrCodeBase64,
+    textValue: pixQrCodeText
   });
 
   return (
@@ -259,7 +272,7 @@ const PaymentConfirmation = () => {
                 {hasValidPixQrCodeBase64 ? (
                   <div>
                     <img 
-                      src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
+                      src={`data:image/png;base64,${pixQrCodeBase64}`}
                       alt="QR Code PIX"
                       className="mx-auto mb-4 border rounded-lg"
                       style={{ maxWidth: '200px', height: 'auto' }}
@@ -273,8 +286,8 @@ const PaymentConfirmation = () => {
                     <p className="text-gray-500">QR Code PIX em processamento...</p>
                     <p className="text-xs text-gray-400 mt-2">
                       Debug: Base64 válido: {hasValidPixQrCodeBase64 ? 'SIM' : 'NÃO'} | 
-                      Tipo: {typeof sale?.iugu_pix_qr_code_base64} | 
-                      Tamanho: {sale?.iugu_pix_qr_code_base64?.length || 0}
+                      Tipo: {typeof pixQrCodeBase64} | 
+                      Tamanho: {pixQrCodeBase64?.length || 0}
                     </p>
                   </div>
                 )}
@@ -287,7 +300,7 @@ const PaymentConfirmation = () => {
                     Código PIX (Copia e Cola):
                   </label>
                   <Textarea
-                    value={sale.iugu_pix_qr_code_text}
+                    value={pixQrCodeText}
                     readOnly
                     className="text-xs font-mono bg-gray-50 resize-none"
                     rows={4}
@@ -308,9 +321,9 @@ const PaymentConfirmation = () => {
                   <p className="text-gray-500">Código PIX em processamento...</p>
                   <p className="text-xs text-gray-400 mt-2">
                     Debug: Texto válido: {hasValidPixQrCodeText ? 'SIM' : 'NÃO'} | 
-                    Tipo: {typeof sale?.iugu_pix_qr_code_text} | 
-                    Tamanho: {sale?.iugu_pix_qr_code_text?.length || 0} |
-                    Início: {sale?.iugu_pix_qr_code_text?.substring(0, 10) || 'N/A'}
+                    Tipo: {typeof pixQrCodeText} | 
+                    Tamanho: {pixQrCodeText?.length || 0} |
+                    Início: {pixQrCodeText?.substring(0, 10) || 'N/A'}
                   </p>
                 </div>
               )}
@@ -357,7 +370,7 @@ const PaymentConfirmation = () => {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={sale.iugu_bank_slip_barcode}
+                      value={bankSlipBarcode}
                       readOnly
                       className="flex-1 p-2 border border-gray-300 rounded text-sm font-mono bg-gray-50"
                     />
