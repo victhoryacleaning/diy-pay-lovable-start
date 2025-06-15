@@ -516,7 +516,7 @@ Deno.serve(async (req) => {
         if (invoiceResponse.ok && invoiceData.id) {
           console.log('[DEBUG] *** FATURA CRIADA COM SUCESSO ***:', invoiceData.id);
           
-          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM LÓGICA ESPECÍFICA PARA PIX "COPIA E COLA"
+          // EXTRAIR CAMPOS PIX/BOLETO DA RESPOSTA DA IUGU COM LÓGICA ESPECÍFICA PARA CÓDIGO PIX "COPIA E COLA"
           console.log('[DEBUG] *** INICIANDO EXTRAÇÃO ESPECÍFICA DOS CAMPOS PIX/BOLETO ***');
           
           // Extract PIX fields - FOCO NO CÓDIGO "COPIA E COLA" VERDADEIRO
@@ -546,43 +546,95 @@ Deno.serve(async (req) => {
             }
           }
 
-          // EXTRAÇÃO CRÍTICA DO CÓDIGO PIX "COPIA E COLA" - BUSCAR PELOS CAMPOS CORRETOS
+          // EXTRAÇÃO CRÍTICA DO CÓDIGO PIX "COPIA E COLA" - BUSCAR PELOS CAMPOS CORRETOS E FAZER UMA CHAMADA ESPECÍFICA SE NECESSÁRIO
           console.log('[DEBUG] *** BUSCANDO CÓDIGO PIX COPIA E COLA CORRETO ***');
           
-          // Tentativa 1: Campos diretos conhecidos para código "copia e cola"
-          if (invoiceData.pix_qr_code_text && invoiceData.pix_qr_code_text.startsWith('0002')) {
-            pixQrCodeText = invoiceData.pix_qr_code_text;
-            console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo direto pix_qr_code_text:', pixQrCodeText.substring(0, 50) + '...');
-          } else if (invoiceData.qr_code_text && invoiceData.qr_code_text.startsWith('0002')) {
-            pixQrCodeText = invoiceData.qr_code_text;
-            console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo direto qr_code_text:', pixQrCodeText.substring(0, 50) + '...');
+          // Primeiro, verificar se há um endpoint específico para o código PIX na resposta
+          if (invoiceData.pix && invoiceData.pix.qrcode_text && invoiceData.pix.qrcode_text.startsWith('http')) {
+            console.log('[DEBUG] Tentando buscar código PIX via URL específica:', invoiceData.pix.qrcode_text);
+            try {
+              const pixCodeResponse = await fetch(invoiceData.pix.qrcode_text);
+              if (pixCodeResponse.ok) {
+                const pixCodeText = await pixCodeResponse.text();
+                console.log('[DEBUG] Resposta da URL do código PIX:', pixCodeText);
+                
+                // Verificar se a resposta contém o código PIX real
+                if (pixCodeText && (pixCodeText.startsWith('0002') || pixCodeText.length > 100)) {
+                  pixQrCodeText = pixCodeText;
+                  console.log('[DEBUG] CÓDIGO PIX COPIA E COLA obtido via URL específica:', pixQrCodeText.substring(0, 50) + '...');
+                }
+              }
+            } catch (fetchError) {
+              console.error('[ERRO] Erro ao buscar código PIX da URL:', fetchError);
+            }
           }
           
-          // Tentativa 2: Objeto pix aninhado - FOCAR NO CÓDIGO EMV VERDADEIRO
-          if (!pixQrCodeText && invoiceData.pix && typeof invoiceData.pix === 'object') {
-            console.log('[DEBUG] Examinando objeto PIX para código copia e cola:', invoiceData.pix);
+          // Se ainda não encontrou o código, tentar campos diretos conhecidos
+          if (!pixQrCodeText) {
+            console.log('[DEBUG] Tentando encontrar código PIX em campos diretos da resposta');
             
-            // Possíveis campos onde pode estar o código "copia e cola" real
-            const possiblePixCodeFields = ['emv', 'qrcode_text', 'qr_code_text', 'pix_code', 'codigo_pix'];
+            // Tentativa 1: Campos diretos conhecidos para código "copia e cola"
+            if (invoiceData.pix_qr_code_text && invoiceData.pix_qr_code_text.startsWith('0002')) {
+              pixQrCodeText = invoiceData.pix_qr_code_text;
+              console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo direto pix_qr_code_text:', pixQrCodeText.substring(0, 50) + '...');
+            } else if (invoiceData.qr_code_text && invoiceData.qr_code_text.startsWith('0002')) {
+              pixQrCodeText = invoiceData.qr_code_text;
+              console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo direto qr_code_text:', pixQrCodeText.substring(0, 50) + '...');
+            }
             
-            for (const field of possiblePixCodeFields) {
-              if (invoiceData.pix[field] && typeof invoiceData.pix[field] === 'string' && invoiceData.pix[field].startsWith('0002')) {
-                pixQrCodeText = invoiceData.pix[field];
-                console.log(`[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo pix.${field}:`, pixQrCodeText.substring(0, 50) + '...');
-                break;
+            // Tentativa 2: Objeto pix aninhado - FOCAR NO CÓDIGO EMV VERDADEIRO
+            if (!pixQrCodeText && invoiceData.pix && typeof invoiceData.pix === 'object') {
+              console.log('[DEBUG] Examinando objeto PIX para código copia e cola:', invoiceData.pix);
+              
+              // Possíveis campos onde pode estar o código "copia e cola" real
+              const possiblePixCodeFields = ['emv', 'qrcode_emv', 'pix_code', 'codigo_pix', 'brcode'];
+              
+              for (const field of possiblePixCodeFields) {
+                if (invoiceData.pix[field] && typeof invoiceData.pix[field] === 'string' && invoiceData.pix[field].startsWith('0002')) {
+                  pixQrCodeText = invoiceData.pix[field];
+                  console.log(`[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo pix.${field}:`, pixQrCodeText.substring(0, 50) + '...');
+                  break;
+                }
+              }
+            }
+
+            // Tentativa 3: Buscar em possíveis campos alternativos na resposta principal
+            if (!pixQrCodeText) {
+              const alternativeFields = ['emv_code', 'pix_emv', 'qr_code_emv', 'brcode', 'pix_brcode'];
+              for (const field of alternativeFields) {
+                if (invoiceData[field] && typeof invoiceData[field] === 'string' && invoiceData[field].startsWith('0002')) {
+                  pixQrCodeText = invoiceData[field];
+                  console.log(`[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo alternativo ${field}:`, pixQrCodeText.substring(0, 50) + '...');
+                  break;
+                }
               }
             }
           }
 
-          // Tentativa 3: Buscar em possíveis campos alternativos na resposta principal
-          if (!pixQrCodeText) {
-            const alternativeFields = ['emv_code', 'pix_emv', 'qr_code_emv', 'brcode'];
-            for (const field of alternativeFields) {
-              if (invoiceData[field] && typeof invoiceData[field] === 'string' && invoiceData[field].startsWith('0002')) {
-                pixQrCodeText = invoiceData[field];
-                console.log(`[DEBUG] CÓDIGO PIX COPIA E COLA encontrado no campo alternativo ${field}:`, pixQrCodeText.substring(0, 50) + '...');
-                break;
+          // Se ainda não encontrou, tentar uma chamada específica à API da Iugu para obter o código PIX
+          if (!pixQrCodeText && invoiceData.id) {
+            console.log('[DEBUG] Tentando buscar código PIX via endpoint específico da fatura');
+            try {
+              const pixDetailsResponse = await fetch(`https://api.iugu.com/v1/invoices/${invoiceData.id}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': authHeader,
+                },
+              });
+              
+              if (pixDetailsResponse.ok) {
+                const pixDetailsText = await pixDetailsResponse.text();
+                const pixDetailsData = JSON.parse(pixDetailsText);
+                console.log('[DEBUG] Detalhes da fatura para PIX:', JSON.stringify(pixDetailsData.pix, null, 2));
+                
+                // Buscar o código PIX nos detalhes
+                if (pixDetailsData.pix && pixDetailsData.pix.emv && pixDetailsData.pix.emv.startsWith('0002')) {
+                  pixQrCodeText = pixDetailsData.pix.emv;
+                  console.log('[DEBUG] CÓDIGO PIX COPIA E COLA encontrado nos detalhes da fatura:', pixQrCodeText.substring(0, 50) + '...');
+                }
               }
+            } catch (fetchError) {
+              console.error('[ERRO] Erro ao buscar detalhes da fatura para PIX:', fetchError);
             }
           }
 
@@ -612,11 +664,11 @@ Deno.serve(async (req) => {
                             invoiceData.bank_slip.barcode_data;
           }
           
-          // Log dos valores finais extraídos
-          console.log('[DEBUG] *** VALORES FINAIS EXTRAÍDOS ***:', {
-            pixQrCodeBase64: pixQrCodeBase64 ? `PRESENTE (length: ${pixQrCodeBase64.length})` : 'NULO',
-            pixQrCodeText: pixQrCodeText ? `PRESENTE (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 20)}...)` : 'NULO',
-            bankSlipBarcode: bankSlipBarcode ? `PRESENTE (length: ${bankSlipBarcode.length})` : 'NULO'
+          // Log dos valores finais extraídos ANTES de salvar no banco
+          console.log('[DEBUG] *** DEBUG CREATE_TRANSACTION: Valores extraídos para PIX ***:', {
+            'QR Code Base64': pixQrCodeBase64 ? `PRESENTE (length: ${pixQrCodeBase64.length})` : 'NULO',
+            'Código Copia e Cola': pixQrCodeText ? `PRESENTE (length: ${pixQrCodeText.length}, começa com: ${pixQrCodeText.substring(0, 20)}...)` : 'NULO',
+            'Bank Slip Barcode': bankSlipBarcode ? `PRESENTE (length: ${bankSlipBarcode.length})` : 'NULO'
           });
           
           // Invoice created successfully - MONTAR OBJETO DE UPDATE COM OS CAMPOS EXTRAÍDOS
