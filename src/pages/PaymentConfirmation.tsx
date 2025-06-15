@@ -180,15 +180,15 @@ const PaymentConfirmation = () => {
   console.log(">>> DEBUG PaymentConfirmation - Tipo de sale.iugu_pix_qr_code_text:", typeof sale?.iugu_pix_qr_code_text);
   console.log(">>> DEBUG PaymentConfirmation - Length de sale.iugu_pix_qr_code_text:", sale?.iugu_pix_qr_code_text?.length);
 
-  // Verificações mais robustas para dados PIX/Boleto
+  // Verificações CORRIGIDAS para dados PIX/Boleto
   const hasValidPixQrCodeBase64 = sale.iugu_pix_qr_code_base64 && 
     sale.iugu_pix_qr_code_base64.trim() !== '' && 
     !sale.iugu_pix_qr_code_base64.startsWith('http');
 
   const hasValidPixQrCodeText = sale.iugu_pix_qr_code_text && 
     sale.iugu_pix_qr_code_text.trim() !== '' && 
-    sale.iugu_pix_qr_code_text.length > 10 && // PIX code should be reasonably long
-    (sale.iugu_pix_qr_code_text.startsWith('0002') || sale.iugu_pix_qr_code_text.length > 50); // Aceitar códigos que começam com 0002 ou são longos
+    sale.iugu_pix_qr_code_text.startsWith('0002') && 
+    sale.iugu_pix_qr_code_text.length > 50;
 
   const hasValidBankSlipBarcode = sale.iugu_bank_slip_barcode && 
     sale.iugu_bank_slip_barcode.trim() !== '';
