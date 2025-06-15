@@ -174,44 +174,32 @@ const PaymentConfirmation = () => {
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
 
-  // LOG CRÍTICO: Valores específicos para debug no frontend
-  console.log(">>> DEBUG PaymentConfirmation - VALOR BRUTO DE sale.iugu_pix_qr_code_text:", sale?.iugu_pix_qr_code_text);
-  console.log(">>> DEBUG PaymentConfirmation - VALOR BRUTO DE sale.iugu_pix_qr_code_base64 existe?", !!sale?.iugu_pix_qr_code_base64);
-  console.log(">>> DEBUG PaymentConfirmation - Tipo de sale.iugu_pix_qr_code_text:", typeof sale?.iugu_pix_qr_code_text);
-  console.log(">>> DEBUG PaymentConfirmation - Length de sale.iugu_pix_qr_code_text:", sale?.iugu_pix_qr_code_text?.length);
-
-  // LOGS ADICIONAIS SOLICITADOS PELO USUÁRIO
+  // LOGS CRÍTICOS PARA DEBUG
   console.log(">>> PaymentConfirmation COMPONENT: sale.iugu_pix_qr_code_base64 RAW:", sale?.iugu_pix_qr_code_base64);
   console.log(">>> PaymentConfirmation COMPONENT: sale.iugu_pix_qr_code_text RAW:", sale?.iugu_pix_qr_code_text);
 
-  // Validações SIMPLIFICADAS e FUNCIONAIS para dados PIX/Boleto
-  const hasValidPixQrCodeBase64 = typeof sale.iugu_pix_qr_code_base64 === 'string' && 
-    sale.iugu_pix_qr_code_base64.trim() !== '' && 
-    !sale.iugu_pix_qr_code_base64.startsWith('http');
+  // Validações CORRIGIDAS e SIMPLIFICADAS
+  const hasValidPixQrCodeBase64 = !!(sale?.iugu_pix_qr_code_base64 && 
+    typeof sale.iugu_pix_qr_code_base64 === 'string' && 
+    sale.iugu_pix_qr_code_base64.length > 10);
 
-  const hasValidPixQrCodeText = typeof sale.iugu_pix_qr_code_text === 'string' && 
-    sale.iugu_pix_qr_code_text.trim() !== '' && 
-    sale.iugu_pix_qr_code_text.startsWith('0002');
+  const hasValidPixQrCodeText = !!(sale?.iugu_pix_qr_code_text && 
+    typeof sale.iugu_pix_qr_code_text === 'string' && 
+    sale.iugu_pix_qr_code_text.length > 10);
 
-  const hasValidBankSlipBarcode = sale.iugu_bank_slip_barcode && 
-    sale.iugu_bank_slip_barcode.trim() !== '';
+  const hasValidBankSlipBarcode = !!(sale?.iugu_bank_slip_barcode && 
+    typeof sale.iugu_bank_slip_barcode === 'string' && 
+    sale.iugu_bank_slip_barcode.length > 0);
 
-  // LOGS DE DEBUG DAS VALIDAÇÕES - DETALHADOS
+  // LOGS DE DEBUG DAS VALIDAÇÕES
   console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidPixQrCodeBase64:", hasValidPixQrCodeBase64);
   console.log(">>> PaymentConfirmation COMPONENT: Resultado da validação hasValidPixQrCodeText:", hasValidPixQrCodeText);
-  console.log(">>> PaymentConfirmation: Testando hasValidPixQrCodeBase64. Valor de sale.iugu_pix_qr_code_base64:", sale.iugu_pix_qr_code_base64, "Resultado:", hasValidPixQrCodeBase64);
-  console.log(">>> PaymentConfirmation: Testando hasValidPixQrCodeText. Valor de sale.iugu_pix_qr_code_text:", sale.iugu_pix_qr_code_text, "Resultado:", hasValidPixQrCodeText);
-
-  console.log('[DEBUG] Renderização - Verificações de dados PIX/Boleto:', {
+  console.log(">>> PaymentConfirmation: Dados para debug:", {
     isPix,
-    isBankSlip,
     hasValidPixQrCodeBase64,
     hasValidPixQrCodeText,
-    hasValidBankSlipBarcode,
-    pixQrCodeBase64Value: sale.iugu_pix_qr_code_base64 ? sale.iugu_pix_qr_code_base64.substring(0, 50) + '...' : 'NULO',
-    pixQrCodeTextValue: sale.iugu_pix_qr_code_text ? sale.iugu_pix_qr_code_text.substring(0, 50) + '...' : 'NULO',
-    bankSlipBarcodeValue: sale.iugu_bank_slip_barcode ? sale.iugu_bank_slip_barcode.substring(0, 50) + '...' : 'NULO',
-    secureUrl: sale.iugu_invoice_secure_url ? 'EXISTE' : 'NÃO EXISTE'
+    pixQrCodeBase64Length: sale?.iugu_pix_qr_code_base64?.length || 0,
+    pixQrCodeTextLength: sale?.iugu_pix_qr_code_text?.length || 0
   });
 
   return (
@@ -266,20 +254,25 @@ const PaymentConfirmation = () => {
               {/* QR Code PIX */}
               <div className="text-center">
                 {hasValidPixQrCodeBase64 ? (
-                  <img 
-                    src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
-                    alt="QR Code PIX"
-                    className="mx-auto mb-4 border rounded-lg"
-                    style={{ maxWidth: '200px', height: 'auto' }}
-                  />
+                  <div>
+                    <img 
+                      src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="mx-auto mb-4 border rounded-lg"
+                      style={{ maxWidth: '200px', height: 'auto' }}
+                    />
+                    <p className="text-sm text-gray-600 mb-4">
+                      Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
+                    </p>
+                  </div>
                 ) : (
                   <div className="text-center py-4">
                     <p className="text-gray-500">QR Code PIX em processamento...</p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Debug: {sale?.iugu_pix_qr_code_base64 ? `Valor recebido (${sale.iugu_pix_qr_code_base64.length} chars)` : 'Nenhum valor recebido'}
+                    </p>
                   </div>
                 )}
-                <p className="text-sm text-gray-600 mb-4">
-                  Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
-                </p>
               </div>
               
               {/* Código PIX Copia e Cola */}
@@ -309,7 +302,7 @@ const PaymentConfirmation = () => {
                 <div className="text-center py-4">
                   <p className="text-gray-500">Código PIX em processamento...</p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Debug: {sale.iugu_pix_qr_code_text ? `Valor recebido: "${sale.iugu_pix_qr_code_text.substring(0, 50)}..."` : 'Nenhum valor recebido'}
+                    Debug: {sale?.iugu_pix_qr_code_text ? `Valor recebido (${sale.iugu_pix_qr_code_text.length} chars): "${sale.iugu_pix_qr_code_text.substring(0, 30)}..."` : 'Nenhum valor recebido'}
                   </p>
                 </div>
               )}
