@@ -48,9 +48,8 @@ const PaymentConfirmation = () => {
     console.log('[DEBUG] Buscando detalhes da venda:', saleId);
 
     try {
-      // CORREÇÃO DEFINITIVA: Enviando o sale_id no corpo da requisição
       const { data, error } = await supabase.functions.invoke('get-sale-details', {
-        body: { sale_id: saleId }, // Enviando como objeto, não JSON.stringify
+        body: { sale_id: saleId },
       });
 
       console.log('[DEBUG] Resposta da função:', { data, error });
@@ -86,8 +85,14 @@ const PaymentConfirmation = () => {
 
     console.log('[DEBUG] Configurando listener realtime para venda:', saleId);
 
+    // Criar o canal com configurações específicas
     const channel = supabase
-      .channel('sale-updates')
+      .channel(`sale-updates-${saleId}`, {
+        config: {
+          broadcast: { self: false },
+          presence: { key: saleId }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -107,15 +112,37 @@ const PaymentConfirmation = () => {
             });
             
             // Atualiza o estado local
-            setSale(prev => prev ? { ...prev, status: newSale.status, paid_at: newSale.paid_at } : null);
+            setSale(prev => prev ? { 
+              ...prev, 
+              status: newSale.status, 
+              paid_at: newSale.paid_at 
+            } : null);
+          } else if (newSale.status !== sale?.status) {
+            // Para outras mudanças de status, apenas atualizar
+            setSale(prev => prev ? { 
+              ...prev, 
+              status: newSale.status,
+              paid_at: newSale.paid_at
+            } : null);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[DEBUG] Status da inscrição realtime:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[DEBUG] Realtime conectado com sucesso');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[ERRO] Erro no canal realtime');
+        } else if (status === 'TIMED_OUT') {
+          console.error('[ERRO] Timeout na conexão realtime');
+        } else if (status === 'CLOSED') {
+          console.log('[DEBUG] Canal realtime fechado');
+        }
+      });
 
     return () => {
       console.log('[DEBUG] Removendo listener realtime');
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
   }, [saleId, sale?.status]);
 
