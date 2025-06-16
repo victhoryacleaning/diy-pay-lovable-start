@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,8 +48,9 @@ const PaymentConfirmation = () => {
     console.log('[DEBUG] Buscando detalhes da venda:', saleId);
 
     try {
+      // CORREÇÃO DEFINITIVA: Enviando o sale_id no corpo da requisição
       const { data, error } = await supabase.functions.invoke('get-sale-details', {
-        body: JSON.stringify({ sale_id: saleId }), // CORREÇÃO: Agora enviando o sale_id no corpo da requisição
+        body: { sale_id: saleId }, // Enviando como objeto, não JSON.stringify
       });
 
       console.log('[DEBUG] Resposta da função:', { data, error });

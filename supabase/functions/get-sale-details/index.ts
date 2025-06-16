@@ -16,13 +16,28 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const saleId = url.searchParams.get('sale_id');
-
-    console.log('[DEBUG] Sale ID recebido:', saleId);
+    // CORREÇÃO DEFINITIVA: Lendo o sale_id do corpo da requisição
+    const body = await req.text();
+    console.log('[DEBUG] Corpo bruto da requisição:', body);
+    
+    let saleId;
+    try {
+      const parsedBody = JSON.parse(body);
+      saleId = parsedBody.sale_id;
+      console.log('[DEBUG] Sale ID extraído do corpo:', saleId);
+    } catch (parseError) {
+      console.error('[ERRO] Erro ao fazer parse do JSON:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Corpo da requisição inválido' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     if (!saleId) {
-      console.error('[ERRO] Sale ID não fornecido');
+      console.error('[ERRO] Sale ID não fornecido no corpo da requisição');
       return new Response(
         JSON.stringify({ error: 'Sale ID é obrigatório' }),
         {
