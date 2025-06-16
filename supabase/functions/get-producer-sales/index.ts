@@ -72,7 +72,8 @@ serve(async (req) => {
 
     console.log('[DEBUG] Buscando vendas para o produtor:', user.id);
 
-    // Buscar vendas do produtor com JOIN nas tabelas sales e products
+    // CORREÇÃO CRÍTICA: Buscar vendas APENAS do produtor logado
+    // Query corrigida com JOIN e filtro por producer_id
     const { data: sales, error: salesError } = await supabase
       .from('sales')
       .select(`
@@ -87,10 +88,11 @@ serve(async (req) => {
         created_at,
         paid_at,
         updated_at,
-        products (
+        products!inner (
           name,
           price_cents,
-          type
+          type,
+          producer_id
         )
       `)
       .eq('products.producer_id', user.id)
