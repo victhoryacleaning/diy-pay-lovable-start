@@ -1,66 +1,123 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Copy, Download, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CheckCircle, Copy, Download, ArrowLeft, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+interface SaleData {
+  id: string;
+  product_id: string;
+  buyer_email: string;
+  amount_total_cents: number;
+  payment_method_used: string;
+  installments_chosen: number;
+  status: string;
+  iugu_invoice_secure_url: string | null;
+  iugu_pix_qr_code_base64: string | null;
+  iugu_pix_qr_code_text: string | null;
+  iugu_bank_slip_barcode: string | null;
+  created_at: string;
+  paid_at: string | null;
+  products: {
+    name: string;
+    price_cents: number;
+  };
+}
 
 const PaymentConfirmation = () => {
   const { saleId } = useParams<{ saleId: string }>();
   const navigate = useNavigate();
+  const [sale, setSale] = useState<SaleData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedBarcode, setCopiedBarcode] = useState(false);
 
-  const { data: sale, isLoading, error } = useQuery({
-    queryKey: ['sale', saleId],
-    queryFn: async () => {
-      if (!saleId) {
-        throw new Error('Sale ID is required');
-      }
+  // Função para buscar dados da venda
+  const fetchSaleDetails = async () => {
+    if (!saleId) {
+      setError('ID da venda não fornecido');
+      setIsLoading(false);
+      return;
+    }
 
-      console.log('[DEBUG] Buscando venda com ID:', saleId);
+    console.log('[DEBUG] Buscando detalhes da venda:', saleId);
 
-      const { data, error } = await supabase
-        .from('sales')
-        .select(`
-          *,
-          products!inner(name, price_cents)
-        `)
-        .eq('id', saleId)
-        .maybeSingle();
+    try {
+      const { data, error } = await supabase.functions.invoke('get-sale-details', {
+        body: JSON.stringify({ sale_id: saleId }),
+      });
 
-      console.log('[DEBUG] Resultado da busca da venda:', { data, error });
+      console.log('[DEBUG] Resposta da função:', { data, error });
 
       if (error) {
-        console.error('[ERRO] Erro na busca da venda:', error);
-        throw new Error(`Database error: ${error.message}`);
+        console.error('[ERRO] Erro na função:', error);
+        setError('Erro ao carregar dados da venda');
+        return;
       }
 
-      if (!data) {
-        throw new Error('Sale not found');
+      if (data?.success && data?.sale) {
+        setSale(data.sale);
+        console.log('[DEBUG] Dados da venda carregados:', data.sale);
+      } else {
+        setError('Venda não encontrada');
       }
-
-      return data;
-    },
-    enabled: !!saleId,
-    retry: 3,
-    retryDelay: 1000,
-  });
-
-  useEffect(() => {
-    if (error) {
-      console.error('[DEBUG] Erro na query:', error);
-      toast({
-        title: "Problema ao carregar pedido",
-        description: "Estamos tendo dificuldades para carregar os detalhes do seu pedido. Tente recarregar a página.",
-        variant: "destructive",
-      });
+    } catch (err) {
+      console.error('[ERRO] Erro ao buscar venda:', err);
+      setError('Erro ao carregar dados da venda');
+    } finally {
+      setIsLoading(false);
     }
-  }, [error]);
+  };
+
+  // Carrega dados iniciais
+  useEffect(() => {
+    fetchSaleDetails();
+  }, [saleId]);
+
+  // Realtime para atualizações de status
+  useEffect(() => {
+    if (!saleId) return;
+
+    console.log('[DEBUG] Configurando listener realtime para venda:', saleId);
+
+    const channel = supabase
+      .channel('sale-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sales',
+          filter: `id=eq.${saleId}`,
+        },
+        (payload) => {
+          console.log('[DEBUG] Atualização realtime recebida:', payload);
+          const newSale = payload.new as any;
+          
+          if (newSale.status === 'paid' && sale?.status !== 'paid') {
+            toast({
+              title: "Pagamento Confirmado! 🎉",
+              description: "Seu pagamento foi processado com sucesso. Você receberá o acesso por email.",
+            });
+            
+            // Atualiza o estado local
+            setSale(prev => prev ? { ...prev, status: newSale.status, paid_at: newSale.paid_at } : null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[DEBUG] Removendo listener realtime');
+      supabase.removeChannel(channel);
+    };
+  }, [saleId, sale?.status]);
 
   const handleCopyPixCode = async () => {
     if (sale?.iugu_pix_qr_code_text) {
@@ -115,6 +172,32 @@ const PaymentConfirmation = () => {
     }).format(cents / 100);
   };
 
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return {
+          text: 'Pago',
+          className: 'bg-green-100 text-green-800',
+        };
+      case 'pending':
+        return {
+          text: 'Aguardando Pagamento',
+          className: 'bg-yellow-100 text-yellow-800',
+        };
+      case 'cancelled':
+        return {
+          text: 'Cancelado',
+          className: 'bg-red-100 text-red-800',
+        };
+      default:
+        return {
+          text: status,
+          className: 'bg-gray-100 text-gray-800',
+        };
+    }
+  };
+
+  // Estados de loading e erro
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -135,22 +218,13 @@ const PaymentConfirmation = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.863-.833-2.634 0L4.232 15.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Pedido não encontrado</h1>
-          <p className="text-gray-600 mb-6">
-            Não foi possível encontrar os detalhes do seu pedido.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Erro ao Carregar Pedido</h1>
+          <p className="text-gray-600 mb-6">{error || "Não foi possível carregar os detalhes do seu pedido."}</p>
           <div className="space-y-3">
-            <Button
-              onClick={() => window.location.reload()}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={() => window.location.reload()} className="w-full bg-blue-600 hover:bg-blue-700">
               Tentar Novamente
             </Button>
-            <Button
-              onClick={() => navigate('/')}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={() => navigate('/')} variant="outline" className="w-full">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar ao Início
             </Button>
@@ -160,43 +234,26 @@ const PaymentConfirmation = () => {
     );
   }
 
-  const product = sale.products as any;
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
+  const isCreditCard = sale.payment_method_used === 'credit_card';
+  const isPaid = sale.status === 'paid';
 
-  // **VALIDAÇÕES SIMPLIFICADAS PARA DEBUG**
-  const pixQrCodeBase64_VAL = sale?.iugu_pix_qr_code_base64;
-  const pixQrCodeText_VAL = sale?.iugu_pix_qr_code_text;
+  const statusDisplay = getStatusDisplay(sale.status);
 
-  console.log(">>> RAW DATA CHECK: pixQrCodeBase64_VAL:", pixQrCodeBase64_VAL);
-  console.log(">>> RAW DATA CHECK: typeof pixQrCodeBase64_VAL:", typeof pixQrCodeBase64_VAL);
-  console.log(">>> RAW DATA CHECK: pixQrCodeText_VAL:", pixQrCodeText_VAL);
-  console.log(">>> RAW DATA CHECK: typeof pixQrCodeText_VAL:", typeof pixQrCodeText_VAL);
-
-  const hasValidPixQrCodeBase64 = typeof pixQrCodeBase64_VAL === 'string' && pixQrCodeBase64_VAL.trim() !== '';
-  const hasValidPixQrCodeText = typeof pixQrCodeText_VAL === 'string' && pixQrCodeText_VAL.trim() !== '';
-
-  console.log(">>> SIMPLIFIED VALIDATION RESULT: hasValidPixQrCodeBase64:", hasValidPixQrCodeBase64);
-  console.log(">>> SIMPLIFIED VALIDATION RESULT: hasValidPixQrCodeText:", hasValidPixQrCodeText);
-
-  // Validação do código de barras do boleto (mantida igual)
-  const bankSlipBarcode = sale?.iugu_bank_slip_barcode;
-  const hasValidBankSlipBarcode = !!(
-    bankSlipBarcode && 
-    bankSlipBarcode !== 'NULO' && 
-    bankSlipBarcode !== 'null' &&
-    typeof bankSlipBarcode === 'string' && 
-    bankSlipBarcode.trim().length > 10
-  );
+  // Verifica se o código PIX é uma URL (ambiente de teste)
+  const isPixTestUrl = sale.iugu_pix_qr_code_text?.startsWith('http');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         <div className="text-center mb-8">
-          <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Pedido Recebido!</h1>
+          <CheckCircle className={`w-16 h-16 mx-auto mb-4 ${isPaid ? 'text-green-600' : 'text-yellow-600'}`} />
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {isPaid ? 'Pagamento Confirmado!' : 'Pedido Recebido!'}
+          </h1>
           <p className="text-lg text-gray-600">
-            Finalize seu pagamento para acessar o produto
+            {isPaid ? 'Obrigado pela sua compra! Você receberá o acesso por email.' : 'Finalize seu pagamento para acessar o produto'}
           </p>
         </div>
 
@@ -209,7 +266,7 @@ const PaymentConfirmation = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Produto:</span>
-                <span className="font-medium">{product?.name}</span>
+                <span className="font-medium">{sale.products.name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Valor:</span>
@@ -218,158 +275,199 @@ const PaymentConfirmation = () => {
               <div className="flex justify-between">
                 <span className="text-gray-600">Método de Pagamento:</span>
                 <span className="font-medium">
-                  {isPix ? 'PIX' : isBankSlip ? 'Boleto Bancário' : sale.payment_method_used}
+                  {isPix ? 'PIX' : isBankSlip ? 'Boleto Bancário' : isCreditCard ? 'Cartão de Crédito' : sale.payment_method_used}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Status:</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Aguardando Pagamento
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.className}`}>
+                  {statusDisplay.text}
                 </span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* PIX Payment */}
-        {isPix && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Pagar com PIX</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* QR Code PIX */}
-              <div className="text-center">
-                {hasValidPixQrCodeBase64 ? (
-                  <div>
-                    <img 
-                      src={`data:image/png;base64,${pixQrCodeBase64_VAL}`}
-                      alt="QR Code PIX"
-                      className="mx-auto mb-4 border rounded-lg"
-                      style={{ maxWidth: '200px', height: 'auto' }}
-                    />
-                    <p className="text-sm text-gray-600 mb-4">
-                      Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-gray-500">QR Code PIX em processamento...</p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Debug: Base64 válido: {hasValidPixQrCodeBase64 ? 'SIM' : 'NÃO'} | 
-                      Tipo: {typeof pixQrCodeBase64_VAL} | 
-                      Tamanho: {pixQrCodeBase64_VAL?.length || 0}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {/* Código PIX Copia e Cola */}
-              {hasValidPixQrCodeText ? (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">
-                    Código PIX (Copia e Cola):
-                  </label>
-                  <Textarea
-                    value={pixQrCodeText_VAL}
-                    readOnly
-                    className="text-xs font-mono bg-gray-50 resize-none"
-                    rows={4}
-                  />
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={handleCopyPixCode}
-                      variant="outline"
-                      className="w-full max-w-xs"
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      {copiedPix ? 'Copiado!' : 'Copiar Código PIX'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">Código PIX em processamento...</p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Debug: Texto válido: {hasValidPixQrCodeText ? 'SIM' : 'NÃO'} | 
-                    Tipo: {typeof pixQrCodeText_VAL} | 
-                    Tamanho: {pixQrCodeText_VAL?.length || 0} |
-                    Início: {pixQrCodeText_VAL?.substring(0, 10) || 'N/A'}
-                  </p>
-                </div>
-              )}
+        {/* Conteúdo específico por método de pagamento */}
+        {!isPaid && (
+          <>
+            {/* PIX Payment */}
+            {isPix && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Pagar com PIX</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* QR Code PIX */}
+                  {sale.iugu_pix_qr_code_base64 && (
+                    <div className="text-center">
+                      <img 
+                        src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
+                        alt="QR Code PIX"
+                        className="mx-auto mb-4 border rounded-lg"
+                        style={{ maxWidth: '200px', height: 'auto' }}
+                      />
+                      <p className="text-sm text-gray-600 mb-4">
+                        Escaneie o QR Code com o app do seu banco ou use o código PIX abaixo
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Código PIX ou Link de Teste */}
+                  {sale.iugu_pix_qr_code_text && (
+                    <div className="space-y-3">
+                      {isPixTestUrl ? (
+                        // Ambiente de teste - mostra link
+                        <div className="text-center">
+                          <a
+                            href={sale.iugu_pix_qr_code_text}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            <ExternalLink className="w-5 h-5 mr-2" />
+                            Clique para Pagar (Simulação PIX)
+                          </a>
+                          <p className="text-xs text-gray-500 mt-2">
+                            * Este é um ambiente de teste. Clique no link para simular o pagamento.
+                          </p>
+                        </div>
+                      ) : (
+                        // Ambiente real - mostra código copia e cola
+                        <>
+                          <label className="text-sm font-medium text-gray-700">
+                            Código PIX (Copia e Cola):
+                          </label>
+                          <Textarea
+                            value={sale.iugu_pix_qr_code_text}
+                            readOnly
+                            className="text-xs font-mono bg-gray-50 resize-none"
+                            rows={4}
+                          />
+                          <div className="flex justify-center">
+                            <Button
+                              onClick={handleCopyPixCode}
+                              variant="outline"
+                              className="w-full max-w-xs"
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              {copiedPix ? 'Copiado!' : 'Copiar Código PIX'}
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 mb-2">Instruções:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• O pagamento é processado instantaneamente</li>
-                  <li>• Após o pagamento, você receberá o acesso por email</li>
-                  <li>• O PIX expira em 24 horas</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-800 mb-2">Instruções:</h4>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• O pagamento é processado instantaneamente</li>
+                      <li>• Após o pagamento, você receberá o acesso por email</li>
+                      <li>• O PIX expira em 24 horas</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Bank Slip Payment */}
+            {isBankSlip && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Pagar com Boleto Bancário</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Botão para imprimir boleto */}
+                  {sale.iugu_invoice_secure_url && (
+                    <div className="text-center">
+                      <Button
+                        onClick={handleOpenBankSlip}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                        size="lg"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Imprimir Boleto
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Linha digitável do boleto */}
+                  {sale.iugu_bank_slip_barcode && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Linha Digitável:
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          value={sale.iugu_bank_slip_barcode}
+                          readOnly
+                          className="flex-1 text-sm font-mono bg-gray-50"
+                        />
+                        <Button
+                          onClick={handleCopyBarcode}
+                          variant="outline"
+                          size="sm"
+                          className="flex-shrink-0"
+                        >
+                          <Copy className="w-4 h-4 mr-1" />
+                          {copiedBarcode ? 'Copiado!' : 'Copiar'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 className="font-medium text-yellow-800 mb-2">Instruções:</h4>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      <li>• Pague o boleto em qualquer banco, lotérica ou app bancário</li>
+                      <li>• O prazo para pagamento é de 3 dias úteis</li>
+                      <li>• Após o pagamento, o processamento pode levar até 2 dias úteis</li>
+                      <li>• Você receberá o acesso por email após a confirmação</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Credit Card Payment */}
+            {isCreditCard && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Pagamento com Cartão de Crédito</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                    <CheckCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                      Pagamento em Processamento
+                    </h3>
+                    <p className="text-blue-700">
+                      Seu pagamento está sendo processado. Avisaremos por e-mail quando for aprovado.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
-        {/* Bank Slip Payment */}
-        {isBankSlip && (
+        {/* Mensagem de sucesso para pagamentos confirmados */}
+        {isPaid && (
           <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Pagar com Boleto Bancário</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Botão para visualizar boleto */}
-              {sale.iugu_invoice_secure_url && (
-                <div className="text-center">
-                  <Button
-                    onClick={handleOpenBankSlip}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-                    size="lg"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Visualizar e Imprimir Boleto
-                  </Button>
-                </div>
-              )}
-
-              {/* Linha digitável do boleto */}
-              {hasValidBankSlipBarcode ? (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Linha Digitável:
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={bankSlipBarcode}
-                      readOnly
-                      className="flex-1 p-2 border border-gray-300 rounded text-sm font-mono bg-gray-50"
-                    />
-                    <Button
-                      onClick={handleCopyBarcode}
-                      variant="outline"
-                      size="sm"
-                      className="flex-shrink-0"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      {copiedBarcode ? 'Copiado!' : 'Copiar'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">Linha digitável em processamento...</p>
-                </div>
-              )}
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">Instruções:</h4>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Pague o boleto em qualquer banco, lotérica ou app bancário</li>
-                  <li>• O prazo para pagamento é de 3 dias úteis</li>
-                  <li>• Após o pagamento, o processamento pode levar até 2 dias úteis</li>
-                  <li>• Você receberá o acesso por email após a confirmação</li>
-                </ul>
+            <CardContent className="pt-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-green-800 mb-2">
+                  Pagamento Confirmado! 🎉
+                </h3>
+                <p className="text-green-700 mb-4">
+                  Obrigado pela sua compra! Você receberá o acesso ao produto por email em instantes.
+                </p>
+                <p className="text-sm text-green-600">
+                  Verifique também sua caixa de spam caso não encontre o email.
+                </p>
               </div>
             </CardContent>
           </Card>
