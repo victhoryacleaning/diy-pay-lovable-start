@@ -36,22 +36,29 @@ interface Sale {
     name: string;
     price_cents: number;
     type: string;
-  };
+  } | null;
 }
 
 const ProducerSalesPage = () => {
   const { session } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Carregar vendas
   const fetchSales = async () => {
-    if (!session) return;
+    if (!session) {
+      console.log('[DEBUG] Sessão não encontrada');
+      return;
+    }
 
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('[DEBUG] Iniciando busca de vendas...');
       
       const { data, error } = await supabase.functions.invoke('get-producer-sales', {
         headers: {
@@ -59,49 +66,69 @@ const ProducerSalesPage = () => {
         },
       });
 
+      console.log('[DEBUG] Resposta da função:', data);
+
       if (error) {
-        console.error('Erro ao buscar vendas:', error);
+        console.error('[ERRO] Erro ao buscar vendas:', error);
+        setError('Erro ao carregar vendas');
         toast.error('Erro ao carregar vendas');
         return;
       }
 
       if (data?.success) {
-        setSales(data.sales);
-        console.log('Vendas carregadas:', data.sales);
+        const salesData = data.sales || [];
+        console.log('[DEBUG] Vendas carregadas:', salesData);
+        setSales(salesData);
       } else {
-        toast.error(data?.error || 'Erro ao carregar vendas');
+        const errorMessage = data?.error || 'Erro ao carregar vendas';
+        console.error('[ERRO] Erro na resposta:', errorMessage);
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
-      console.error('Erro na requisição:', error);
-      toast.error('Erro ao carregar vendas');
+      console.error('[ERRO] Erro na requisição:', error);
+      const errorMessage = 'Erro inesperado ao carregar vendas';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('[DEBUG] useEffect executado, session:', !!session);
     fetchSales();
   }, [session]);
 
   // Funções utilitárias
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(cents / 100);
+    try {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(cents / 100);
+    } catch {
+      return `R$ ${(cents / 100).toFixed(2)}`;
+    }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
   };
 
   const getStatusBadge = (status: string) => {
+    if (!status) return <Badge variant="secondary">Desconhecido</Badge>;
+    
     switch (status.toLowerCase()) {
       case 'paid':
         return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
@@ -119,6 +146,8 @@ const ProducerSalesPage = () => {
   };
 
   const getPaymentMethodLabel = (method: string) => {
+    if (!method) return 'Não informado';
+    
     switch (method.toLowerCase()) {
       case 'credit_card':
         return 'Cartão de Crédito';
@@ -131,25 +160,28 @@ const ProducerSalesPage = () => {
     }
   };
 
-  // Filtrar vendas
+  // Filtrar vendas com verificações de segurança
   const filteredSales = sales.filter(sale => {
-    const matchesSearch = 
-      sale.buyer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sale.products.name.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!sale) return false;
     
-    const matchesStatus = statusFilter === 'all' || sale.status.toLowerCase() === statusFilter;
+    const productName = sale.products?.name || '';
+    const buyerEmail = sale.buyer_email || '';
+    
+    const matchesSearch = 
+      buyerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      productName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const saleStatus = sale.status ? sale.status.toLowerCase() : '';
+    const matchesStatus = statusFilter === 'all' || saleStatus === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
-  // Estatísticas
+  // Estatísticas com verificações de segurança
   const totalSales = sales.length;
-  const totalRevenue = sales
-    .filter(sale => sale.status === 'paid')
-    .reduce((sum, sale) => sum + sale.amount_total_cents, 0);
-  const totalEarnings = sales
-    .filter(sale => sale.status === 'paid')
-    .reduce((sum, sale) => sum + sale.producer_share_cents, 0);
+  const paidSales = sales.filter(sale => sale?.status === 'paid');
+  const totalRevenue = paidSales.reduce((sum, sale) => sum + (sale?.amount_total_cents || 0), 0);
+  const totalEarnings = paidSales.reduce((sum, sale) => sum + (sale?.producer_share_cents || 0), 0);
 
   return (
     <SidebarProvider>
@@ -270,6 +302,17 @@ const ProducerSalesPage = () => {
                         </div>
                       ))}
                     </div>
+                  ) : error ? (
+                    <div className="text-center py-8 text-red-500">
+                      <p>{error}</p>
+                      <Button 
+                        onClick={fetchSales} 
+                        variant="outline" 
+                        className="mt-4"
+                      >
+                        Tentar novamente
+                      </Button>
+                    </div>
                   ) : filteredSales.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <p>Nenhuma venda encontrada</p>
@@ -296,18 +339,20 @@ const ProducerSalesPage = () => {
                               </TableCell>
                               <TableCell>
                                 <div>
-                                  <div className="font-medium">{sale.products.name}</div>
+                                  <div className="font-medium">
+                                    {sale.products?.name || 'Produto não encontrado'}
+                                  </div>
                                   <div className="text-sm text-muted-foreground">
-                                    {formatCurrency(sale.products.price_cents)}
+                                    {sale.products?.price_cents ? formatCurrency(sale.products.price_cents) : 'N/A'}
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>{sale.buyer_email}</TableCell>
+                              <TableCell>{sale.buyer_email || 'N/A'}</TableCell>
                               <TableCell>{getStatusBadge(sale.status)}</TableCell>
                               <TableCell>
                                 <div className="text-sm">
                                   <div>{getPaymentMethodLabel(sale.payment_method_used)}</div>
-                                  {sale.installments_chosen > 1 && (
+                                  {sale.installments_chosen && sale.installments_chosen > 1 && (
                                     <div className="text-muted-foreground">
                                       {sale.installments_chosen}x
                                     </div>
@@ -315,7 +360,7 @@ const ProducerSalesPage = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-medium">
-                                {formatCurrency(sale.producer_share_cents)}
+                                {formatCurrency(sale.producer_share_cents || 0)}
                               </TableCell>
                             </TableRow>
                           ))}

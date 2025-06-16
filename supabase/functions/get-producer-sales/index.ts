@@ -108,6 +108,7 @@ serve(async (req) => {
     }
 
     console.log('[DEBUG] Vendas encontradas:', sales?.length || 0);
+    console.log('[DEBUG] Dados das vendas:', JSON.stringify(sales, null, 2));
 
     // Retornar as vendas
     return new Response(
