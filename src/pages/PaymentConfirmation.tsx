@@ -50,7 +50,7 @@ const PaymentConfirmation = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('get-sale-details', {
-        body: JSON.stringify({ sale_id: saleId }),
+        body: JSON.stringify({ sale_id: saleId }), // CORREÇÃO: Agora enviando o sale_id no corpo da requisição
       });
 
       console.log('[DEBUG] Resposta da função:', { data, error });
