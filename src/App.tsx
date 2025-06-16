@@ -14,6 +14,7 @@ import ProducerDashboard from "./pages/ProducerDashboard";
 import ProductsPage from "./pages/ProductsPage";
 import CreateProductPage from "./pages/CreateProductPage";
 import EditProductPage from "./pages/EditProductPage";
+import ProducerSalesPage from "./pages/ProducerSalesPage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import NotFound from "./pages/NotFound";
@@ -70,6 +71,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="producer">
                   <EditProductPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/sales" 
+              element={
+                <ProtectedRoute requiredRole="producer">
+                  <ProducerSalesPage />
                 </ProtectedRoute>
               } 
             />
