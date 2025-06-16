@@ -359,6 +359,15 @@ const PaymentConfirmation = () => {
                     </div>
                   )}
 
+                  {/* Mensagem quando não há código PIX disponível */}
+                  {!sale.iugu_pix_qr_code_text && (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-500">
+                        Código Copia e Cola indisponível no ambiente de teste.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-medium text-blue-800 mb-2">Instruções:</h4>
                     <ul className="text-sm text-blue-700 space-y-1">
