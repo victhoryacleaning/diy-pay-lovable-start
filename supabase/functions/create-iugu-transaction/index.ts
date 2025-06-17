@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -17,6 +16,7 @@ interface TransactionPayload {
   buyer_name?: string;
   buyer_cpf_cnpj?: string;
   notification_url_base?: string;
+  donation_amount_cents?: number; // Novo campo para doações
 }
 
 // Função para atualizar o saldo do produtor
@@ -259,6 +259,7 @@ Deno.serve(async (req) => {
 
     console.log('[DEBUG] *** PROCESSANDO TRANSAÇÃO PARA PRODUTO ***:', payload.product_id);
     console.log('[DEBUG] *** BUYER_PROFILE_ID RECEBIDO NO PAYLOAD ***:', payload.buyer_profile_id);
+    console.log('[DEBUG] *** DONATION_AMOUNT_CENTS RECEBIDO ***:', payload.donation_amount_cents);
 
     // Validate required fields
     if (!payload.product_id || !payload.buyer_email || !payload.payment_method_selected) {
@@ -333,8 +334,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Calculate fees
-    const amountTotalCents = product.price_cents;
+    // Calculate fees - usar valor da doação se for produto de doação
+    let amountTotalCents = product.price_cents;
+    if (product.product_type === 'donation' && payload.donation_amount_cents) {
+      amountTotalCents = payload.donation_amount_cents;
+      console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', amountTotalCents);
+    }
+
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
     const producerShareCents = amountTotalCents - platformFeeCents;
 
@@ -342,7 +348,8 @@ Deno.serve(async (req) => {
       amountTotalCents,
       platformFeeCents,
       producerShareCents,
-      platformFeePercentage
+      platformFeePercentage,
+      isDonation: product.product_type === 'donation'
     });
 
     // Validate installments
@@ -375,8 +382,8 @@ Deno.serve(async (req) => {
       const saleToInsert = {
         product_id: payload.product_id,
         buyer_email: payload.buyer_email,
-        buyer_profile_id: payload.buyer_profile_id || null, // EXPLICITAMENTE MAPEAR
-        amount_total_cents: amountTotalCents,
+        buyer_profile_id: payload.buyer_profile_id || null,
+        amount_total_cents: amountTotalCents, // Usando valor calculado (pode ser doação)
         platform_fee_cents: platformFeeCents,
         producer_share_cents: producerShareCents,
         payment_method_used: payload.payment_method_selected,
@@ -434,11 +441,11 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
     console.log('[DEBUG] Header de autenticação criado (primeiros 30 chars):', authHeader.substring(0, 30) + '...');
 
-    // Prepare items for Iugu
+    // Prepare items for Iugu - usar valor dinâmico para doações
     const items = [{
       description: product.name,
       quantity: 1,
-      price_cents: product.price_cents
+      price_cents: amountTotalCents // Usar o valor calculado (produto normal ou doação)
     }];
     console.log('[DEBUG] *** ITEMS PARA IUGU ***:', JSON.stringify(items, null, 2));
 
@@ -540,7 +547,7 @@ Deno.serve(async (req) => {
       const invoicePayload: any = {
         email: payload.buyer_email,
         due_date: dueDate.toISOString().split('T')[0], // YYYY-MM-DD format
-        items: items,
+        items: items, // Usando items com valor correto (produto normal ou doação)
         payable_with: payload.payment_method_selected,
         notification_url: webhookUrl,
         ...(payload.iugu_customer_id && { customer_id: payload.iugu_customer_id })

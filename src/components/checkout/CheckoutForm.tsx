@@ -9,6 +9,7 @@ import { PersonalInfoSection } from "./PersonalInfoSection";
 import { EmailSection } from "./EmailSection";
 import { PaymentMethodTabs } from "./PaymentMethodTabs";
 import { CheckoutButton } from "./CheckoutButton";
+import { DonationValueSection } from "./DonationValueSection";
 import { toast } from "@/hooks/use-toast";
 
 interface Product {
@@ -16,6 +17,7 @@ interface Product {
   name: string;
   price_cents: number;
   max_installments_allowed: number;
+  product_type?: string;
 }
 
 interface CheckoutFormProps {
@@ -36,6 +38,7 @@ const checkoutSchema = z.object({
   cardCvv: z.string().optional(),
   installments: z.number().min(1).default(1),
   saveData: z.boolean().default(false),
+  donationAmount: z.string().optional(),
 }).refine((data) => data.email === data.confirmEmail, {
   message: "Os emails devem ser iguais",
   path: ["confirmEmail"],
@@ -46,6 +49,7 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 export const CheckoutForm = ({ product }: CheckoutFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
+  const isDonation = product.product_type === 'donation';
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -53,10 +57,23 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       paymentMethod: "credit_card",
       installments: 1,
       saveData: false,
+      donationAmount: isDonation ? "" : undefined,
     },
   });
 
   const validateRequiredFields = (data: CheckoutFormData) => {
+    // Validação específica para doações
+    if (isDonation) {
+      if (!data.donationAmount || data.donationAmount.trim() === "" || parseFloat(data.donationAmount.replace(',', '.')) <= 0) {
+        toast({
+          title: "Valor obrigatório",
+          description: "Por favor, informe o valor da doação.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
     if (data.paymentMethod === "bank_slip") {
       if (!data.fullName || !data.cpfCnpj) {
         toast({
@@ -140,20 +157,31 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     console.log('[DEBUG] Criando transação com:', {
       iuguCustomerId,
       buyerProfileId,
-      hasCardToken: !!cardToken
+      hasCardToken: !!cardToken,
+      isDonation,
+      donationAmount: data.donationAmount
     });
+
+    // Calcular valor para doações
+    let amountCents = product.price_cents;
+    if (isDonation && data.donationAmount) {
+      const donationValue = parseFloat(data.donationAmount.replace(',', '.'));
+      amountCents = Math.round(donationValue * 100);
+    }
 
     const transactionPayload = {
       product_id: product.id,
       buyer_email: data.email,
       iugu_customer_id: iuguCustomerId,
-      buyer_profile_id: buyerProfileId, // Make sure this is included
+      buyer_profile_id: buyerProfileId,
       payment_method_selected: data.paymentMethod,
       card_token: cardToken,
       installments: data.installments,
       buyer_name: data.fullName,
       buyer_cpf_cnpj: data.cpfCnpj,
       notification_url_base: `${window.location.origin}/api/webhook/iugu`,
+      // Enviar valor da doação se for produto de doação
+      ...(isDonation && { donation_amount_cents: amountCents })
     };
 
     console.log('[DEBUG] Payload para create-iugu-transaction:', transactionPayload);
@@ -224,6 +252,19 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     setIsLoading(loading);
   };
 
+  // Calcular valor a ser exibido no resumo
+  const getDisplayAmount = () => {
+    if (isDonation) {
+      const donationAmount = form.watch('donationAmount');
+      if (donationAmount && donationAmount.trim() !== '') {
+        const value = parseFloat(donationAmount.replace(',', '.'));
+        return isNaN(value) ? 0 : Math.round(value * 100);
+      }
+      return 0;
+    }
+    return product.price_cents;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -234,6 +275,11 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <PersonalInfoSection form={form} />
             <EmailSection form={form} />
+            
+            {/* Seção específica para doações */}
+            {isDonation && (
+              <DonationValueSection form={form} />
+            )}
             
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-600">
@@ -249,7 +295,7 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
               setPaymentMethod={setPaymentMethod}
               form={form}
               maxInstallments={product.max_installments_allowed}
-              productPriceCents={product.price_cents}
+              productPriceCents={getDisplayAmount()}
             />
 
             <CheckoutButton 
