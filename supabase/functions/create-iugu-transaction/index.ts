@@ -16,7 +16,7 @@ interface TransactionPayload {
   buyer_name?: string;
   buyer_cpf_cnpj?: string;
   notification_url_base?: string;
-  donation_amount_cents?: number; // Novo campo para doações
+  donation_amount_cents?: number; // Campo para doações
 }
 
 // Função para atualizar o saldo do produtor
@@ -336,23 +336,26 @@ Deno.serve(async (req) => {
 
     // *** CORREÇÃO CRÍTICA: USAR VALOR DINÂMICO PARA DOAÇÕES ***
     let amountTotalCents = product.price_cents;
-    if (product.product_type === 'donation' && payload.donation_amount_cents) {
-      amountTotalCents = payload.donation_amount_cents;
-      console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', amountTotalCents);
-    } else if (product.product_type === 'donation' && !payload.donation_amount_cents) {
-      console.error('[ERRO] *** PRODUTO DE DOAÇÃO SEM VALOR ESPECIFICADO ***');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: true,
-          message: 'Valor da doação é obrigatório',
-          functionName: 'create-iugu-transaction'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    if (product.product_type === 'donation') {
+      if (payload.donation_amount_cents) {
+        // *** ROBUSTEZ: GARANTIR QUE É UM NÚMERO ***
+        amountTotalCents = Number(payload.donation_amount_cents);
+        console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', amountTotalCents);
+      } else {
+        console.error('[ERRO] *** PRODUTO DE DOAÇÃO SEM VALOR ESPECIFICADO ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Valor da doação é obrigatório',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     }
 
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);

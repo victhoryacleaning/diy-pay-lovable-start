@@ -99,6 +99,14 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     return true;
   };
 
+  // Função para converter valor da doação para centavos
+  const convertDonationToCents = (donationValue: string): number => {
+    // Remove formatação e converte para número
+    const cleanValue = donationValue.replace(/[^\d,]/g, '').replace(',', '.');
+    const numberValue = parseFloat(cleanValue);
+    return Math.round(numberValue * 100);
+  };
+
   const createIuguCustomer = async (data: CheckoutFormData) => {
     console.log('[DEBUG] Criando cliente Iugu...');
     const response = await fetch('/api/functions/v1/get-or-create-iugu-customer', {
@@ -162,14 +170,8 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       donationAmount: data.donationAmount
     });
 
-    // Calcular valor para doações
-    let amountCents = product.price_cents;
-    if (isDonation && data.donationAmount) {
-      const donationValue = parseFloat(data.donationAmount.replace(',', '.'));
-      amountCents = Math.round(donationValue * 100);
-    }
-
-    const transactionPayload = {
+    // *** CORREÇÃO: ENVIAR donation_amount_cents CORRETO ***
+    const transactionPayload: any = {
       product_id: product.id,
       buyer_email: data.email,
       iugu_customer_id: iuguCustomerId,
@@ -180,9 +182,17 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       buyer_name: data.fullName,
       buyer_cpf_cnpj: data.cpfCnpj,
       notification_url_base: `${window.location.origin}/api/webhook/iugu`,
-      // Enviar valor da doação se for produto de doação
-      ...(isDonation && { donation_amount_cents: amountCents })
     };
+
+    // Se for doação, converter e enviar valor em centavos
+    if (isDonation && data.donationAmount) {
+      const donationCents = convertDonationToCents(data.donationAmount);
+      transactionPayload.donation_amount_cents = donationCents;
+      console.log('[DEBUG] *** VALOR DA DOAÇÃO CONVERTIDO ***:', {
+        original: data.donationAmount,
+        cents: donationCents
+      });
+    }
 
     console.log('[DEBUG] Payload para create-iugu-transaction:', transactionPayload);
 
