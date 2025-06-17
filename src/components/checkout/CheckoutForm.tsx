@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -211,6 +212,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       notification_url_base: `${window.location.origin}/api/webhook/iugu`,
     };
 
+    // *** CORREÇÃO CRÍTICA: INCLUIR donation_amount_cents NO PAYLOAD ***
     if (isDonation && data.donationAmount) {
       const donationCents = convertDonationToCents(data.donationAmount);
       transactionPayload.donation_amount_cents = donationCents;
