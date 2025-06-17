@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -72,6 +71,11 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   // Populate form with existing product data
   useEffect(() => {
     if (product && mode === 'edit') {
+      // Safely cast the allowed_payment_methods from Json to string[]
+      const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
+        ? product.allowed_payment_methods as string[]
+        : ['credit_card', 'pix', 'bank_slip'];
+
       setFormData({
         name: product.name,
         description: product.description || '',
@@ -82,7 +86,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         is_active: product.is_active,
         product_type: product.product_type || 'single_payment',
         subscription_frequency: product.subscription_frequency || '',
-        allowed_payment_methods: product.allowed_payment_methods || ['credit_card', 'pix', 'bank_slip']
+        allowed_payment_methods: allowedPaymentMethods
       });
     }
   }, [product, mode]);
