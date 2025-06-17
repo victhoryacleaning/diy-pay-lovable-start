@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +12,7 @@ import { CheckoutButton } from "./CheckoutButton";
 import { DonationValueSection } from "./DonationValueSection";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 interface Product {
   id: string;
@@ -20,7 +22,7 @@ interface Product {
   product_type?: string;
   donation_title?: string;
   donation_description?: string;
-  allowed_payment_methods: string[];
+  allowed_payment_methods: Json;
 }
 
 interface CheckoutFormProps {
@@ -53,6 +55,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
   const isDonation = product.product_type === 'donation';
+
+  // Convert Json to string array with fallback
+  const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
+    ? product.allowed_payment_methods as string[]
+    : ["credit_card", "pix", "bank_slip"];
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -228,7 +235,9 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               form={form}
               maxInstallments={product.max_installments_allowed}
               productPriceCents={getDisplayAmount()}
-              product={product}
+              product={{
+                allowed_payment_methods: allowedPaymentMethods
+              }}
             />
 
             <CheckoutButton isLoading={isLoading} />
