@@ -206,48 +206,88 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Finalizar Compra</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <PersonalInfoSection form={form} />
-            <EmailSection form={form} />
-            
-            {isDonation && (
-              <DonationValueSection 
-                form={form}
-                title={product.donation_title}
-                description={product.donation_description}
-              />
-            )}
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-600">💸 Tem um cupom de desconto?</label>
-              <p className="text-sm text-gray-500">Funcionalidade em breve!</p>
-            </div>
+    <div className="max-w-2xl mx-auto">
+      <Card className="border-gray-200 shadow-lg bg-white">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold text-gray-900 text-center">
+            Finalizar Compra
+          </CardTitle>
+          <p className="text-gray-600 text-center text-sm">
+            Preencha os dados abaixo para concluir sua compra
+          </p>
+        </CardHeader>
+        <CardContent className="px-8 pb-8">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* Personal Info Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <PersonalInfoSection form={form} />
+              </div>
 
-            <PaymentMethodTabs
-              paymentMethod={paymentMethod}
-              setPaymentMethod={setPaymentMethod}
-              form={form}
-              maxInstallments={product.max_installments_allowed}
-              productPriceCents={getDisplayAmount()}
-              product={{
-                allowed_payment_methods: allowedPaymentMethods
-              }}
-            />
+              {/* Email Section */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+                <EmailSection form={form} />
+              </div>
+              
+              {/* Donation Section */}
+              {isDonation && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <DonationValueSection 
+                    form={form}
+                    title={product.donation_title}
+                    description={product.donation_description}
+                  />
+                </div>
+              )}
+              
+              {/* Discount Coupon Teaser */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-600 text-lg">🎟️</span>
+                  <div>
+                    <label className="text-sm font-semibold text-blue-900">Tem um cupom de desconto?</label>
+                    <p className="text-xs text-blue-700">Funcionalidade em breve!</p>
+                  </div>
+                </div>
+              </div>
 
-            <CheckoutButton isLoading={isLoading} />
+              {/* Payment Methods Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <PaymentMethodTabs
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  form={form}
+                  maxInstallments={product.max_installments_allowed}
+                  productPriceCents={getDisplayAmount()}
+                  product={{
+                    allowed_payment_methods: allowedPaymentMethods
+                  }}
+                />
+              </div>
 
-            <div className="text-center pt-4 border-t">
-              <p className="text-sm text-gray-500">🔒 Pagamento processado por DIYPay</p>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+              {/* Checkout Button */}
+              <div className="pt-4">
+                <CheckoutButton isLoading={isLoading} />
+              </div>
+
+              {/* Footer */}
+              <div className="text-center pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-5 h-5 bg-green-600 rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">🔒</span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Pagamento 100% seguro processado por <span className="font-bold text-green-600">DIYPay</span>
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Seus dados estão protegidos com criptografia SSL
+                </p>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
