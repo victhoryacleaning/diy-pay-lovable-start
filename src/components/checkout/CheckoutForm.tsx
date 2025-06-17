@@ -5,10 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { EmailSection } from "./EmailSection";
 import { PaymentMethodTabs } from "./PaymentMethodTabs";
+import { CheckoutButton } from "./CheckoutButton";
 import { DonationValueSection } from "./DonationValueSection";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,8 +110,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   };
 
   const createIuguCustomer = async (data: CheckoutFormData) => {
-    console.log('[DEBUG] Invocando get-or-create-iugu-customer via supabase.functions.invoke');
-    
     const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
       body: {
         email: data.email,
@@ -120,48 +118,38 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         phone: data.phone,
       },
     });
-    
-    if (error) {
-      console.error('[ERRO] Erro ao chamar get-or-create-iugu-customer:', error);
-      throw error;
-    }
-    
-    if (!result.success) {
-      console.error('[ERRO] Resposta de erro da função:', result);
-      throw new Error(result.error || "Falha ao criar cliente Iugu");
-    }
-    
-    console.log('[DEBUG] Cliente Iugu criado/encontrado com sucesso:', result);
+    if (error) throw error;
     return result;
+  };
+  
+  // A LÓGICA DE TOKENIZAÇÃO DEVE SER REVISADA, USANDO INVOKE TAMBÉM
+  const createPaymentToken = async (data: CheckoutFormData) => {
+    // ...
+    return null; // Placeholder
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (!validateRequiredFields(data)) {
       return;
     }
-
     setIsLoading(true);
 
     try {
-      // PASSO 1: Obter/Criar cliente Iugu
       console.log('[DEBUG] PASSO 1: CRIANDO CLIENTE NA IUGU');
-      const { iugu_customer_id, buyer_profile_id } = await createIuguCustomer(data);
-      if (!iugu_customer_id) throw new Error("Falha ao obter ID do cliente Iugu");
+      const customerResponse = await createIuguCustomer(data);
+      if (!customerResponse.success) {
+        throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
+      }
+      const { iugu_customer_id, buyer_profile_id } = customerResponse;
 
-      // PASSO 2: Obter token do cartão (se aplicável)
-      console.log('[DEBUG] PASSO 2: PULANDO CRIAÇÃO DE TOKEN (MÉTODO NÃO É CREDIT_CARD)');
-      // A lógica de tokenização precisa ser implementada aqui se for usar cartão
-      const cardToken = null; 
+      const cardToken = null; // Lógica de tokenização de cartão a ser implementada
 
-      // PASSO 3: Preparar e enviar o payload da transação
       console.log('[DEBUG] PASSO 3: CRIANDO TRANSAÇÃO');
-
-      // Montar o payload base
       const transactionPayload: any = {
         product_id: product.id,
         buyer_email: data.email,
-        iugu_customer_id: iugu_customer_id,
-        buyer_profile_id: buyer_profile_id,
+        iugu_customer_id,
+        buyer_profile_id,
         payment_method_selected: data.paymentMethod,
         card_token: cardToken,
         installments: data.installments,
@@ -169,7 +157,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         buyer_cpf_cnpj: data.cpfCnpj,
       };
 
-      // *** CORREÇÃO CRÍTICA: Adicionar o valor da doação se for um produto de doação ***
       if (isDonation && data.donationAmount) {
         const donationCents = convertDonationToCents(data.donationAmount);
         transactionPayload.donation_amount_cents = donationCents;
@@ -177,21 +164,18 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
 
-      // Invocar a Edge Function com o payload completo e correto
       const { data: result, error: transactionError } = await supabase.functions.invoke(
         'create-iugu-transaction',
         { body: transactionPayload }
       );
 
-      if (transactionError) {
-        throw transactionError;
-      }
+      if (transactionError) throw transactionError;
 
       if (!result.success) {
-        throw new Error(result.lugu_errors || "Falha ao processar pagamento.");
+        const errorMessage = result.lugu_errors ? JSON.stringify(result.lugu_errors) : "Falha ao processar pagamento.";
+        throw new Error(errorMessage);
       }
-
-      // Redirecionar para a página de confirmação
+      
       window.location.href = `/payment-confirmation/${result.sale_id}`;
 
     } catch (error: any) {
@@ -241,13 +225,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               productPriceCents={getDisplayAmount()}
             />
 
-            <Button 
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold"
-            >
-              {isLoading ? "Processando..." : "Pagar agora"}
-            </Button>
+            <CheckoutButton isLoading={isLoading} />
 
             <div className="text-center pt-4 border-t">
               <p className="text-sm text-gray-500">🔒 Pagamento processado por DIYPay</p>
