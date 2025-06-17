@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +18,8 @@ interface Product {
   price_cents: number;
   max_installments_allowed: number;
   product_type?: string;
+  donation_title?: string;
+  donation_description?: string;
 }
 
 interface CheckoutFormProps {
@@ -64,7 +65,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   });
 
   const donationAmount = form.watch('donationAmount');
-  if (isDonation && onDonationAmountChange && donationAmount !== undefined) {
+  if (isDonation && donationAmount !== undefined) {
     onDonationAmountChange(donationAmount);
   }
 
@@ -208,7 +209,13 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
             <PersonalInfoSection form={form} />
             <EmailSection form={form} />
             
-            {isDonation && <DonationValueSection form={form} />}
+            {isDonation && (
+              <DonationValueSection 
+                form={form}
+                title={product.donation_title}
+                description={product.donation_description}
+              />
+            )}
             
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-600">💸 Tem um cupom de desconto?</label>

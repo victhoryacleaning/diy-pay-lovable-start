@@ -60,20 +60,38 @@ const Checkout = () => {
     return null;
   }
 
+  // Aplicar cor de fundo personalizada se definida
+  const backgroundStyle = product.checkout_background_color 
+    ? { backgroundColor: product.checkout_background_color }
+    : {};
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8" style={backgroundStyle}>
       <div className="max-w-4xl mx-auto px-4">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Product Info Sidebar */}
-          <div className="lg:col-span-1">
-            <ProductInfo 
-              product={product} 
-              donationAmount={donationAmount}
+        {/* Imagem personalizada do checkout */}
+        {product.checkout_image_url && (
+          <div className="mb-8 text-center">
+            <img 
+              src={product.checkout_image_url} 
+              alt={product.name}
+              className="max-w-full h-auto mx-auto rounded-lg shadow-md max-h-64 object-cover"
             />
           </div>
+        )}
 
-          {/* Checkout Form */}
-          <div className="lg:col-span-2">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Product Info Sidebar - só exibe se show_order_summary for true */}
+          {product.show_order_summary && (
+            <div className="lg:col-span-1">
+              <ProductInfo 
+                product={product} 
+                donationAmount={donationAmount}
+              />
+            </div>
+          )}
+
+          {/* Checkout Form - ajustar grid dependendo do show_order_summary */}
+          <div className={product.show_order_summary ? "lg:col-span-2" : "lg:col-span-3"}>
             <CheckoutForm 
               product={product}
               onDonationAmountChange={setDonationAmount}

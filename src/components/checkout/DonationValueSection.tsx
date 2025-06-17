@@ -5,9 +5,11 @@ import { UseFormReturn } from "react-hook-form";
 
 interface DonationValueSectionProps {
   form: UseFormReturn<any>;
+  title?: string;
+  description?: string;
 }
 
-export const DonationValueSection = ({ form }: DonationValueSectionProps) => {
+export const DonationValueSection = ({ form, title, description }: DonationValueSectionProps) => {
   const formatCurrency = (value: string) => {
     // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '');
@@ -29,9 +31,11 @@ export const DonationValueSection = ({ form }: DonationValueSectionProps) => {
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-blue-900">💝 Defina o Valor da sua Doação</h3>
+        <h3 className="text-lg font-semibold text-blue-900">
+          💝 {title || "Defina o Valor da sua Doação"}
+        </h3>
         <p className="text-sm text-blue-700 mt-1">
-          Você decide quanto quer contribuir para apoiar este projeto
+          {description || "Você decide quanto quer contribuir para apoiar este projeto"}
         </p>
       </div>
       

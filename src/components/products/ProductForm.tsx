@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import ProductTypeSection from './ProductTypeSection';
 import PaymentMethodsSection from './PaymentMethodsSection';
+import CheckoutCustomizationSection from './CheckoutCustomizationSection';
 
 interface ProductFormData {
   name: string;
@@ -26,6 +27,11 @@ interface ProductFormData {
   product_type: string;
   subscription_frequency: string;
   allowed_payment_methods: string[];
+  show_order_summary: boolean;
+  donation_title: string;
+  donation_description: string;
+  checkout_image_url: string;
+  checkout_background_color: string;
 }
 
 interface ProductFormProps {
@@ -47,7 +53,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     is_active: true,
     product_type: 'single_payment',
     subscription_frequency: '',
-    allowed_payment_methods: ['credit_card', 'pix', 'bank_slip']
+    allowed_payment_methods: ['credit_card', 'pix', 'bank_slip'],
+    show_order_summary: true,
+    donation_title: '',
+    donation_description: '',
+    checkout_image_url: '',
+    checkout_background_color: '#F3F4F6'
   });
 
   // Fetch product data for edit mode
@@ -86,7 +97,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         is_active: product.is_active,
         product_type: product.product_type || 'single_payment',
         subscription_frequency: product.subscription_frequency || '',
-        allowed_payment_methods: allowedPaymentMethods
+        allowed_payment_methods: allowedPaymentMethods,
+        show_order_summary: product.show_order_summary ?? true,
+        donation_title: product.donation_title || '',
+        donation_description: product.donation_description || '',
+        checkout_image_url: product.checkout_image_url || '',
+        checkout_background_color: product.checkout_background_color || '#F3F4F6'
       });
     }
   }, [product, mode]);
@@ -121,7 +137,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         producer_id: user?.id,
         product_type: data.product_type,
         subscription_frequency: data.product_type === 'subscription' ? data.subscription_frequency : null,
-        allowed_payment_methods: data.allowed_payment_methods
+        allowed_payment_methods: data.allowed_payment_methods,
+        show_order_summary: data.show_order_summary,
+        donation_title: data.donation_title || null,
+        donation_description: data.donation_description || null,
+        checkout_image_url: data.checkout_image_url || null,
+        checkout_background_color: data.checkout_background_color || null
       };
 
       if (mode === 'create') {
@@ -342,6 +363,17 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
             <PaymentMethodsSection
               allowedPaymentMethods={formData.allowed_payment_methods}
               onPaymentMethodsChange={(methods) => handleInputChange('allowed_payment_methods', methods)}
+            />
+
+            <CheckoutCustomizationSection
+              form={{ 
+                control: { 
+                  // Mock form control for the new section
+                }, 
+                getValues: () => formData,
+                setValue: (field: string, value: any) => handleInputChange(field as keyof ProductFormData, value)
+              } as any}
+              productType={formData.product_type}
             />
 
             <div className="flex items-center space-x-2">

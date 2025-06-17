@@ -56,9 +56,13 @@ export type Database = {
       products: {
         Row: {
           allowed_payment_methods: Json
+          checkout_background_color: string | null
+          checkout_image_url: string | null
           checkout_link_slug: string | null
           created_at: string
           description: string | null
+          donation_description: string | null
+          donation_title: string | null
           file_url_or_access_info: string | null
           id: string
           is_active: boolean | null
@@ -67,15 +71,20 @@ export type Database = {
           price_cents: number
           producer_id: string
           product_type: string
+          show_order_summary: boolean
           subscription_frequency: string | null
           type: string | null
           updated_at: string
         }
         Insert: {
           allowed_payment_methods?: Json
+          checkout_background_color?: string | null
+          checkout_image_url?: string | null
           checkout_link_slug?: string | null
           created_at?: string
           description?: string | null
+          donation_description?: string | null
+          donation_title?: string | null
           file_url_or_access_info?: string | null
           id?: string
           is_active?: boolean | null
@@ -84,15 +93,20 @@ export type Database = {
           price_cents: number
           producer_id: string
           product_type?: string
+          show_order_summary?: boolean
           subscription_frequency?: string | null
           type?: string | null
           updated_at?: string
         }
         Update: {
           allowed_payment_methods?: Json
+          checkout_background_color?: string | null
+          checkout_image_url?: string | null
           checkout_link_slug?: string | null
           created_at?: string
           description?: string | null
+          donation_description?: string | null
+          donation_title?: string | null
           file_url_or_access_info?: string | null
           id?: string
           is_active?: boolean | null
@@ -101,6 +115,7 @@ export type Database = {
           price_cents?: number
           producer_id?: string
           product_type?: string
+          show_order_summary?: boolean
           subscription_frequency?: string | null
           type?: string | null
           updated_at?: string
