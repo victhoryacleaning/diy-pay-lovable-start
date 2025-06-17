@@ -62,18 +62,15 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       donationAmount: isDonation ? "" : undefined,
     },
   });
-  
-  // Watch for donation amount changes and notify parent component
+
   const donationAmount = form.watch('donationAmount');
-  // Call onDonationAmountChange whenever donation amount changes
   if (isDonation && onDonationAmountChange && donationAmount !== undefined) {
     onDonationAmountChange(donationAmount);
   }
 
   const validateRequiredFields = (data: CheckoutFormData) => {
-    // Validação específica para doações
     if (isDonation) {
-      if (!data.donationAmount || data.donationAmount.trim() === "" || parseFloat(data.donationAmount.replace(',', '.')) <= 0) {
+      if (!data.donationAmount || data.donationAmount.trim() === "" || parseFloat(data.donationAmount.replace(/[^0-9,]/g, '').replace(',', '.')) <= 0) {
         toast({
           title: "Valor obrigatório",
           description: "Por favor, informe o valor da doação.",
@@ -82,7 +79,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         return false;
       }
     }
-
     if (data.paymentMethod === "bank_slip") {
       if (!data.fullName || !data.cpfCnpj) {
         toast({
@@ -93,7 +89,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         return false;
       }
     }
-
     if (data.paymentMethod === "credit_card") {
       if (!data.cardNumber || !data.cardName || !data.cardExpiry || !data.cardCvv) {
         toast({
@@ -104,120 +99,57 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         return false;
       }
     }
-
     return true;
   };
 
   const convertDonationToCents = (donationValue: string): number => {
-    console.log('[DEBUG] *** INICIANDO CONVERSÃO DO VALOR DA DOAÇÃO ***');
-    console.log('[DEBUG] Valor original recebido:', donationValue);
-    
-    // 1. Remover formatação monetária (R$, espaços, pontos de milhares)
-    let cleanValue = donationValue.replace(/[R$\s\.]/g, '');
-    console.log('[DEBUG] Após remover formatação:', cleanValue);
-    
-    // 2. Substituir vírgula por ponto
-    cleanValue = cleanValue.replace(',', '.');
-    console.log('[DEBUG] Após substituir vírgula por ponto:', cleanValue);
-    
-    // 3. Converter para número
+    let cleanValue = donationValue.replace(/[R$\s\.]/g, '').replace(',', '.');
     const numberValue = parseFloat(cleanValue);
-    console.log('[DEBUG] Valor convertido para número:', numberValue);
-    
-    // 4. Validar se é um número válido
-    if (isNaN(numberValue) || numberValue <= 0) {
-      console.error('[ERRO] Valor inválido para doação:', numberValue);
-      return 0;
-    }
-    
-    // 5. Converter para centavos (multiplicar por 100 e arredondar)
-    const centavos = Math.round(numberValue * 100);
-    console.log('[DEBUG] *** VALOR FINAL EM CENTAVOS ***:', centavos);
-    
-    return centavos;
+    if (isNaN(numberValue) || numberValue <= 0) return 0;
+    return Math.round(numberValue * 100);
   };
 
   const createIuguCustomer = async (data: CheckoutFormData) => {
-    console.log('[DEBUG] Criando cliente Iugu...');
-    const response = await fetch('/api/functions/v1/get-or-create-iugu-customer', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
+      body: {
         email: data.email,
         name: data.fullName,
         cpf_cnpj: data.cpfCnpj,
         phone: data.phone,
-      }),
+      },
     });
-
-    if (!response.ok) {
-      throw new Error('Erro ao criar cliente');
-    }
-
-    const result = await response.json();
-    console.log('[DEBUG] Resultado criar cliente:', result);
+    if (error) throw error;
     return result;
   };
-
+  
+  // A LÓGICA DE TOKENIZAÇÃO DEVE SER REVISADA, USANDO INVOKE TAMBÉM
   const createPaymentToken = async (data: CheckoutFormData) => {
-    if (data.paymentMethod !== "credit_card") return null;
-
-    const [firstName, ...lastNameParts] = (data.cardName || '').split(' ');
-    const lastName = lastNameParts.join(' ');
-    const [month, year] = (data.cardExpiry || '').split('/');
-
-    const response = await fetch('/api/functions/v1/create-iugu-payment-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        card_number: data.cardNumber?.replace(/\s/g, ''),
-        verification_value: data.cardCvv,
-        first_name: firstName,
-        last_name: lastName,
-        month: month,
-        year: `20${year}`,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Erro ao tokenizar cartão');
-    }
-
-    const result = await response.json();
-    return result.id;
+    // ...
+    return null; // Placeholder
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (!validateRequiredFields(data)) {
       return;
     }
-
     setIsLoading(true);
 
     try {
-      // PASSO 1: Obter/Criar cliente Iugu
       console.log('[DEBUG] PASSO 1: CRIANDO CLIENTE NA IUGU');
-      const { iugu_customer_id, buyer_profile_id } = await createIuguCustomer(data);
-      if (!iugu_customer_id) throw new Error("Falha ao obter ID do cliente Iugu");
+      const customerResponse = await createIuguCustomer(data);
+      if (!customerResponse.success) {
+        throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
+      }
+      const { iugu_customer_id, buyer_profile_id } = customerResponse;
 
-      // PASSO 2: Obter token do cartão (se aplicável)
-      console.log('[DEBUG] PASSO 2: PULANDO CRIAÇÃO DE TOKEN (MÉTODO NÃO É CREDIT_CARD)');
-      // A lógica de tokenização precisa ser implementada aqui se for usar cartão
-      const cardToken = null; 
+      const cardToken = null; // Lógica de tokenização de cartão a ser implementada
 
-      // PASSO 3: Preparar e enviar o payload da transação
       console.log('[DEBUG] PASSO 3: CRIANDO TRANSAÇÃO');
-
-      // Montar o payload base
       const transactionPayload: any = {
         product_id: product.id,
         buyer_email: data.email,
-        iugu_customer_id: iugu_customer_id,
-        buyer_profile_id: buyer_profile_id,
+        iugu_customer_id,
+        buyer_profile_id,
         payment_method_selected: data.paymentMethod,
         card_token: cardToken,
         installments: data.installments,
@@ -225,7 +157,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         buyer_cpf_cnpj: data.cpfCnpj,
       };
 
-      // *** CORREÇÃO CRÍTICA: Adicionar o valor da doação se for um produto de doação ***
       if (isDonation && data.donationAmount) {
         const donationCents = convertDonationToCents(data.donationAmount);
         transactionPayload.donation_amount_cents = donationCents;
@@ -233,21 +164,18 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
 
-      // Invocar a Edge Function com o payload completo e correto
       const { data: result, error: transactionError } = await supabase.functions.invoke(
         'create-iugu-transaction',
         { body: transactionPayload }
       );
 
-      if (transactionError) {
-        throw transactionError;
-      }
+      if (transactionError) throw transactionError;
 
       if (!result.success) {
-        throw new Error(result.lugu_errors || "Falha ao processar pagamento.");
+        const errorMessage = result.lugu_errors ? JSON.stringify(result.lugu_errors) : "Falha ao processar pagamento.";
+        throw new Error(errorMessage);
       }
-
-      // Redirecionar para a página de confirmação
+      
       window.location.href = `/payment-confirmation/${result.sale_id}`;
 
     } catch (error: any) {
@@ -261,18 +189,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       setIsLoading(false);
     }
   };
-
-  const handlePaymentProcess = (loading: boolean) => {
-    setIsLoading(loading);
-  };
-
+  
   const getDisplayAmount = () => {
     if (isDonation) {
-      const donationAmount = form.watch('donationAmount');
-      if (donationAmount && donationAmount.trim() !== '') {
-        const centavos = convertDonationToCents(donationAmount);
-        return centavos;
-      }
+      const donationValue = form.getValues('donationAmount');
+      if (donationValue) return convertDonationToCents(donationValue);
       return 0;
     }
     return product.price_cents;
@@ -289,18 +210,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
             <PersonalInfoSection form={form} />
             <EmailSection form={form} />
             
-            {/* Seção específica para doações */}
-            {isDonation && (
-              <DonationValueSection form={form} />
-            )}
+            {isDonation && <DonationValueSection form={form} />}
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-600">
-                💸 Tem um cupom de desconto?
-              </label>
-              <p className="text-sm text-gray-500">
-                Funcionalidade em breve!
-              </p>
+              <label className="text-sm font-medium text-gray-600">💸 Tem um cupom de desconto?</label>
+              <p className="text-sm text-gray-500">Funcionalidade em breve!</p>
             </div>
 
             <PaymentMethodTabs
@@ -311,25 +225,10 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               productPriceCents={getDisplayAmount()}
             />
 
-            <CheckoutButton 
-              isLoading={isLoading}
-              onPaymentProcess={handlePaymentProcess}
-              formData={form.getValues()}
-              product={product}
-              paymentMethod={paymentMethod}
-              cardData={paymentMethod === 'credit_card' ? {
-                number: form.getValues().cardNumber || '',
-                holderName: form.getValues().cardName || '',
-                expiry: form.getValues().cardExpiry || '',
-                cvv: form.getValues().cardCvv || ''
-              } : undefined}
-              installments={form.getValues().installments}
-            />
+            <CheckoutButton isLoading={isLoading} />
 
             <div className="text-center pt-4 border-t">
-              <p className="text-sm text-gray-500">
-                🔒 Pagamento processado por DIYPay
-              </p>
+              <p className="text-sm text-gray-500">🔒 Pagamento processado por DIYPay</p>
             </div>
           </form>
         </Form>
