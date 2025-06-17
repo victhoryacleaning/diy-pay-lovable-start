@@ -1,4 +1,5 @@
 
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -190,61 +191,17 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     return result.id;
   };
 
-  const createTransaction = async (data: CheckoutFormData, iuguCustomerId: string, buyerProfileId: string | null, cardToken?: string) => {
-    console.log('[DEBUG] Criando transação com:', {
-      iuguCustomerId,
-      buyerProfileId,
-      hasCardToken: !!cardToken,
-      isDonation,
-      donationAmount: data.donationAmount
-    });
-
-    const transactionPayload: any = {
-      product_id: product.id,
-      buyer_email: data.email,
-      iugu_customer_id: iuguCustomerId,
-      buyer_profile_id: buyerProfileId,
-      payment_method_selected: data.paymentMethod,
-      card_token: cardToken,
-      installments: data.installments,
-      buyer_name: data.fullName,
-      buyer_cpf_cnpj: data.cpfCnpj,
-      notification_url_base: `${window.location.origin}/api/webhook/iugu`,
-    };
-
-    // *** CORREÇÃO CRÍTICA: INCLUIR donation_amount_cents NO PAYLOAD ***
-    if (isDonation && data.donationAmount) {
-      const donationCents = convertDonationToCents(data.donationAmount);
-      transactionPayload.donation_amount_cents = donationCents;
-      console.log('[DEBUG] *** VALOR DA DOAÇÃO ADICIONADO AO PAYLOAD ***:', {
-        original: data.donationAmount,
-        cents: donationCents
-      });
-    }
-
-    console.log('[DEBUG] *** PAYLOAD COMPLETO SENDO ENVIADO PARA create-iugu-transaction ***:', JSON.stringify(transactionPayload, null, 2));
-
-    const response = await fetch('/api/functions/v1/create-iugu-transaction', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(transactionPayload),
-    });
-
-    if (!response.ok) {
-      throw new Error('Erro ao processar pagamento');
-    }
-
-    return await response.json();
-  };
-
   const onSubmit = async (data: CheckoutFormData) => {
     if (!validateRequiredFields(data)) return;
 
     setIsLoading(true);
 
     try {
+      console.log('[DEBUG] *** INÍCIO DA SUBMISSÃO DO CHECKOUT ***');
+      console.log('[DEBUG] Dados do formulário:', data);
+      console.log('[DEBUG] Produto é doação:', isDonation);
+      console.log('[DEBUG] Valor da doação:', data.donationAmount);
+
       // Step 1: Create/get Iugu customer
       const customerResult = await createIuguCustomer(data);
       
@@ -263,8 +220,48 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         cardToken = await createPaymentToken(data);
       }
 
-      // Step 3: Create transaction
-      const result = await createTransaction(data, iuguCustomerId, buyerProfileId, cardToken);
+      // Step 3: Prepare transaction payload
+      console.log('[DEBUG] *** MONTANDO PAYLOAD PARA TRANSAÇÃO ***');
+      
+      const transactionPayload: any = {
+        product_id: product.id,
+        buyer_email: data.email,
+        iugu_customer_id: iuguCustomerId,
+        buyer_profile_id: buyerProfileId,
+        payment_method_selected: data.paymentMethod,
+        card_token: cardToken,
+        installments: data.installments,
+        buyer_name: data.fullName,
+        buyer_cpf_cnpj: data.cpfCnpj,
+        notification_url_base: `${window.location.origin}/api/webhook/iugu`,
+      };
+
+      // *** CORREÇÃO CRÍTICA: INCLUIR donation_amount_cents NO PAYLOAD ***
+      if (isDonation && data.donationAmount) {
+        const donationCents = convertDonationToCents(data.donationAmount);
+        transactionPayload.donation_amount_cents = donationCents;
+        console.log('[DEBUG] *** VALOR DA DOAÇÃO ADICIONADO AO PAYLOAD ***:', {
+          original: data.donationAmount,
+          cents: donationCents
+        });
+      }
+
+      console.log('[DEBUG] *** PAYLOAD COMPLETO SENDO ENVIADO PARA create-iugu-transaction ***:', JSON.stringify(transactionPayload, null, 2));
+
+      // Step 4: Create transaction
+      const response = await fetch('/api/functions/v1/create-iugu-transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transactionPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao processar pagamento');
+      }
+
+      const result = await response.json();
 
       if (result.success) {
         // Redirect to our internal payment confirmation page
@@ -361,3 +358,4 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     </Card>
   );
 };
+
