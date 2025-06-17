@@ -334,11 +334,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Calculate fees - usar valor da doação se for produto de doação
+    // *** CORREÇÃO CRÍTICA: USAR VALOR DINÂMICO PARA DOAÇÕES ***
     let amountTotalCents = product.price_cents;
     if (product.product_type === 'donation' && payload.donation_amount_cents) {
       amountTotalCents = payload.donation_amount_cents;
       console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', amountTotalCents);
+    } else if (product.product_type === 'donation' && !payload.donation_amount_cents) {
+      console.error('[ERRO] *** PRODUTO DE DOAÇÃO SEM VALOR ESPECIFICADO ***');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: true,
+          message: 'Valor da doação é obrigatório',
+          functionName: 'create-iugu-transaction'
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
@@ -441,13 +455,13 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
     console.log('[DEBUG] Header de autenticação criado (primeiros 30 chars):', authHeader.substring(0, 30) + '...');
 
-    // Prepare items for Iugu - usar valor dinâmico para doações
+    // *** CORREÇÃO CRÍTICA: USAR VALOR CORRETO NOS ITEMS ***
     const items = [{
       description: product.name,
       quantity: 1,
-      price_cents: amountTotalCents // Usar o valor calculado (produto normal ou doação)
+      price_cents: amountTotalCents // *** USAR O VALOR CALCULADO (PRODUTO NORMAL OU DOAÇÃO) ***
     }];
-    console.log('[DEBUG] *** ITEMS PARA IUGU ***:', JSON.stringify(items, null, 2));
+    console.log('[DEBUG] *** ITEMS PARA IUGU (COM VALOR CORRETO) ***:', JSON.stringify(items, null, 2));
 
     let iuguResponse;
     let updateData: any = {};
