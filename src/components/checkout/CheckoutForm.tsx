@@ -194,7 +194,8 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       });
     }
 
-    console.log('[DEBUG] Payload para create-iugu-transaction:', transactionPayload);
+    // *** LOG DE DEPURAÇÃO - PAYLOAD EXATO SENDO ENVIADO ***
+    console.log('[DEBUG] *** PAYLOAD COMPLETO SENDO ENVIADO PARA create-iugu-transaction ***:', JSON.stringify(transactionPayload, null, 2));
 
     const response = await fetch('/api/functions/v1/create-iugu-transaction', {
       method: 'POST',

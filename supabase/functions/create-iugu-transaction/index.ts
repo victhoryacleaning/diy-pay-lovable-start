@@ -230,15 +230,16 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('[DEBUG] Cliente Supabase inicializado com sucesso');
 
-    // Parse request body
+    // *** LOG DE DEPURAÇÃO - CORPO COMPLETO DA REQUISIÇÃO ***
     console.log('[DEBUG] *** TENTANDO FAZER PARSE DO BODY ***');
     let payload: TransactionPayload;
     
     try {
       const requestText = await req.text();
-      console.log('[DEBUG] Body bruto recebido (length: ' + requestText.length + '):', requestText);
+      console.log('[DEBUG] *** CORPO COMPLETO DA REQUISIÇÃO RECEBIDO ***:', requestText);
+      console.log('[DEBUG] *** TAMANHO DO CORPO DA REQUISIÇÃO ***:', requestText.length, 'caracteres');
       payload = JSON.parse(requestText);
-      console.log('[DEBUG] Payload parseado com sucesso:', JSON.stringify(payload, null, 2));
+      console.log('[DEBUG] *** PAYLOAD PARSEADO COM SUCESSO ***:', JSON.stringify(payload, null, 2));
     } catch (parseError) {
       const errorMsg = 'Erro ao fazer parse do JSON da requisição';
       console.error('[ERRO] *** PARSE ERROR ***:', errorMsg, parseError);
@@ -261,7 +262,12 @@ Deno.serve(async (req) => {
     console.log('[DEBUG] *** BUYER_PROFILE_ID RECEBIDO NO PAYLOAD ***:', payload.buyer_profile_id);
     console.log('[DEBUG] *** DONATION_AMOUNT_CENTS RECEBIDO ***:', payload.donation_amount_cents);
 
-    // Validate required fields
+    // *** VALIDAÇÃO DETALHADA DOS CAMPOS OBRIGATÓRIOS ***
+    console.log('[DEBUG] *** VALIDAÇÃO DETALHADA DOS CAMPOS OBRIGATÓRIOS ***');
+    console.log('[DEBUG] - product_id:', payload.product_id ? 'PRESENTE' : 'AUSENTE');
+    console.log('[DEBUG] - buyer_email:', payload.buyer_email ? 'PRESENTE' : 'AUSENTE');
+    console.log('[DEBUG] - payment_method_selected:', payload.payment_method_selected ? 'PRESENTE' : 'AUSENTE');
+    
     if (!payload.product_id || !payload.buyer_email || !payload.payment_method_selected) {
       const errorMsg = 'Campos obrigatórios não informados';
       console.error('[ERRO] *** VALIDATION ERROR ***:', errorMsg, { 
