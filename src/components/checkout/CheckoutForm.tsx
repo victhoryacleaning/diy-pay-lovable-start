@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -192,89 +191,36 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
-    if (!validateRequiredFields(data)) return;
+    console.log('[DEBUG] INICIANDO onSubmit COM TESTE SIMPLIFICADO');
 
-    setIsLoading(true);
+    // 1. Valor Fixo para Teste
+    const testDonationValueInCents = 9999; // Usando um valor fixo e único para fácil identificação
+    const testProductId = 'ed66c2e3-5854-4b7a-93c1-c1e976df375a'; // ID do produto de doação
 
+    // 2. Montar um Payload Mínimo
+    const minimalPayload = {
+      product_id: testProductId,
+      donation_amount_cents: testDonationValueInCents,
+      // Adicionar apenas os outros campos que são ABSOLUTAMENTE obrigatórios pelo backend
+      buyer_email: 'teste@debug.com',
+      payment_method_selected: 'pix'
+    };
+
+    // 3. Logar o Payload Mínimo
+    console.log('[DEBUG] PAYLOAD MÍNIMO DE TESTE SENDO ENVIADO:', minimalPayload);
+
+    // 4. Invocar a Função
     try {
-      console.log('[DEBUG] *** INÍCIO DA SUBMISSÃO DO CHECKOUT ***');
-      console.log('[DEBUG] Dados do formulário:', data);
-      console.log('[DEBUG] Produto é doação:', isDonation);
-      console.log('[DEBUG] Valor da doação:', data.donationAmount);
+      const { data: result, error } = await supabase.functions.invoke(
+        'create-iugu-transaction',
+        { body: minimalPayload }
+      );
 
-      // Step 1: Create/get Iugu customer
-      const customerResult = await createIuguCustomer(data);
-      
-      if (!customerResult.success) {
-        throw new Error(customerResult.message || 'Erro ao criar cliente');
-      }
+      if (error) throw error;
 
-      const iuguCustomerId = customerResult.iugu_customer_id;
-      const buyerProfileId = customerResult.buyer_profile_id || null;
-
-      console.log('[DEBUG] Cliente criado:', { iuguCustomerId, buyerProfileId });
-
-      // Step 2: Create payment token (for credit card only)
-      let cardToken = null;
-      if (data.paymentMethod === "credit_card") {
-        cardToken = await createPaymentToken(data);
-      }
-
-      // Step 3: Prepare transaction payload
-      console.log('[DEBUG] *** MONTANDO PAYLOAD PARA TRANSAÇÃO ***');
-      
-      const transactionPayload: any = {
-        product_id: product.id,
-        buyer_email: data.email,
-        iugu_customer_id: iuguCustomerId,
-        buyer_profile_id: buyerProfileId,
-        payment_method_selected: data.paymentMethod,
-        card_token: cardToken,
-        installments: data.installments,
-        buyer_name: data.fullName,
-        buyer_cpf_cnpj: data.cpfCnpj,
-        notification_url_base: `${window.location.origin}/api/webhook/iugu`,
-      };
-
-      // *** CORREÇÃO CRÍTICA: INCLUIR donation_amount_cents NO PAYLOAD ***
-      if (isDonation && data.donationAmount) {
-        const donationCents = convertDonationToCents(data.donationAmount);
-        transactionPayload.donation_amount_cents = donationCents;
-        console.log('[DEBUG] *** VALOR DA DOAÇÃO ADICIONADO AO PAYLOAD ***:', {
-          original: data.donationAmount,
-          cents: donationCents
-        });
-      }
-
-      // *** LOG DE VERIFICAÇÃO CRÍTICO ***
-      console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
-
-      // Step 4: Create transaction usando supabase.functions.invoke
-      const { data: result, error } = await supabase.functions.invoke('create-iugu-transaction', {
-        body: transactionPayload,
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Erro ao processar pagamento');
-      }
-
-      if (result?.success) {
-        // Redirect to our internal payment confirmation page
-        const saleId = result.sale_id;
-        window.location.href = `/payment-confirmation/${saleId}`;
-      } else {
-        throw new Error(result?.message || 'Erro no processamento do pagamento');
-      }
-
+      console.log('[DEBUG] RESPOSTA DO BACKEND (TESTE SIMPLIFICADO):', result);
     } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: "Erro no pagamento",
-        description: "Ocorreu um erro ao processar seu pagamento. Verifique os dados e tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      console.error('[ERRO] FALHA NO TESTE SIMPLIFICADO:', error);
     }
   };
 
