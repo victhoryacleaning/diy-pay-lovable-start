@@ -1,102 +1,110 @@
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Copy, 
-  ExternalLink
-} from "lucide-react";
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Edit, Eye, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
   name: string;
-  description?: string;
+  description: string | null;
   price_cents: number;
   type: string;
   is_active: boolean;
-  checkout_link_slug?: string;
-  max_installments_allowed: number;
-  file_url_or_access_info?: string;
+  checkout_link_slug: string | null;
   created_at: string;
 }
 
 const ProductList = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products', user?.id],
-    queryFn: async () => {
+  const fetchProducts = async () => {
+    if (!user) return;
+
+    try {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('producer_id', user?.id)
+        .eq('producer_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as Product[];
-    },
-    enabled: !!user
-  });
+      if (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Erro ao carregar produtos');
+        return;
+      }
 
-  const deleteProductMutation = useMutation({
-    mutationFn: async (productId: string) => {
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Erro inesperado ao carregar produtos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) {
+      return;
+    }
+
+    try {
       const { error } = await supabase
         .from('products')
         .delete()
-        .eq('id', productId);
+        .eq('id', id);
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.success('Produto excluído com sucesso!');
-    },
-    onError: (error) => {
-      console.error('Error deleting product:', error);
-      toast.error('Erro ao excluir produto');
+      if (error) {
+        console.error('Error deleting product:', error);
+        toast.error('Erro ao excluir produto');
+        return;
+      }
+
+      toast.success('Produto excluído com sucesso');
+      fetchProducts(); // Refresh the list
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Erro inesperado ao excluir produto');
     }
-  });
+  };
 
-  const formatPrice = (cents: number) => {
+  const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL',
+      currency: 'BRL'
     }).format(cents / 100);
   };
 
-  const getCheckoutUrl = (slug?: string) => {
-    if (!slug) return '';
-    return `${window.location.origin}/checkout/${slug}`;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Link copiado para a área de transferência!');
-  };
+  useEffect(() => {
+    fetchProducts();
+  }, [user]);
 
-  const handleDelete = (productId: string, productName: string) => {
-    if (window.confirm(`Tem certeza que deseja excluir o produto "${productName}"?`)) {
-      deleteProductMutation.mutate(productId);
-    }
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-diypay-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Carregando produtos...</p>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Produtos</h2>
+            <p className="text-gray-600">Gerencie seus produtos digitais</p>
+          </div>
+          <div className="w-32 h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded animate-pulse"></div>
+          ))}
         </div>
       </div>
     );
@@ -106,137 +114,102 @@ const ProductList = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Meus Produtos</h2>
-          <p className="text-gray-600">Gerencie seus produtos e links de checkout</p>
+          <h2 className="text-2xl font-bold text-gray-900">Produtos</h2>
+          <p className="text-gray-600 mt-2">Gerencie seus produtos digitais</p>
         </div>
         <Link to="/products/new">
-          <Button className="bg-diypay-600 hover:bg-diypay-700">
+          <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Criar Novo Produto
+            Novo Produto
           </Button>
         </Link>
       </div>
 
-      {!products || products.length === 0 ? (
+      {products.length === 0 ? (
         <Card>
-          <CardContent className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Plus className="h-16 w-16 mx-auto" />
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nenhum produto cadastrado
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Comece criando seu primeiro produto digital
+              </p>
+              <Link to="/products/new">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Primeiro Produto
+                </Button>
+              </Link>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Nenhum produto encontrado
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Crie seu primeiro produto para começar a vender
-            </p>
-            <Link to="/products/new">
-              <Button className="bg-diypay-600 hover:bg-diypay-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Primeiro Produto
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Produtos Cadastrados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Link de Checkout</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{product.name}</div>
-                        {product.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {product.description}
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-400 mt-1">
-                          {product.type}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {formatPrice(product.price_cents)}
-                      {product.max_installments_allowed > 1 && (
-                        <div className="text-xs text-gray-500">
-                          até {product.max_installments_allowed}x
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={product.is_active ? "default" : "secondary"}
-                        className={product.is_active ? "bg-green-100 text-green-800" : ""}
-                      >
+        <div className="grid gap-4">
+          {products.map((product) => (
+            <Card key={product.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CardTitle className="text-lg">{product.name}</CardTitle>
+                      <Badge variant={product.is_active ? "default" : "secondary"}>
                         {product.is_active ? "Ativo" : "Inativo"}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {product.checkout_link_slug ? (
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs text-gray-600 truncate max-w-xs">
-                            {getCheckoutUrl(product.checkout_link_slug)}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => copyToClipboard(getCheckoutUrl(product.checkout_link_slug))}
-                              className="h-7 px-2"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => window.open(getCheckoutUrl(product.checkout_link_slug), '_blank')}
-                              className="h-7 px-2"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-sm">Sem link</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Link to={`/products/edit/${product.id}`}>
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(product.id, product.name)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                    </div>
+                    {product.description && (
+                      <CardDescription className="text-sm text-gray-600">
+                        {product.description}
+                      </CardDescription>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-green-600">
+                      {formatCurrency(product.price_cents)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Criado em {formatDate(product.created_at)}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="flex gap-2">
+                  <Link to={`/products/edit/${product.id}`}>
+                    <Button variant="outline" size="sm">
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </Button>
+                  </Link>
+                  
+                  {product.checkout_link_slug && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a 
+                        href={`/checkout/${product.checkout_link_slug}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Página
+                      </a>
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleDelete(product.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

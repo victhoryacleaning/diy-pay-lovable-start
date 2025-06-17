@@ -184,7 +184,7 @@ const ProducerDashboard = () => {
                 <Card className="lg:col-span-2">
                   <CardHeader>
                     <CardTitle>Transações Recentes</CardTitle>
-                    <CardDescription>Suas vendas mais recentes (todas as criadas)</CardDescription>
+                    <CardDescription>Suas 3 vendas mais recentes</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
@@ -229,9 +229,11 @@ const ProducerDashboard = () => {
                       </div>
                     )}
                     <div className="mt-4">
-                      <Button variant="outline" className="w-full" disabled>
-                        Ver Todas as Transações
-                      </Button>
+                      <Link to="/sales" className="block">
+                        <Button variant="outline" className="w-full">
+                          Ver todas as transações
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>

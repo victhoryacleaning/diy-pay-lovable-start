@@ -9,6 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   Table, 
   TableBody, 
   TableCell, 
@@ -17,7 +24,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Download, Calendar, CreditCard, DollarSign } from 'lucide-react';
+import { Search, Calendar, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Sale {
@@ -39,23 +46,62 @@ interface Sale {
   } | null;
 }
 
+interface Product {
+  id: string;
+  name: string;
+}
+
 const ProducerSalesPage = () => {
   const { session } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('all');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const ITEMS_PER_PAGE = 10;
+
+  // Carregar produtos do produtor
+  const fetchProducts = async () => {
+    if (!session) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('producer_id', session.user.id);
+
+      if (error) {
+        console.error('[ERRO] Erro ao buscar produtos:', error);
+        return;
+      }
+
+      setProducts(data || []);
+    } catch (error) {
+      console.error('[ERRO] Erro na requisição de produtos:', error);
+    }
+  };
 
   // Carregar vendas
-  const fetchSales = async () => {
+  const fetchSales = async (page = 1, append = false) => {
     if (!session) {
       console.log('[DEBUG] Sessão não encontrada');
       return;
     }
 
     try {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
       
       console.log('[DEBUG] Iniciando busca de vendas...');
@@ -78,7 +124,19 @@ const ProducerSalesPage = () => {
       if (data?.success) {
         const salesData = data.sales || [];
         console.log('[DEBUG] Vendas carregadas:', salesData);
-        setSales(salesData);
+        
+        // Aplicar paginação no frontend por enquanto
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const paginatedSales = salesData.slice(startIndex, endIndex);
+        
+        if (append) {
+          setSales(prev => [...prev, ...paginatedSales]);
+        } else {
+          setSales(paginatedSales);
+        }
+        
+        setHasMore(endIndex < salesData.length);
       } else {
         const errorMessage = data?.error || 'Erro ao carregar vendas';
         console.error('[ERRO] Erro na resposta:', errorMessage);
@@ -92,11 +150,19 @@ const ProducerSalesPage = () => {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const loadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchSales(nextPage, true);
   };
 
   useEffect(() => {
     console.log('[DEBUG] useEffect executado, session:', !!session);
+    fetchProducts();
     fetchSales();
   }, [session]);
 
@@ -161,27 +227,55 @@ const ProducerSalesPage = () => {
   };
 
   // Filtrar vendas com verificações de segurança
-  const filteredSales = sales.filter(sale => {
-    if (!sale) return false;
-    
-    const productName = sale.products?.name || '';
-    const buyerEmail = sale.buyer_email || '';
-    
-    const matchesSearch = 
-      buyerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      productName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const saleStatus = sale.status ? sale.status.toLowerCase() : '';
-    const matchesStatus = statusFilter === 'all' || saleStatus === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const getFilteredSales = () => {
+    return sales.filter(sale => {
+      if (!sale) return false;
+      
+      const productName = sale.products?.name || '';
+      const buyerEmail = sale.buyer_email || '';
+      
+      const matchesSearch = 
+        buyerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        productName.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const saleStatus = sale.status ? sale.status.toLowerCase() : '';
+      const matchesStatus = statusFilter === 'all' || saleStatus === statusFilter;
+      
+      const matchesProduct = productFilter === 'all' || sale.products?.name === productFilter;
+      
+      const salePaymentMethod = sale.payment_method_used ? sale.payment_method_used.toLowerCase() : '';
+      const matchesPaymentMethod = paymentMethodFilter === 'all' || salePaymentMethod === paymentMethodFilter;
+      
+      // Filtro de data simples
+      let matchesDate = true;
+      if (dateFilter !== 'all') {
+        const saleDate = new Date(sale.created_at);
+        const now = new Date();
+        
+        switch (dateFilter) {
+          case 'today':
+            matchesDate = saleDate.toDateString() === now.toDateString();
+            break;
+          case '7days':
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            matchesDate = saleDate >= sevenDaysAgo;
+            break;
+          case '30days':
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            matchesDate = saleDate >= thirtyDaysAgo;
+            break;
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesProduct && matchesPaymentMethod && matchesDate;
+    });
+  };
 
-  // Estatísticas com verificações de segurança
+  const filteredSales = getFilteredSales();
+
+  // Estatísticas simplificadas
   const totalSales = sales.length;
-  const paidSales = sales.filter(sale => sale?.status === 'paid');
-  const totalRevenue = paidSales.reduce((sum, sale) => sum + (sale?.amount_total_cents || 0), 0);
-  const totalEarnings = paidSales.reduce((sum, sale) => sum + (sale?.producer_share_cents || 0), 0);
+  const totalEarnings = sales.reduce((sum, sale) => sum + (sale?.producer_share_cents || 0), 0);
 
   return (
     <SidebarProvider>
@@ -195,8 +289,8 @@ const ProducerSalesPage = () => {
             </div>
             
             <div className="container mx-auto px-4 py-8">
-              {/* Estatísticas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* Estatísticas simplificadas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
@@ -212,22 +306,7 @@ const ProducerSalesPage = () => {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(totalRevenue)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Vendas pagas
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Seus Ganhos</CardTitle>
+                    <CardTitle className="text-sm font-medium">Valor Líquido Total</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -241,42 +320,89 @@ const ProducerSalesPage = () => {
                 </Card>
               </div>
 
-              {/* Filtros e busca */}
+              {/* Filtros aprimorados */}
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Filtrar Vendas</CardTitle>
                   <CardDescription>Busque e filtre suas vendas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Buscar</label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder="Buscar por produto ou cliente..."
+                          placeholder="Produto ou cliente..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10"
                         />
                       </div>
                     </div>
-                    <div className="md:w-48">
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      >
-                        <option value="all">Todos os Status</option>
-                        <option value="paid">Pago</option>
-                        <option value="pending">Pendente</option>
-                        <option value="failed">Falhado</option>
-                        <option value="cancelled">Cancelado</option>
-                      </select>
+
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Produto</label>
+                      <Select value={productFilter} onValueChange={setProductFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os produtos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os produtos</SelectItem>
+                          {products.map((product) => (
+                            <SelectItem key={product.id} value={product.name}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Exportar
-                    </Button>
+
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Data</label>
+                      <Select value={dateFilter} onValueChange={setDateFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todo o período" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todo o período</SelectItem>
+                          <SelectItem value="today">Hoje</SelectItem>
+                          <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                          <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Método de Pagamento</label>
+                      <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os métodos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os métodos</SelectItem>
+                          <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="bank_slip">Boleto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Status</label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os Status</SelectItem>
+                          <SelectItem value="paid">Pago</SelectItem>
+                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="failed">Falhado</SelectItem>
+                          <SelectItem value="cancelled">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -306,7 +432,7 @@ const ProducerSalesPage = () => {
                     <div className="text-center py-8 text-red-500">
                       <p>{error}</p>
                       <Button 
-                        onClick={fetchSales} 
+                        onClick={() => fetchSales()} 
                         variant="outline" 
                         className="mt-4"
                       >
@@ -319,54 +445,68 @@ const ProducerSalesPage = () => {
                       <p className="text-sm">Suas vendas aparecerão aqui quando realizadas</p>
                     </div>
                   ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Data</TableHead>
-                            <TableHead>Produto</TableHead>
-                            <TableHead>Cliente</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Pagamento</TableHead>
-                            <TableHead className="text-right">Valor Líquido</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredSales.map((sale) => (
-                            <TableRow key={sale.id}>
-                              <TableCell className="font-mono text-sm">
-                                {formatDate(sale.created_at)}
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">
-                                    {sale.products?.name || 'Produto não encontrado'}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {sale.products?.price_cents ? formatCurrency(sale.products.price_cents) : 'N/A'}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{sale.buyer_email || 'N/A'}</TableCell>
-                              <TableCell>{getStatusBadge(sale.status)}</TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  <div>{getPaymentMethodLabel(sale.payment_method_used)}</div>
-                                  {sale.installments_chosen && sale.installments_chosen > 1 && (
-                                    <div className="text-muted-foreground">
-                                      {sale.installments_chosen}x
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                {formatCurrency(sale.producer_share_cents || 0)}
-                              </TableCell>
+                    <>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Data</TableHead>
+                              <TableHead>Produto</TableHead>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Pagamento</TableHead>
+                              <TableHead className="text-right">Valor Líquido</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredSales.map((sale) => (
+                              <TableRow key={sale.id}>
+                                <TableCell className="font-mono text-sm">
+                                  {formatDate(sale.created_at)}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">
+                                      {sale.products?.name || 'Produto não encontrado'}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {sale.products?.price_cents ? formatCurrency(sale.products.price_cents) : 'N/A'}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{sale.buyer_email || 'N/A'}</TableCell>
+                                <TableCell>{getStatusBadge(sale.status)}</TableCell>
+                                <TableCell>
+                                  <div className="text-sm">
+                                    <div>{getPaymentMethodLabel(sale.payment_method_used)}</div>
+                                    {sale.installments_chosen && sale.installments_chosen > 1 && (
+                                      <div className="text-muted-foreground">
+                                        {sale.installments_chosen}x
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {formatCurrency(sale.producer_share_cents || 0)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      
+                      {hasMore && !loading && (
+                        <div className="mt-4 text-center">
+                          <Button 
+                            onClick={loadMore} 
+                            variant="outline" 
+                            disabled={loadingMore}
+                          >
+                            {loadingMore ? 'Carregando...' : 'Carregar mais'}
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>

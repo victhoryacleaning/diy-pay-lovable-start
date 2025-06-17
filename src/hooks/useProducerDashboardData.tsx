@@ -71,7 +71,7 @@ export const useProducerDashboardData = () => {
             .in('product_id', productIds)
             .eq('status', 'pending');
 
-          // Buscar transações recentes (todas as vendas criadas recentemente, não apenas pagas)
+          // Buscar transações recentes (apenas as 3 mais recentes)
           const { data: recentSales } = await supabase
             .from('sales')
             .select(`
@@ -84,7 +84,7 @@ export const useProducerDashboardData = () => {
             `)
             .in('product_id', productIds)
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(3);
 
           // Calcular métricas
           const totalSalesThisMonth = salesThisMonth?.reduce((sum, sale) => sum + sale.producer_share_cents, 0) || 0;
