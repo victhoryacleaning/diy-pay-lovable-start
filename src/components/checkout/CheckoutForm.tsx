@@ -31,7 +31,6 @@ const checkoutSchema = z.object({
   fullName: z.string().min(2, "Nome completo é obrigatório"),
   phone: z.string().optional(),
   cpfCnpj: z.string().optional(),
-  instagram: z.string().optional(),
   email: z.string().email("Email inválido"),
   confirmEmail: z.string().email("Email inválido"),
   paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),

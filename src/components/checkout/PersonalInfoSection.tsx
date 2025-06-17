@@ -1,4 +1,3 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -86,20 +85,6 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
           )}
         />
       </div>
-
-      <FormField
-        control={form.control}
-        name="instagram"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Instagram</FormLabel>
-            <FormControl>
-              <Input placeholder="@seuinstagram" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 };

@@ -79,25 +79,34 @@ const Checkout = () => {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Product Info Sidebar - só exibe se show_order_summary for true */}
-          {product.show_order_summary && (
+        {product.show_order_summary ? (
+          // Layout com grid quando resumo está visível
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Product Info Sidebar */}
             <div className="lg:col-span-1">
               <ProductInfo 
                 product={product} 
                 donationAmount={donationAmount}
               />
             </div>
-          )}
 
-          {/* Checkout Form - ajustar grid dependendo do show_order_summary */}
-          <div className={product.show_order_summary ? "lg:col-span-2" : "lg:col-span-3"}>
+            {/* Checkout Form */}
+            <div className="lg:col-span-2">
+              <CheckoutForm 
+                product={product}
+                onDonationAmountChange={setDonationAmount}
+              />
+            </div>
+          </div>
+        ) : (
+          // Layout centralizado quando resumo está oculto
+          <div className="max-w-2xl mx-auto">
             <CheckoutForm 
               product={product}
               onDonationAmountChange={setDonationAmount}
             />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
