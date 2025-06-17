@@ -110,6 +110,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   };
 
   const createIuguCustomer = async (data: CheckoutFormData) => {
+    console.log('[DEBUG] Invocando get-or-create-iugu-customer via supabase.functions.invoke');
+    
     const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
       body: {
         email: data.email,
@@ -118,7 +120,18 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         phone: data.phone,
       },
     });
-    if (error) throw error;
+    
+    if (error) {
+      console.error('[ERRO] Erro ao chamar get-or-create-iugu-customer:', error);
+      throw error;
+    }
+    
+    if (!result.success) {
+      console.error('[ERRO] Resposta de erro da função:', result);
+      throw new Error(result.error || "Falha ao criar cliente Iugu");
+    }
+    
+    console.log('[DEBUG] Cliente Iugu criado/encontrado com sucesso:', result);
     return result;
   };
   
@@ -132,24 +145,29 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     if (!validateRequiredFields(data)) {
       return;
     }
+
     setIsLoading(true);
 
     try {
+      // PASSO 1: Obter/Criar cliente Iugu
       console.log('[DEBUG] PASSO 1: CRIANDO CLIENTE NA IUGU');
-      const customerResponse = await createIuguCustomer(data);
-      if (!customerResponse.success) {
-        throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
-      }
-      const { iugu_customer_id, buyer_profile_id } = customerResponse;
+      const { iugu_customer_id, buyer_profile_id } = await createIuguCustomer(data);
+      if (!iugu_customer_id) throw new Error("Falha ao obter ID do cliente Iugu");
 
-      const cardToken = null; // Lógica de tokenização de cartão a ser implementada
+      // PASSO 2: Obter token do cartão (se aplicável)
+      console.log('[DEBUG] PASSO 2: PULANDO CRIAÇÃO DE TOKEN (MÉTODO NÃO É CREDIT_CARD)');
+      // A lógica de tokenização precisa ser implementada aqui se for usar cartão
+      const cardToken = null; 
 
+      // PASSO 3: Preparar e enviar o payload da transação
       console.log('[DEBUG] PASSO 3: CRIANDO TRANSAÇÃO');
+
+      // Montar o payload base
       const transactionPayload: any = {
         product_id: product.id,
         buyer_email: data.email,
-        iugu_customer_id,
-        buyer_profile_id,
+        iugu_customer_id: iugu_customer_id,
+        buyer_profile_id: buyer_profile_id,
         payment_method_selected: data.paymentMethod,
         card_token: cardToken,
         installments: data.installments,
@@ -157,6 +175,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         buyer_cpf_cnpj: data.cpfCnpj,
       };
 
+      // *** CORREÇÃO CRÍTICA: Adicionar o valor da doação se for um produto de doação ***
       if (isDonation && data.donationAmount) {
         const donationCents = convertDonationToCents(data.donationAmount);
         transactionPayload.donation_amount_cents = donationCents;
@@ -164,18 +183,21 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
 
+      // Invocar a Edge Function com o payload completo e correto
       const { data: result, error: transactionError } = await supabase.functions.invoke(
         'create-iugu-transaction',
         { body: transactionPayload }
       );
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        throw transactionError;
+      }
 
       if (!result.success) {
-        const errorMessage = result.lugu_errors ? JSON.stringify(result.lugu_errors) : "Falha ao processar pagamento.";
-        throw new Error(errorMessage);
+        throw new Error(result.lugu_errors || "Falha ao processar pagamento.");
       }
-      
+
+      // Redirecionar para a página de confirmação
       window.location.href = `/payment-confirmation/${result.sale_id}`;
 
     } catch (error: any) {
