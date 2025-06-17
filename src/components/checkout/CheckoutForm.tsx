@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -191,36 +192,73 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
-    console.log('[DEBUG] INICIANDO onSubmit COM TESTE SIMPLIFICADO');
+    if (!validateRequiredFields(data)) {
+      return;
+    }
 
-    // 1. Valor Fixo para Teste
-    const testDonationValueInCents = 9999; // Usando um valor fixo e único para fácil identificação
-    const testProductId = 'ed66c2e3-5854-4b7a-93c1-c1e976df375a'; // ID do produto de doação
+    setIsLoading(true);
 
-    // 2. Montar um Payload Mínimo
-    const minimalPayload = {
-      product_id: testProductId,
-      donation_amount_cents: testDonationValueInCents,
-      // Adicionar apenas os outros campos que são ABSOLUTAMENTE obrigatórios pelo backend
-      buyer_email: 'teste@debug.com',
-      payment_method_selected: 'pix'
-    };
-
-    // 3. Logar o Payload Mínimo
-    console.log('[DEBUG] PAYLOAD MÍNIMO DE TESTE SENDO ENVIADO:', minimalPayload);
-
-    // 4. Invocar a Função
     try {
-      const { data: result, error } = await supabase.functions.invoke(
+      // PASSO 1: Obter/Criar cliente Iugu
+      console.log('[DEBUG] PASSO 1: CRIANDO CLIENTE NA IUGU');
+      const { iugu_customer_id, buyer_profile_id } = await createIuguCustomer(data);
+      if (!iugu_customer_id) throw new Error("Falha ao obter ID do cliente Iugu");
+
+      // PASSO 2: Obter token do cartão (se aplicável)
+      console.log('[DEBUG] PASSO 2: PULANDO CRIAÇÃO DE TOKEN (MÉTODO NÃO É CREDIT_CARD)');
+      // A lógica de tokenização precisa ser implementada aqui se for usar cartão
+      const cardToken = null; 
+
+      // PASSO 3: Preparar e enviar o payload da transação
+      console.log('[DEBUG] PASSO 3: CRIANDO TRANSAÇÃO');
+
+      // Montar o payload base
+      const transactionPayload: any = {
+        product_id: product.id,
+        buyer_email: data.email,
+        iugu_customer_id: iugu_customer_id,
+        buyer_profile_id: buyer_profile_id,
+        payment_method_selected: data.paymentMethod,
+        card_token: cardToken,
+        installments: data.installments,
+        buyer_name: data.fullName,
+        buyer_cpf_cnpj: data.cpfCnpj,
+      };
+
+      // *** CORREÇÃO CRÍTICA: Adicionar o valor da doação se for um produto de doação ***
+      if (isDonation && data.donationAmount) {
+        const donationCents = convertDonationToCents(data.donationAmount);
+        transactionPayload.donation_amount_cents = donationCents;
+      }
+
+      console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
+
+      // Invocar a Edge Function com o payload completo e correto
+      const { data: result, error: transactionError } = await supabase.functions.invoke(
         'create-iugu-transaction',
-        { body: minimalPayload }
+        { body: transactionPayload }
       );
 
-      if (error) throw error;
+      if (transactionError) {
+        throw transactionError;
+      }
 
-      console.log('[DEBUG] RESPOSTA DO BACKEND (TESTE SIMPLIFICADO):', result);
-    } catch (error) {
-      console.error('[ERRO] FALHA NO TESTE SIMPLIFICADO:', error);
+      if (!result.success) {
+        throw new Error(result.lugu_errors || "Falha ao processar pagamento.");
+      }
+
+      // Redirecionar para a página de confirmação
+      window.location.href = `/payment-confirmation/${result.sale_id}`;
+
+    } catch (error: any) {
+      console.error('[ERRO] ERRO NO PROCESSO DE PAGAMENTO ***:', error);
+      toast({
+        title: "Erro no pagamento",
+        description: error.message || "Ocorreu um erro ao processar seu pagamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
