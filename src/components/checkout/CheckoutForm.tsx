@@ -5,10 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { EmailSection } from "./EmailSection";
 import { PaymentMethodTabs } from "./PaymentMethodTabs";
-import { CheckoutButton } from "./CheckoutButton";
 import { DonationValueSection } from "./DonationValueSection";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,12 +134,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     console.log('[DEBUG] Cliente Iugu criado/encontrado com sucesso:', result);
     return result;
   };
-  
-  // A LÓGICA DE TOKENIZAÇÃO DEVE SER REVISADA, USANDO INVOKE TAMBÉM
-  const createPaymentToken = async (data: CheckoutFormData) => {
-    // ...
-    return null; // Placeholder
-  };
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (!validateRequiredFields(data)) {
@@ -247,7 +241,13 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               productPriceCents={getDisplayAmount()}
             />
 
-            <CheckoutButton isLoading={isLoading} />
+            <Button 
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold"
+            >
+              {isLoading ? "Processando..." : "Pagar agora"}
+            </Button>
 
             <div className="text-center pt-4 border-t">
               <p className="text-sm text-gray-500">🔒 Pagamento processado por DIYPay</p>
