@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 const Checkout = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [donationAmount, setDonationAmount] = useState<string>("");
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', slug],
@@ -65,12 +66,18 @@ const Checkout = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Product Info Sidebar */}
           <div className="lg:col-span-1">
-            <ProductInfo product={product} />
+            <ProductInfo 
+              product={product} 
+              donationAmount={donationAmount}
+            />
           </div>
 
           {/* Checkout Form */}
           <div className="lg:col-span-2">
-            <CheckoutForm product={product} />
+            <CheckoutForm 
+              product={product}
+              onDonationAmountChange={setDonationAmount}
+            />
           </div>
         </div>
       </div>

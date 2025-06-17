@@ -99,12 +99,34 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     return true;
   };
 
-  // Função para converter valor da doação para centavos
+  // *** FUNÇÃO CORRIGIDA PARA CONVERTER VALOR DA DOAÇÃO ***
   const convertDonationToCents = (donationValue: string): number => {
-    // Remove formatação e converte para número
-    const cleanValue = donationValue.replace(/[^\d,]/g, '').replace(',', '.');
+    console.log('[DEBUG] *** INICIANDO CONVERSÃO DO VALOR DA DOAÇÃO ***');
+    console.log('[DEBUG] Valor original recebido:', donationValue);
+    
+    // 1. Remover formatação monetária (R$, espaços, pontos de milhares)
+    let cleanValue = donationValue.replace(/[R$\s\.]/g, '');
+    console.log('[DEBUG] Após remover formatação:', cleanValue);
+    
+    // 2. Substituir vírgula por ponto
+    cleanValue = cleanValue.replace(',', '.');
+    console.log('[DEBUG] Após substituir vírgula por ponto:', cleanValue);
+    
+    // 3. Converter para número
     const numberValue = parseFloat(cleanValue);
-    return Math.round(numberValue * 100);
+    console.log('[DEBUG] Valor convertido para número:', numberValue);
+    
+    // 4. Validar se é um número válido
+    if (isNaN(numberValue) || numberValue <= 0) {
+      console.error('[ERRO] Valor inválido para doação:', numberValue);
+      return 0;
+    }
+    
+    // 5. Converter para centavos (multiplicar por 100 e arredondar)
+    const centavos = Math.round(numberValue * 100);
+    console.log('[DEBUG] *** VALOR FINAL EM CENTAVOS ***:', centavos);
+    
+    return centavos;
   };
 
   const createIuguCustomer = async (data: CheckoutFormData) => {
@@ -170,7 +192,7 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       donationAmount: data.donationAmount
     });
 
-    // *** CORREÇÃO: ENVIAR donation_amount_cents CORRETO ***
+    // *** CORREÇÃO CRÍTICA: MONTAR PAYLOAD COM donation_amount_cents CORRETO ***
     const transactionPayload: any = {
       product_id: product.id,
       buyer_email: data.email,
@@ -184,11 +206,11 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       notification_url_base: `${window.location.origin}/api/webhook/iugu`,
     };
 
-    // Se for doação, converter e enviar valor em centavos
+    // *** SE FOR DOAÇÃO, CONVERTER E INCLUIR O VALOR EM CENTAVOS ***
     if (isDonation && data.donationAmount) {
       const donationCents = convertDonationToCents(data.donationAmount);
       transactionPayload.donation_amount_cents = donationCents;
-      console.log('[DEBUG] *** VALOR DA DOAÇÃO CONVERTIDO ***:', {
+      console.log('[DEBUG] *** VALOR DA DOAÇÃO ADICIONADO AO PAYLOAD ***:', {
         original: data.donationAmount,
         cents: donationCents
       });
@@ -263,13 +285,14 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     setIsLoading(loading);
   };
 
-  // Calcular valor a ser exibido no resumo
+  // *** FUNÇÃO CORRIGIDA PARA CALCULAR VALOR A SER EXIBIDO NO RESUMO ***
   const getDisplayAmount = () => {
     if (isDonation) {
       const donationAmount = form.watch('donationAmount');
       if (donationAmount && donationAmount.trim() !== '') {
-        const value = parseFloat(donationAmount.replace(',', '.'));
-        return isNaN(value) ? 0 : Math.round(value * 100);
+        // Usar a mesma lógica de conversão, mas retornar em centavos para manter consistência
+        const centavos = convertDonationToCents(donationAmount);
+        return centavos;
       }
       return 0;
     }
