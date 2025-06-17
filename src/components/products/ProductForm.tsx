@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import ProductTypeSection from './ProductTypeSection';
 import PaymentMethodsSection from './PaymentMethodsSection';
-import CheckoutCustomizationSection from './CheckoutCustomizationSection';
+import { CheckoutCustomizationSection } from './CheckoutCustomizationSection';
 
 interface ProductFormData {
   name: string;
