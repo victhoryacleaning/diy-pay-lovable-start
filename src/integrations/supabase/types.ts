@@ -55,6 +55,7 @@ export type Database = {
       }
       products: {
         Row: {
+          allowed_payment_methods: Json
           checkout_link_slug: string | null
           created_at: string
           description: string | null
@@ -65,10 +66,13 @@ export type Database = {
           name: string
           price_cents: number
           producer_id: string
+          product_type: string
+          subscription_frequency: string | null
           type: string | null
           updated_at: string
         }
         Insert: {
+          allowed_payment_methods?: Json
           checkout_link_slug?: string | null
           created_at?: string
           description?: string | null
@@ -79,10 +83,13 @@ export type Database = {
           name: string
           price_cents: number
           producer_id: string
+          product_type?: string
+          subscription_frequency?: string | null
           type?: string | null
           updated_at?: string
         }
         Update: {
+          allowed_payment_methods?: Json
           checkout_link_slug?: string | null
           created_at?: string
           description?: string | null
@@ -93,6 +100,8 @@ export type Database = {
           name?: string
           price_cents?: number
           producer_id?: string
+          product_type?: string
+          subscription_frequency?: string | null
           type?: string | null
           updated_at?: string
         }

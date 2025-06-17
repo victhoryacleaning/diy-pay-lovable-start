@@ -13,6 +13,8 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import ProductTypeSection from './ProductTypeSection';
+import PaymentMethodsSection from './PaymentMethodsSection';
 
 interface ProductFormData {
   name: string;
@@ -22,6 +24,9 @@ interface ProductFormData {
   file_url_or_access_info: string;
   max_installments_allowed: number;
   is_active: boolean;
+  product_type: string;
+  subscription_frequency: string;
+  allowed_payment_methods: string[];
 }
 
 interface ProductFormProps {
@@ -40,7 +45,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     type: 'digital_file',
     file_url_or_access_info: '',
     max_installments_allowed: 1,
-    is_active: true
+    is_active: true,
+    product_type: 'single_payment',
+    subscription_frequency: '',
+    allowed_payment_methods: ['credit_card', 'pix', 'bank_slip']
   });
 
   // Fetch product data for edit mode
@@ -71,7 +79,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         type: product.type || 'digital_file',
         file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
-        is_active: product.is_active
+        is_active: product.is_active,
+        product_type: product.product_type || 'single_payment',
+        subscription_frequency: product.subscription_frequency || '',
+        allowed_payment_methods: product.allowed_payment_methods || ['credit_card', 'pix', 'bank_slip']
       });
     }
   }, [product, mode]);
@@ -93,7 +104,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
   const saveProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const priceCents = Math.round(parseFloat(data.price) * 100);
+      const priceCents = data.product_type === 'donation' ? 0 : Math.round(parseFloat(data.price) * 100);
       
       const productData = {
         name: data.name,
@@ -103,7 +114,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         file_url_or_access_info: data.file_url_or_access_info || null,
         max_installments_allowed: data.max_installments_allowed,
         is_active: data.is_active,
-        producer_id: user?.id
+        producer_id: user?.id,
+        product_type: data.product_type,
+        subscription_frequency: data.product_type === 'subscription' ? data.subscription_frequency : null,
+        allowed_payment_methods: data.allowed_payment_methods
       };
 
       if (mode === 'create') {
@@ -151,8 +165,20 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       return;
     }
     
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    // Validar preço apenas se não for doação
+    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price) <= 0)) {
       toast.error('Preço deve ser maior que zero');
+      return;
+    }
+
+    // Validar frequência para assinaturas
+    if (formData.product_type === 'subscription' && !formData.subscription_frequency) {
+      toast.error('Frequência de cobrança é obrigatória para assinaturas');
+      return;
+    }
+
+    if (formData.allowed_payment_methods.length === 0) {
+      toast.error('Selecione pelo menos um método de pagamento');
       return;
     }
 
@@ -181,6 +207,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       </div>
     );
   }
+
+  const isPriceDisabled = formData.product_type === 'donation';
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -212,6 +240,13 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <ProductTypeSection
+              productType={formData.product_type}
+              subscriptionFrequency={formData.subscription_frequency}
+              onProductTypeChange={(value) => handleInputChange('product_type', value)}
+              onSubscriptionFrequencyChange={(value) => handleInputChange('subscription_frequency', value)}
+            />
+
             <div className="space-y-2">
               <Label htmlFor="name">Nome do Produto *</Label>
               <Input
@@ -236,7 +271,9 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="price">Valor do Produto (R$) *</Label>
+                <Label htmlFor="price">
+                  {isPriceDisabled ? 'Valor (Definido pelo Cliente)' : 'Valor do Produto (R$) *'}
+                </Label>
                 <Input
                   id="price"
                   type="number"
@@ -244,9 +281,15 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                   min="0.01"
                   value={formData.price}
                   onChange={(e) => handleInputChange('price', e.target.value)}
-                  placeholder="0.00"
-                  required
+                  placeholder={isPriceDisabled ? "Valor livre" : "0.00"}
+                  disabled={isPriceDisabled}
+                  required={!isPriceDisabled}
                 />
+                {isPriceDisabled && (
+                  <p className="text-sm text-gray-500">
+                    Para doações, o valor será definido pelo cliente no momento da compra
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -291,6 +334,11 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                 Link para download, acesso à plataforma ou instruções que serão enviadas ao cliente após a compra
               </p>
             </div>
+
+            <PaymentMethodsSection
+              allowedPaymentMethods={formData.allowed_payment_methods}
+              onPaymentMethodsChange={(methods) => handleInputChange('allowed_payment_methods', methods)}
+            />
 
             <div className="flex items-center space-x-2">
               <Checkbox
