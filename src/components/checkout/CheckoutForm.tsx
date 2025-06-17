@@ -68,81 +68,92 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     onDonationAmountChange(donationAmount);
   }
 
-  const validateRequiredFields = (data: CheckoutFormData) => {
+  const validateRequiredFields = (data: CheckoutFormData): boolean => {
     if (isDonation) {
-      if (!data.donationAmount || data.donationAmount.trim() === "" || parseFloat(data.donationAmount.replace(/[^0-9,]/g, '').replace(',', '.')) <= 0) {
-        toast({
-          title: "Valor obrigatório",
-          description: "Por favor, informe o valor da doação.",
-          variant: "destructive",
+      const donationValue = parseFloat(data.donationAmount?.replace(/[^0-9,]/g, '').replace(',', '.') || '0');
+      if (isNaN(donationValue) || donationValue <= 0) {
+        toast({ 
+          title: "Valor obrigatório", 
+          description: "Por favor, informe um valor válido para a doação.", 
+          variant: "destructive" 
         });
         return false;
       }
     }
-    if (data.paymentMethod === "bank_slip") {
-      if (!data.fullName || !data.cpfCnpj) {
-        toast({
-          title: "Campos obrigatórios",
-          description: "Nome completo e CPF/CNPJ são obrigatórios para boleto bancário.",
-          variant: "destructive",
-        });
-        return false;
-      }
+    if (data.paymentMethod === "bank_slip" && (!data.fullName || !data.cpfCnpj)) {
+      toast({ 
+        title: "Campos obrigatórios", 
+        description: "Nome completo e CPF/CNPJ são obrigatórios para boleto.", 
+        variant: "destructive" 
+      });
+      return false;
     }
-    if (data.paymentMethod === "credit_card") {
-      if (!data.cardNumber || !data.cardName || !data.cardExpiry || !data.cardCvv) {
-        toast({
-          title: "Campos obrigatórios",
-          description: "Todos os dados do cartão são obrigatórios.",
-          variant: "destructive",
-        });
-        return false;
-      }
+    if (data.paymentMethod === "credit_card" && (!data.cardNumber || !data.cardName || !data.cardExpiry || !data.cardCvv)) {
+      toast({ 
+        title: "Campos obrigatórios", 
+        description: "Todos os dados do cartão são obrigatórios.", 
+        variant: "destructive" 
+      });
+      return false;
     }
     return true;
   };
 
-  const convertDonationToCents = (donationValue: string): number => {
-    let cleanValue = donationValue.replace(/[R$\s\.]/g, '').replace(',', '.');
+  const convertToCents = (value: string | undefined): number => {
+    if (!value) return 0;
+    const cleanValue = value.replace(/[R$\s\.]/g, '').replace(',', '.');
     const numberValue = parseFloat(cleanValue);
     if (isNaN(numberValue) || numberValue <= 0) return 0;
     return Math.round(numberValue * 100);
   };
-
+  
   const createIuguCustomer = async (data: CheckoutFormData) => {
+    console.log('[DEBUG] Padronizado: Criando cliente Iugu com supabase.functions.invoke...');
     const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
-      body: {
-        email: data.email,
-        name: data.fullName,
-        cpf_cnpj: data.cpfCnpj,
-        phone: data.phone,
+      body: { 
+        email: data.email, 
+        name: data.fullName, 
+        cpf_cnpj: data.cpfCnpj, 
+        phone: data.phone 
       },
     });
-    if (error) throw error;
+    if (error) throw new Error('Erro ao criar ou buscar cliente Iugu.');
     return result;
   };
-  
-  // A LÓGICA DE TOKENIZAÇÃO DEVE SER REVISADA, USANDO INVOKE TAMBÉM
+
   const createPaymentToken = async (data: CheckoutFormData) => {
-    // ...
-    return null; // Placeholder
+    if (data.paymentMethod !== "credit_card" || !data.cardName || !data.cardExpiry || !data.cardCvv) return null;
+    
+    const [firstName, ...lastNameParts] = data.cardName.split(' ');
+    const lastName = lastNameParts.join(' ');
+    const [month, year] = data.cardExpiry.split('/');
+
+    const { data: result, error } = await supabase.functions.invoke('create-iugu-payment-token', {
+      body: {
+        card_number: data.cardNumber?.replace(/\s/g, ''),
+        verification_value: data.cardCvv,
+        first_name: firstName,
+        last_name: lastName,
+        month,
+        year: `20${year}`,
+      },
+    });
+    if (error) throw new Error('Erro ao tokenizar cartão.');
+    return result.id;
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
-    if (!validateRequiredFields(data)) {
-      return;
-    }
+    if (!validateRequiredFields(data)) return;
     setIsLoading(true);
 
     try {
       console.log('[DEBUG] PASSO 1: CRIANDO CLIENTE NA IUGU');
       const customerResponse = await createIuguCustomer(data);
-      if (!customerResponse.success) {
-        throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
-      }
+      if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
       const { iugu_customer_id, buyer_profile_id } = customerResponse;
 
-      const cardToken = null; // Lógica de tokenização de cartão a ser implementada
+      console.log('[DEBUG] PASSO 2: CRIANDO TOKEN DO CARTÃO (se aplicável)');
+      const cardToken = await createPaymentToken(data);
 
       console.log('[DEBUG] PASSO 3: CRIANDO TRANSAÇÃO');
       const transactionPayload: any = {
@@ -157,11 +168,10 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         buyer_cpf_cnpj: data.cpfCnpj,
       };
 
-      if (isDonation && data.donationAmount) {
-        const donationCents = convertDonationToCents(data.donationAmount);
-        transactionPayload.donation_amount_cents = donationCents;
+      if (isDonation) {
+        transactionPayload.donation_amount_cents = convertToCents(data.donationAmount);
       }
-
+      
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
 
       const { data: result, error: transactionError } = await supabase.functions.invoke(
@@ -170,7 +180,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       );
 
       if (transactionError) throw transactionError;
-
       if (!result.success) {
         const errorMessage = result.lugu_errors ? JSON.stringify(result.lugu_errors) : "Falha ao processar pagamento.";
         throw new Error(errorMessage);
@@ -190,11 +199,10 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     }
   };
   
-  const getDisplayAmount = () => {
+  const getDisplayAmount = (): number => {
     if (isDonation) {
       const donationValue = form.getValues('donationAmount');
-      if (donationValue) return convertDonationToCents(donationValue);
-      return 0;
+      return convertToCents(donationValue);
     }
     return product.price_cents;
   };
