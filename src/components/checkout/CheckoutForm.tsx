@@ -20,6 +20,7 @@ interface Product {
   product_type?: string;
   donation_title?: string;
   donation_description?: string;
+  allowed_payment_methods: string[];
 }
 
 interface CheckoutFormProps {
