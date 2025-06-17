@@ -14,7 +14,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import ProductTypeSection from './ProductTypeSection';
 import PaymentMethodsSection from './PaymentMethodsSection';
-import { CheckoutCustomizationSection } from './CheckoutCustomizationSection';
 
 interface ProductFormData {
   name: string;
@@ -234,6 +233,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   }
 
   const isPriceDisabled = formData.product_type === 'donation';
+  const isDonation = formData.product_type === 'donation';
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -365,16 +365,94 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
               onPaymentMethodsChange={(methods) => handleInputChange('allowed_payment_methods', methods)}
             />
 
-            <CheckoutCustomizationSection
-              form={{ 
-                control: { 
-                  // Mock form control for the new section
-                }, 
-                getValues: () => formData,
-                setValue: (field: string, value: any) => handleInputChange(field as keyof ProductFormData, value)
-              } as any}
-              productType={formData.product_type}
-            />
+            {/* Personalização do Checkout */}
+            <div className="space-y-6 p-4 border rounded-lg bg-gray-50">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">🎨 Personalização do Checkout</h3>
+                <p className="text-sm text-gray-600">Customize a aparência e comportamento da página de checkout</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="checkout_image_url">URL da Imagem do Checkout</Label>
+                  <Input
+                    id="checkout_image_url"
+                    value={formData.checkout_image_url}
+                    onChange={(e) => handleInputChange('checkout_image_url', e.target.value)}
+                    placeholder="https://exemplo.com/imagem.jpg"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Imagem exibida no topo da página de checkout
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="checkout_background_color">Cor de Fundo do Checkout</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      className="w-16 h-10 p-1 border"
+                      value={formData.checkout_background_color}
+                      onChange={(e) => handleInputChange('checkout_background_color', e.target.value)}
+                    />
+                    <Input
+                      id="checkout_background_color"
+                      value={formData.checkout_background_color}
+                      onChange={(e) => handleInputChange('checkout_background_color', e.target.value)}
+                      placeholder="#F3F4F6"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Cor de fundo da página de checkout (formato HEX)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="show_order_summary"
+                  checked={formData.show_order_summary}
+                  onCheckedChange={(checked) => handleInputChange('show_order_summary', checked)}
+                />
+                <Label htmlFor="show_order_summary">Exibir Resumo do Pedido</Label>
+                <p className="text-xs text-gray-500 ml-2">
+                  Mostra um resumo detalhado do pedido na lateral do checkout
+                </p>
+              </div>
+
+              {isDonation && (
+                <div className="space-y-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
+                  <h4 className="font-semibold text-blue-900">💝 Personalização para Doações</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="donation_title" className="text-blue-900">Título da Seção de Doação</Label>
+                    <Input
+                      id="donation_title"
+                      value={formData.donation_title}
+                      onChange={(e) => handleInputChange('donation_title', e.target.value)}
+                      placeholder="Ex: Apoie este Projeto"
+                    />
+                    <p className="text-xs text-blue-600">
+                      Título personalizado para a seção onde o cliente define o valor
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="donation_description" className="text-blue-900">Descrição da Doação</Label>
+                    <Textarea
+                      id="donation_description"
+                      value={formData.donation_description}
+                      onChange={(e) => handleInputChange('donation_description', e.target.value)}
+                      placeholder="Descreva como a doação será utilizada..."
+                      rows={3}
+                    />
+                    <p className="text-xs text-blue-600">
+                      Texto explicativo sobre o propósito da doação
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
