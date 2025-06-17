@@ -227,6 +227,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               form={form}
               maxInstallments={product.max_installments_allowed}
               productPriceCents={getDisplayAmount()}
+              product={product}
             />
 
             <CheckoutButton isLoading={isLoading} />
