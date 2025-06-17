@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +10,7 @@ import { PaymentMethodTabs } from "./PaymentMethodTabs";
 import { CheckoutButton } from "./CheckoutButton";
 import { DonationValueSection } from "./DonationValueSection";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
@@ -246,29 +245,24 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         });
       }
 
-      console.log('[DEBUG] *** PAYLOAD COMPLETO SENDO ENVIADO PARA create-iugu-transaction ***:', JSON.stringify(transactionPayload, null, 2));
+      // *** LOG DE VERIFICAÇÃO CRÍTICO ***
+      console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
 
-      // Step 4: Create transaction
-      const response = await fetch('/api/functions/v1/create-iugu-transaction', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transactionPayload),
+      // Step 4: Create transaction usando supabase.functions.invoke
+      const { data: result, error } = await supabase.functions.invoke('create-iugu-transaction', {
+        body: transactionPayload,
       });
 
-      if (!response.ok) {
-        throw new Error('Erro ao processar pagamento');
+      if (error) {
+        throw new Error(error.message || 'Erro ao processar pagamento');
       }
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (result?.success) {
         // Redirect to our internal payment confirmation page
         const saleId = result.sale_id;
         window.location.href = `/payment-confirmation/${saleId}`;
       } else {
-        throw new Error(result.message || 'Erro no processamento do pagamento');
+        throw new Error(result?.message || 'Erro no processamento do pagamento');
       }
 
     } catch (error) {
@@ -358,4 +352,3 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     </Card>
   );
 };
-
