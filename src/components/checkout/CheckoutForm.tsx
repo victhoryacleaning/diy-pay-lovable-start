@@ -70,8 +70,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
   const validateRequiredFields = (data: CheckoutFormData): boolean => {
     if (isDonation) {
-      const donationValue = parseFloat(data.donationAmount?.replace(/[^0-9,]/g, '').replace(',', '.') || '0');
-      if (isNaN(donationValue) || donationValue <= 0) {
+      if (!data.donationAmount || convertToCents(data.donationAmount) === 0) {
         toast({ 
           title: "Valor obrigatório", 
           description: "Por favor, informe um valor válido para a doação.", 
@@ -108,19 +107,13 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   };
   
   const createIuguCustomer = async (data: CheckoutFormData) => {
-    console.log('[DEBUG] Padronizado: Criando cliente Iugu com supabase.functions.invoke...');
     const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
-      body: { 
-        email: data.email, 
-        name: data.fullName, 
-        cpf_cnpj: data.cpfCnpj, 
-        phone: data.phone 
-      },
+      body: { email: data.email, name: data.fullName, cpf_cnpj: data.cpfCnpj, phone: data.phone },
     });
     if (error) throw new Error('Erro ao criar ou buscar cliente Iugu.');
     return result;
   };
-
+  
   const createPaymentToken = async (data: CheckoutFormData) => {
     if (data.paymentMethod !== "credit_card" || !data.cardName || !data.cardExpiry || !data.cardCvv) return null;
     
@@ -147,15 +140,12 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     setIsLoading(true);
 
     try {
-      console.log('[DEBUG] PASSO 1: CRIANDO CLIENTE NA IUGU');
       const customerResponse = await createIuguCustomer(data);
       if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
       const { iugu_customer_id, buyer_profile_id } = customerResponse;
 
-      console.log('[DEBUG] PASSO 2: CRIANDO TOKEN DO CARTÃO (se aplicável)');
       const cardToken = await createPaymentToken(data);
 
-      console.log('[DEBUG] PASSO 3: CRIANDO TRANSAÇÃO');
       const transactionPayload: any = {
         product_id: product.id,
         buyer_email: data.email,
@@ -188,10 +178,10 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       window.location.href = `/payment-confirmation/${result.sale_id}`;
 
     } catch (error: any) {
-      console.error('[ERRO] ERRO NO PROCESSO DE PAGAMENTO ***:', error);
+      console.error('[ERRO] NO PROCESSO DE PAGAMENTO:', error);
       toast({
         title: "Erro no pagamento",
-        description: error.message || "Ocorreu um erro ao processar seu pagamento. Tente novamente.",
+        description: error.message || "Ocorreu um erro ao processar seu pagamento.",
         variant: "destructive",
       });
     } finally {
@@ -233,20 +223,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               productPriceCents={getDisplayAmount()}
             />
 
-            <CheckoutButton 
-              isLoading={isLoading}
-              onPaymentProcess={setIsLoading}
-              formData={form.getValues()}
-              product={product}
-              paymentMethod={paymentMethod}
-              cardData={{
-                number: form.getValues('cardNumber') || '',
-                holderName: form.getValues('cardName') || '',
-                expiry: form.getValues('cardExpiry') || '',
-                cvv: form.getValues('cardCvv') || ''
-              }}
-              installments={form.getValues('installments')}
-            />
+            <CheckoutButton isLoading={isLoading} />
 
             <div className="text-center pt-4 border-t">
               <p className="text-sm text-gray-500">🔒 Pagamento processado por DIYPay</p>
