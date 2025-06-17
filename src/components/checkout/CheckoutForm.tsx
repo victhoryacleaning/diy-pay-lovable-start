@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +21,7 @@ interface Product {
 
 interface CheckoutFormProps {
   product: Product;
+  onDonationAmountChange?: (amount: string) => void;
 }
 
 const checkoutSchema = z.object({
@@ -46,7 +46,7 @@ const checkoutSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
-export const CheckoutForm = ({ product }: CheckoutFormProps) => {
+export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
   const isDonation = product.product_type === 'donation';
@@ -60,6 +60,13 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       donationAmount: isDonation ? "" : undefined,
     },
   });
+  
+  // Watch for donation amount changes and notify parent component
+  const donationAmount = form.watch('donationAmount');
+  // Call onDonationAmountChange whenever donation amount changes
+  if (isDonation && onDonationAmountChange && donationAmount !== undefined) {
+    onDonationAmountChange(donationAmount);
+  }
 
   const validateRequiredFields = (data: CheckoutFormData) => {
     // Validação específica para doações
@@ -99,7 +106,6 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     return true;
   };
 
-  // *** FUNÇÃO CORRIGIDA PARA CONVERTER VALOR DA DOAÇÃO ***
   const convertDonationToCents = (donationValue: string): number => {
     console.log('[DEBUG] *** INICIANDO CONVERSÃO DO VALOR DA DOAÇÃO ***');
     console.log('[DEBUG] Valor original recebido:', donationValue);
@@ -192,7 +198,6 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       donationAmount: data.donationAmount
     });
 
-    // *** CORREÇÃO CRÍTICA: MONTAR PAYLOAD COM donation_amount_cents CORRETO ***
     const transactionPayload: any = {
       product_id: product.id,
       buyer_email: data.email,
@@ -206,7 +211,6 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       notification_url_base: `${window.location.origin}/api/webhook/iugu`,
     };
 
-    // *** SE FOR DOAÇÃO, CONVERTER E INCLUIR O VALOR EM CENTAVOS ***
     if (isDonation && data.donationAmount) {
       const donationCents = convertDonationToCents(data.donationAmount);
       transactionPayload.donation_amount_cents = donationCents;
@@ -216,7 +220,6 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
       });
     }
 
-    // *** LOG DE DEPURAÇÃO - PAYLOAD EXATO SENDO ENVIADO ***
     console.log('[DEBUG] *** PAYLOAD COMPLETO SENDO ENVIADO PARA create-iugu-transaction ***:', JSON.stringify(transactionPayload, null, 2));
 
     const response = await fetch('/api/functions/v1/create-iugu-transaction', {
@@ -285,12 +288,10 @@ export const CheckoutForm = ({ product }: CheckoutFormProps) => {
     setIsLoading(loading);
   };
 
-  // *** FUNÇÃO CORRIGIDA PARA CALCULAR VALOR A SER EXIBIDO NO RESUMO ***
   const getDisplayAmount = () => {
     if (isDonation) {
       const donationAmount = form.watch('donationAmount');
       if (donationAmount && donationAmount.trim() !== '') {
-        // Usar a mesma lógica de conversão, mas retornar em centavos para manter consistência
         const centavos = convertDonationToCents(donationAmount);
         return centavos;
       }
