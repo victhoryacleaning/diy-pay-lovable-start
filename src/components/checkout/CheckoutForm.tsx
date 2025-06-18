@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { EmailSection } from "./EmailSection";
@@ -208,30 +207,22 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   return (
     <div className="max-w-2xl mx-auto">
       <Card className="border-gray-200 shadow-lg bg-white">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-2xl font-bold text-gray-900 text-center">
-            Finalizar Compra
-          </CardTitle>
-          <p className="text-gray-600 text-center text-sm">
-            Preencha os dados abaixo para concluir sua compra
-          </p>
-        </CardHeader>
-        <CardContent className="px-8 pb-8">
+        <CardContent className="px-4 sm:px-8 pb-8 pt-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {/* Personal Info Section */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
                 <PersonalInfoSection form={form} />
               </div>
 
               {/* Email Section */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
                 <EmailSection form={form} />
               </div>
               
               {/* Donation Section */}
               {isDonation && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
                   <DonationValueSection 
                     form={form}
                     title={product.donation_title}
@@ -252,7 +243,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               </div>
 
               {/* Payment Methods Section */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
                 <PaymentMethodTabs
                   paymentMethod={paymentMethod}
                   setPaymentMethod={setPaymentMethod}

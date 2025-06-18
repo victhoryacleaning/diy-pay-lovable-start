@@ -1,15 +1,15 @@
 
-import { FileText, Calendar, MapPin, Smartphone, AlertTriangle } from "lucide-react";
+import { FileText, Calendar, AlertTriangle } from "lucide-react";
 
 export const BankSlipPaymentInfo = () => {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8 shadow-sm">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 sm:p-8 shadow-sm">
       <div className="flex items-center space-x-4 mb-6">
-        <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
-          <FileText className="w-8 h-8 text-white" />
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+          <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
         </div>
         <div>
-          <h4 className="text-xl font-bold text-blue-800">Boleto Bancário</h4>
+          <h4 className="text-lg sm:text-xl font-bold text-blue-800">Boleto Bancário</h4>
           <p className="text-blue-600 font-medium">Pagamento tradicional e confiável</p>
         </div>
       </div>
@@ -31,29 +31,10 @@ export const BankSlipPaymentInfo = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
-          <div className="flex items-center space-x-2 mb-2">
-            <Calendar className="w-5 h-5 text-blue-500" />
-            <span className="font-semibold text-blue-800">3 dias úteis</span>
-          </div>
-          <p className="text-sm text-gray-600">Prazo para pagamento</p>
-        </div>
-        
-        <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
-          <div className="flex items-center space-x-2 mb-2">
-            <MapPin className="w-5 h-5 text-blue-500" />
-            <span className="font-semibold text-blue-800">Qualquer lugar</span>
-          </div>
-          <p className="text-sm text-gray-600">Bancos e lotéricas</p>
-        </div>
-        
-        <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
-          <div className="flex items-center space-x-2 mb-2">
-            <Smartphone className="w-5 h-5 text-blue-500" />
-            <span className="font-semibold text-blue-800">Internet Banking</span>
-          </div>
-          <p className="text-sm text-gray-600">Pelo app do banco</p>
+      <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm text-center">
+        <div className="flex items-center justify-center space-x-2 mb-2">
+          <Calendar className="w-5 h-5 text-blue-500" />
+          <span className="font-semibold text-blue-800">Não podemos parcelar Boleto.</span>
         </div>
       </div>
     </div>

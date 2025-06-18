@@ -54,25 +54,25 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
   return (
     <div className="space-y-6">
       {/* Layout Grid: Mockup Left, Form Fields Right */}
-      <div className="grid lg:grid-cols-5 gap-8">
+      <div className="grid lg:grid-cols-5 gap-6 sm:gap-8">
         {/* Credit Card Mockup - Left Side */}
         <div className="lg:col-span-2">
-          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-6 rounded-2xl shadow-2xl relative overflow-hidden" style={{ backgroundColor: '#820ad1' }}>
+          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-6 rounded-2xl shadow-2xl relative overflow-hidden h-36 sm:h-40" style={{ backgroundColor: '#820ad1' }}>
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-4 right-4 w-12 h-12 border-2 border-white rounded-full"></div>
-              <div className="absolute top-8 right-8 w-8 h-8 border border-white rounded-full"></div>
+              <div className="absolute top-4 right-4 w-8 h-8 sm:w-12 sm:h-12 border-2 border-white rounded-full"></div>
+              <div className="absolute top-6 right-6 sm:top-8 sm:right-8 w-6 h-6 sm:w-8 sm:h-8 border border-white rounded-full"></div>
             </div>
             
             {/* Card Content */}
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-8">
-                <CreditCard className="h-6 w-6 text-white" />
+            <div className="relative z-10 h-full flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <CreditCard className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 <div className="text-xs font-medium">CARTÃO</div>
               </div>
               
-              <div className="space-y-4">
-                <div className="text-lg font-mono tracking-wider">
+              <div className="space-y-2 sm:space-y-4">
+                <div className="text-sm sm:text-lg font-mono tracking-wider">
                   {cardNumber || "•••• •••• •••• ••••"}
                 </div>
                 
@@ -172,30 +172,30 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
               )}
             />
           </div>
-
-          {/* Linha 3: Nome do titular */}
-          <FormField
-            control={form.control}
-            name="cardName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium text-gray-700">Nome do titular (como está no cartão) *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="JOÃO DA SILVA" 
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
-                    style={{ textTransform: 'uppercase' }}
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
       </div>
 
-      {/* Campos adicionais em largura total */}
+      {/* Nome do titular em largura total */}
+      <FormField
+        control={form.control}
+        name="cardName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-sm font-medium text-gray-700">Nome do titular (como está no cartão) *</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="JOÃO DA SILVA" 
+                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
+                style={{ textTransform: 'uppercase' }}
+                {...field} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Parcelas e Checkbox */}
       <div className="space-y-4">
         <FormField
           control={form.control}
