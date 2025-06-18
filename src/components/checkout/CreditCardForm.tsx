@@ -1,9 +1,10 @@
+
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
-import { CreditCard, Shield } from "lucide-react";
+import { CreditCard } from "lucide-react";
 
 interface CreditCardFormProps {
   form: UseFormReturn<any>;
@@ -51,12 +52,12 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
   const cardExpiry = form.watch("cardExpiry") || "";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Layout Grid: Mockup Left, Form Fields Right */}
       <div className="grid lg:grid-cols-5 gap-5 sm:gap-6">
         {/* Credit Card Mockup - Left Side */}
         <div className="lg:col-span-2">
-          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-5 rounded-2xl shadow-2xl relative overflow-hidden h-32 sm:h-36 w-full max-w-sm" style={{ backgroundColor: '#820ad1', aspectRatio: '1.6/1' }}>
+          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-5 rounded-2xl shadow-2xl relative overflow-hidden h-28 sm:h-32 w-full max-w-md" style={{ backgroundColor: '#820ad1', aspectRatio: '1.8/1' }}>
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-3 right-3 w-6 h-6 sm:w-8 sm:h-8 border-2 border-white rounded-full"></div>
@@ -69,8 +70,8 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                 <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               
-              <div className="space-y-2 sm:space-y-3">
-                <div className="text-xs sm:text-sm font-mono tracking-wider">
+              <div className="space-y-2">
+                <div className="text-xs sm:text-xs font-mono tracking-wider">
                   {cardNumber || "•••• •••• •••• ••••"}
                 </div>
                 
@@ -94,7 +95,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
         </div>
 
         {/* Form Fields - Right Side */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-3">
           {/* Linha 1: Número do cartão */}
           <FormField
             control={form.control}
@@ -106,7 +107,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                   <Input
                     placeholder="1234 5678 9012 3456"
                     maxLength={19}
-                    className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base font-mono"
+                    className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base font-mono"
                     {...field}
                     onChange={(e) => {
                       const formatted = formatCardNumber(e.target.value);
@@ -131,7 +132,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                     <Input
                       placeholder="MM/AA"
                       maxLength={5}
-                      className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                      className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
                       {...field}
                       onChange={(e) => {
                         const formatted = formatExpiry(e.target.value);
@@ -149,15 +150,12 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
               name="cardCvv"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-gray-700 flex items-center space-x-1">
-                    <span>CVV *</span>
-                    <Shield className="w-4 h-4 text-gray-500" />
-                  </FormLabel>
+                  <FormLabel className="text-sm font-medium text-gray-700">CVV *</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="123"
                       maxLength={4}
-                      className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                      className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
                       {...field}
                       onChange={(e) => {
                         const numbers = e.target.value.replace(/\D/g, '');
@@ -183,7 +181,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             <FormControl>
               <Input 
                 placeholder="JOÃO DA SILVA" 
-                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
+                className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
                 style={{ textTransform: 'uppercase' }}
                 {...field} 
               />
@@ -194,7 +192,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
       />
 
       {/* Parcelas e Checkbox */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <FormField
           control={form.control}
           name="installments"
@@ -203,7 +201,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
               <FormLabel className="text-sm font-medium text-gray-700">Parcelas</FormLabel>
               <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
                 <FormControl>
-                  <SelectTrigger className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione o número de parcelas" />
                   </SelectTrigger>
                 </FormControl>

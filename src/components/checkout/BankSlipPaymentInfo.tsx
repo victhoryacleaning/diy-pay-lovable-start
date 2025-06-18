@@ -34,7 +34,7 @@ export const BankSlipPaymentInfo = () => {
       <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm text-center">
         <div className="flex items-center justify-center space-x-2 mb-2">
           <Calendar className="w-5 h-5 text-blue-500" />
-          <span className="font-semibold text-blue-800">Não podemos parcelar Boleto.</span>
+          <span className="font-semibold text-blue-800">Não podemos parcelar Boleto. Pode levar até 2 dias úteis para compensar.</span>
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -210,7 +209,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       <Card className="border-gray-200 shadow-lg bg-white">
         <CardContent className="px-4 sm:px-8 pb-6 pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {/* Personal Info Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                 <PersonalInfoSection form={form} />
@@ -258,12 +257,12 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               </div>
 
               {/* Checkout Button */}
-              <div className="pt-3">
+              <div className="pt-2">
                 <CheckoutButton isLoading={isLoading} />
               </div>
 
               {/* Footer */}
-              <div className="text-center pt-4 border-t border-gray-200">
+              <div className="text-center pt-3 border-t border-gray-200">
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-5 h-5 bg-green-600 rounded flex items-center justify-center">
                     <span className="text-white text-xs font-bold">🔒</span>

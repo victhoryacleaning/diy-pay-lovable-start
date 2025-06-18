@@ -1,5 +1,5 @@
 
-import { Smartphone, CheckCircle, Clock } from "lucide-react";
+import { Smartphone, CheckCircle } from "lucide-react";
 
 export const PixPaymentInfo = () => {
   return (
@@ -10,7 +10,7 @@ export const PixPaymentInfo = () => {
         </div>
         <div>
           <h4 className="text-lg sm:text-xl font-bold text-green-800">Pagamento via PIX</h4>
-          <p className="text-green-600 font-medium">Aprovação instantânea • Sem taxas</p>
+          <p className="text-green-600 font-medium">Aprovação instantânea</p>
         </div>
       </div>
       
@@ -22,7 +22,7 @@ export const PixPaymentInfo = () => {
       <div className="bg-white rounded-lg p-4 border border-green-100 shadow-sm text-center">
         <div className="flex items-center justify-center space-x-2 mb-2">
           <CheckCircle className="w-5 h-5 text-green-500" />
-          <span className="font-semibold text-green-800">É simples, só usar o aplicativo de seu banco para pagar PIX.</span>
+          <span className="font-semibold text-green-800">É simples, só usar o aplicativo de seu banco para pagar PIX. Liberação imediata!</span>
         </div>
       </div>
     </div>
