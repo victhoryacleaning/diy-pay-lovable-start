@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -209,7 +210,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       <Card className="border-gray-200 shadow-lg bg-white">
         <CardContent className="px-4 sm:px-8 pb-6 pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
               {/* Personal Info Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                 <PersonalInfoSection form={form} />
@@ -230,17 +231,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
                   />
                 </div>
               )}
-              
-              {/* Discount Coupon Teaser */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="text-blue-600 text-lg">🎟️</span>
-                  <div>
-                    <label className="text-sm font-semibold text-blue-900">Tem um cupom de desconto?</label>
-                    <p className="text-xs text-blue-700">Funcionalidade em breve!</p>
-                  </div>
-                </div>
-              </div>
 
               {/* Payment Methods Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
