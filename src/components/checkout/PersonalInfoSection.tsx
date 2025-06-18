@@ -27,8 +27,8 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-2 mb-4">
+    <div className="space-y-5">
+      <div className="flex items-center space-x-2 mb-3">
         <User className="w-5 h-5 text-gray-600" />
         <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
       </div>
@@ -42,7 +42,7 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
             <FormControl>
               <Input 
                 placeholder="Digite seu nome completo" 
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 {...field} 
               />
             </FormControl>
@@ -51,7 +51,7 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
         )}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <FormField
           control={form.control}
           name="phone"
@@ -64,7 +64,7 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
               <FormControl>
                 <Input
                   placeholder="(11) 99999-9999"
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   {...field}
                   onChange={(e) => {
                     const formatted = formatPhone(e.target.value);
@@ -89,7 +89,7 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
               <FormControl>
                 <Input
                   placeholder="000.000.000-00"
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   {...field}
                   onChange={(e) => {
                     const formatted = formatCpfCnpj(e.target.value);

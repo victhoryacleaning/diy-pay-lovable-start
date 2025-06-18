@@ -1,4 +1,3 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,27 +51,26 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
   const cardExpiry = form.watch("cardExpiry") || "";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Layout Grid: Mockup Left, Form Fields Right */}
-      <div className="grid lg:grid-cols-5 gap-6 sm:gap-8">
+      <div className="grid lg:grid-cols-5 gap-5 sm:gap-6">
         {/* Credit Card Mockup - Left Side */}
         <div className="lg:col-span-2">
-          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-6 rounded-2xl shadow-2xl relative overflow-hidden h-36 sm:h-40" style={{ backgroundColor: '#820ad1' }}>
+          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-5 rounded-2xl shadow-2xl relative overflow-hidden h-32 sm:h-36 w-full max-w-sm" style={{ backgroundColor: '#820ad1', aspectRatio: '1.6/1' }}>
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-4 right-4 w-8 h-8 sm:w-12 sm:h-12 border-2 border-white rounded-full"></div>
-              <div className="absolute top-6 right-6 sm:top-8 sm:right-8 w-6 h-6 sm:w-8 sm:h-8 border border-white rounded-full"></div>
+              <div className="absolute top-3 right-3 w-6 h-6 sm:w-8 sm:h-8 border-2 border-white rounded-full"></div>
+              <div className="absolute top-4 right-4 sm:top-5 sm:right-5 w-4 h-4 sm:w-6 sm:h-6 border border-white rounded-full"></div>
             </div>
             
             {/* Card Content */}
             <div className="relative z-10 h-full flex flex-col justify-between">
               <div className="flex justify-between items-start">
-                <CreditCard className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                <div className="text-xs font-medium">CARTÃO</div>
+                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               
-              <div className="space-y-2 sm:space-y-4">
-                <div className="text-sm sm:text-lg font-mono tracking-wider">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="text-xs sm:text-sm font-mono tracking-wider">
                   {cardNumber || "•••• •••• •••• ••••"}
                 </div>
                 
@@ -108,7 +106,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                   <Input
                     placeholder="1234 5678 9012 3456"
                     maxLength={19}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-lg font-mono"
+                    className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base font-mono"
                     {...field}
                     onChange={(e) => {
                       const formatted = formatCardNumber(e.target.value);
@@ -133,7 +131,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                     <Input
                       placeholder="MM/AA"
                       maxLength={5}
-                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                      className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
                       {...field}
                       onChange={(e) => {
                         const formatted = formatExpiry(e.target.value);
@@ -159,7 +157,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                     <Input
                       placeholder="123"
                       maxLength={4}
-                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                      className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
                       {...field}
                       onChange={(e) => {
                         const numbers = e.target.value.replace(/\D/g, '');
@@ -185,7 +183,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             <FormControl>
               <Input 
                 placeholder="JOÃO DA SILVA" 
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
+                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
                 style={{ textTransform: 'uppercase' }}
                 {...field} 
               />
@@ -205,7 +203,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
               <FormLabel className="text-sm font-medium text-gray-700">Parcelas</FormLabel>
               <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
                 <FormControl>
-                  <SelectTrigger className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione o número de parcelas" />
                   </SelectTrigger>
                 </FormControl>
@@ -226,7 +224,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
           control={form.control}
           name="saveData"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-gray-200 p-4 bg-gray-50">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-gray-200 p-3 bg-gray-50">
               <FormControl>
                 <Checkbox
                   checked={field.value}

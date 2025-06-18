@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -207,22 +208,22 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
   return (
     <div className="max-w-2xl mx-auto">
       <Card className="border-gray-200 shadow-lg bg-white">
-        <CardContent className="px-4 sm:px-8 pb-8 pt-8">
+        <CardContent className="px-4 sm:px-8 pb-6 pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Personal Info Section */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                 <PersonalInfoSection form={form} />
               </div>
 
               {/* Email Section */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                 <EmailSection form={form} />
               </div>
               
               {/* Donation Section */}
               {isDonation && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
+                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                   <DonationValueSection 
                     form={form}
                     title={product.donation_title}
@@ -232,7 +233,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               )}
               
               {/* Discount Coupon Teaser */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
                 <div className="flex items-center space-x-2">
                   <span className="text-blue-600 text-lg">🎟️</span>
                   <div>
@@ -243,7 +244,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               </div>
 
               {/* Payment Methods Section */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                 <PaymentMethodTabs
                   paymentMethod={paymentMethod}
                   setPaymentMethod={setPaymentMethod}
@@ -257,12 +258,12 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               </div>
 
               {/* Checkout Button */}
-              <div className="pt-4">
+              <div className="pt-3">
                 <CheckoutButton isLoading={isLoading} />
               </div>
 
               {/* Footer */}
-              <div className="text-center pt-6 border-t border-gray-200">
+              <div className="text-center pt-4 border-t border-gray-200">
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-5 h-5 bg-green-600 rounded flex items-center justify-center">
                     <span className="text-white text-xs font-bold">🔒</span>

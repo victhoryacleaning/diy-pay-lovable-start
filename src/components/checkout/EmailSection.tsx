@@ -10,8 +10,8 @@ interface EmailSectionProps {
 
 export const EmailSection = ({ form }: EmailSectionProps) => {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-2 mb-4">
+    <div className="space-y-5">
+      <div className="flex items-center space-x-2 mb-3">
         <Mail className="w-5 h-5 text-blue-600" />
         <h3 className="text-lg font-semibold text-gray-900">E-mail para acesso ao produto</h3>
       </div>
@@ -26,7 +26,7 @@ export const EmailSection = ({ form }: EmailSectionProps) => {
               <Input 
                 type="email" 
                 placeholder="seuemail@exemplo.com" 
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 {...field} 
               />
             </FormControl>
@@ -45,7 +45,7 @@ export const EmailSection = ({ form }: EmailSectionProps) => {
               <Input 
                 type="email" 
                 placeholder="seuemail@exemplo.com" 
-                className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 {...field} 
               />
             </FormControl>
