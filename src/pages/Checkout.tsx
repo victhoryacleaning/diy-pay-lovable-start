@@ -67,7 +67,7 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen py-8" style={backgroundStyle}>
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Imagem personalizada do checkout */}
         {product.checkout_image_url && (
           <div className="mb-8 text-center">
@@ -81,7 +81,7 @@ const Checkout = () => {
 
         {product.show_order_summary ? (
           // Layout com grid quando resumo está visível
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-4 gap-8">
             {/* Product Info Sidebar */}
             <div className="lg:col-span-1">
               <ProductInfo 
@@ -91,7 +91,7 @@ const Checkout = () => {
             </div>
 
             {/* Checkout Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <CheckoutForm 
                 product={product}
                 onDonationAmountChange={setDonationAmount}
