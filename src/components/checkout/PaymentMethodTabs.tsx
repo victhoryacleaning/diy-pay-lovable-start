@@ -59,11 +59,11 @@ export const PaymentMethodTabs = ({
   const getMethodLabel = (method: string) => {
     switch (method) {
       case "credit_card":
-        return "Cartão de Crédito";
+        return "Cartão";
       case "pix":
         return "PIX";
       case "bank_slip":
-        return "Boleto Bancário";
+        return "Boleto";
       default:
         return "";
     }

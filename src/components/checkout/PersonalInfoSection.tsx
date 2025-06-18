@@ -12,7 +12,7 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '+55 ($1) $2-$3');
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
     }
     return value;
   };
@@ -63,7 +63,7 @@ export const PersonalInfoSection = ({ form }: PersonalInfoSectionProps) => {
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="+55 (11) 99999-9999"
+                  placeholder="(11) 99999-9999"
                   className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   {...field}
                   onChange={(e) => {

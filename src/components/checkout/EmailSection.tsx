@@ -15,9 +15,6 @@ export const EmailSection = ({ form }: EmailSectionProps) => {
         <Mail className="w-5 h-5 text-blue-600" />
         <h3 className="text-lg font-semibold text-gray-900">E-mail para acesso ao produto</h3>
       </div>
-      <p className="text-sm text-gray-600 mb-4">
-        Você receberá os dados de acesso neste e-mail após a confirmação do pagamento
-      </p>
       
       <FormField
         control={form.control}

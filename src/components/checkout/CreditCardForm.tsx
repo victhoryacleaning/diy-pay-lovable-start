@@ -52,106 +52,66 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
   const cardExpiry = form.watch("cardExpiry") || "";
 
   return (
-    <div className="space-y-8">
-      {/* Credit Card Mockup */}
-      <div className="relative">
-        <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white p-8 rounded-2xl shadow-2xl relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 right-4 w-12 h-12 border-2 border-white rounded-full"></div>
-            <div className="absolute top-8 right-8 w-8 h-8 border border-white rounded-full"></div>
-          </div>
-          
-          {/* Card Content */}
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-12">
-              <CreditCard className="h-8 w-8 text-white" />
-              <div className="text-sm font-medium">CARTÃO</div>
+    <div className="space-y-6">
+      {/* Layout Grid: Mockup Left, Form Fields Right */}
+      <div className="grid lg:grid-cols-5 gap-8">
+        {/* Credit Card Mockup - Left Side */}
+        <div className="lg:col-span-2">
+          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-6 rounded-2xl shadow-2xl relative overflow-hidden" style={{ backgroundColor: '#820ad1' }}>
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-4 right-4 w-12 h-12 border-2 border-white rounded-full"></div>
+              <div className="absolute top-8 right-8 w-8 h-8 border border-white rounded-full"></div>
             </div>
             
-            <div className="space-y-6">
-              <div className="text-2xl font-mono tracking-wider">
-                {cardNumber || "•••• •••• •••• ••••"}
+            {/* Card Content */}
+            <div className="relative z-10">
+              <div className="flex justify-between items-start mb-8">
+                <CreditCard className="h-6 w-6 text-white" />
+                <div className="text-xs font-medium">CARTÃO</div>
               </div>
               
-              <div className="flex justify-between items-end">
-                <div className="space-y-1">
-                  <div className="text-xs text-gray-300 uppercase tracking-wide">Portador</div>
-                  <div className="text-sm font-medium uppercase">
-                    {cardName || "NOME DO TITULAR"}
-                  </div>
+              <div className="space-y-4">
+                <div className="text-lg font-mono tracking-wider">
+                  {cardNumber || "•••• •••• •••• ••••"}
                 </div>
-                <div className="space-y-1 text-right">
-                  <div className="text-xs text-gray-300 uppercase tracking-wide">Válido até</div>
-                  <div className="text-sm font-medium">
-                    {cardExpiry || "MM/AA"}
+                
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-300 uppercase tracking-wide">Portador</div>
+                    <div className="text-xs font-medium uppercase">
+                      {cardName || "NOME DO TITULAR"}
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <div className="text-xs text-gray-300 uppercase tracking-wide">Válido até</div>
+                    <div className="text-xs font-medium">
+                      {cardExpiry || "MM/AA"}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Card Form Fields */}
-      <div className="space-y-6">
-        <FormField
-          control={form.control}
-          name="cardNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">Número do cartão *</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={19}
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-lg font-mono"
-                  {...field}
-                  onChange={(e) => {
-                    const formatted = formatCardNumber(e.target.value);
-                    field.onChange(formatted);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="cardName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">Nome do titular (como está no cartão) *</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="JOÃO DA SILVA" 
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
-                  style={{ textTransform: 'uppercase' }}
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-2 gap-6">
+        {/* Form Fields - Right Side */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Linha 1: Número do cartão */}
           <FormField
             control={form.control}
-            name="cardExpiry"
+            name="cardNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium text-gray-700">Vencimento *</FormLabel>
+                <FormLabel className="text-sm font-medium text-gray-700">Número do cartão *</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="MM/AA"
-                    maxLength={5}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                    placeholder="1234 5678 9012 3456"
+                    maxLength={19}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-lg font-mono"
                     {...field}
                     onChange={(e) => {
-                      const formatted = formatExpiry(e.target.value);
+                      const formatted = formatCardNumber(e.target.value);
                       field.onChange(formatted);
                     }}
                   />
@@ -161,25 +121,71 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             )}
           />
 
+          {/* Linha 2: Vencimento e CVV lado a lado */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="cardExpiry"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-gray-700">Vencimento *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="MM/AA"
+                      maxLength={5}
+                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                      {...field}
+                      onChange={(e) => {
+                        const formatted = formatExpiry(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cardCvv"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-gray-700 flex items-center space-x-1">
+                    <span>CVV *</span>
+                    <Shield className="w-4 h-4 text-gray-500" />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="123"
+                      maxLength={4}
+                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                      {...field}
+                      onChange={(e) => {
+                        const numbers = e.target.value.replace(/\D/g, '');
+                        field.onChange(numbers);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Linha 3: Nome do titular */}
           <FormField
             control={form.control}
-            name="cardCvv"
+            name="cardName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium text-gray-700 flex items-center space-x-1">
-                  <span>CVV *</span>
-                  <Shield className="w-4 h-4 text-gray-500" />
-                </FormLabel>
+                <FormLabel className="text-sm font-medium text-gray-700">Nome do titular (como está no cartão) *</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="123"
-                    maxLength={4}
-                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
-                    {...field}
-                    onChange={(e) => {
-                      const numbers = e.target.value.replace(/\D/g, '');
-                      field.onChange(numbers);
-                    }}
+                  <Input 
+                    placeholder="JOÃO DA SILVA" 
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
+                    style={{ textTransform: 'uppercase' }}
+                    {...field} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -187,7 +193,10 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             )}
           />
         </div>
+      </div>
 
+      {/* Campos adicionais em largura total */}
+      <div className="space-y-4">
         <FormField
           control={form.control}
           name="installments"
