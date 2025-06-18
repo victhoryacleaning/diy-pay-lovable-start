@@ -4,8 +4,9 @@ import { CreditCardForm } from "./CreditCardForm";
 import { PixPaymentInfo } from "./PixPaymentInfo";
 import { BankSlipPaymentInfo } from "./BankSlipPaymentInfo";
 import { UseFormReturn } from "react-hook-form";
-import { CreditCard, FileText } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { SiPix } from "react-icons/si";
+import { FaBarcode } from "react-icons/fa6";
 import { useEffect } from "react";
 
 interface PaymentMethodTabsProps {
@@ -51,7 +52,7 @@ export const PaymentMethodTabs = ({
       case "pix":
         return <SiPix className="w-5 h-5" />;
       case "bank_slip":
-        return <FileText className="w-5 h-5" />;
+        return <FaBarcode className="w-5 h-5" />;
       default:
         return null;
     }
