@@ -1,5 +1,5 @@
 
-import { FileText, Barcode, AlertTriangle } from "lucide-react";
+import { FileText, CircleX, CalendarDays, AlertTriangle } from "lucide-react";
 
 export const BankSlipPaymentInfo = () => {
   return (
@@ -31,10 +31,19 @@ export const BankSlipPaymentInfo = () => {
         </div>
       </div>
       
+      {/* Primeiro Bloco de Aviso - Não pode parcelar */}
+      <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm mb-3">
+        <div className="flex items-center space-x-3">
+          <CircleX className="w-5 h-5 text-blue-500 flex-shrink-0" />
+          <span className="font-semibold text-blue-800">Não podemos parcelar Boleto.</span>
+        </div>
+      </div>
+
+      {/* Segundo Bloco de Aviso - Tempo de compensação */}
       <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
         <div className="flex items-center space-x-3">
-          <Barcode className="w-5 h-5 text-blue-500 flex-shrink-0" />
-          <span className="font-semibold text-blue-800">Não podemos parcelar Boleto. Pode levar até 2 dias úteis para compensar.</span>
+          <CalendarDays className="w-5 h-5 text-blue-500 flex-shrink-0" />
+          <span className="font-semibold text-blue-800">Pode levar até 2 dias úteis para compensar.</span>
         </div>
       </div>
     </div>

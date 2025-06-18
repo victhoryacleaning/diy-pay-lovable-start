@@ -33,7 +33,7 @@ interface CheckoutFormProps {
 const checkoutSchema = z.object({
   fullName: z.string().min(2, "Nome completo é obrigatório"),
   phone: z.string().optional(),
-  cpfCnpj: z.string().optional(),
+  cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
   email: z.string().email("Email inválido"),
   confirmEmail: z.string().email("Email inválido"),
   paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
@@ -86,14 +86,6 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         });
         return false;
       }
-    }
-    if (data.paymentMethod === "bank_slip" && (!data.fullName || !data.cpfCnpj)) {
-      toast({ 
-        title: "Campos obrigatórios", 
-        description: "Nome completo e CPF/CNPJ são obrigatórios para boleto.", 
-        variant: "destructive" 
-      });
-      return false;
     }
     if (data.paymentMethod === "credit_card" && (!data.cardNumber || !data.cardName || !data.cardExpiry || !data.cardCvv)) {
       toast({ 
@@ -210,7 +202,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       <Card className="border-gray-200 shadow-lg bg-white">
         <CardContent className="px-4 sm:px-8 pb-6 pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               {/* Personal Info Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                 <PersonalInfoSection form={form} />

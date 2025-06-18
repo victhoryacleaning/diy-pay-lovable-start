@@ -54,10 +54,10 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
   return (
     <div className="space-y-3">
       {/* Layout Grid: Mockup Left, Form Fields Right */}
-      <div className="grid lg:grid-cols-3 gap-5 sm:gap-6">
-        {/* Credit Card Mockup - Left Side - Increased width for better alignment */}
-        <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-5 rounded-2xl shadow-2xl relative overflow-hidden h-24 sm:h-28 w-full" style={{ backgroundColor: '#820ad1', aspectRatio: '2/1' }}>
+      <div className="grid lg:grid-cols-5 gap-5 sm:gap-6">
+        {/* Credit Card Mockup - Left Side - Increased to 2 columns out of 5 */}
+        <div className="lg:col-span-2">
+          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-4 sm:p-5 rounded-2xl shadow-2xl relative overflow-hidden w-full" style={{ backgroundColor: '#820ad1', aspectRatio: '1.6/1' }}>
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-3 right-3 w-6 h-6 sm:w-8 sm:h-8 border-2 border-white rounded-full"></div>
@@ -67,24 +67,24 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             {/* Card Content */}
             <div className="relative z-10 h-full flex flex-col justify-between">
               <div className="flex justify-between items-start">
-                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               
-              <div className="space-y-1">
-                <div className="text-[10px] sm:text-xs font-mono tracking-wider">
+              <div className="space-y-2">
+                <div className="text-xs sm:text-sm font-mono tracking-wider">
                   {cardNumber || "•••• •••• •••• ••••"}
                 </div>
                 
                 <div className="flex justify-between items-end">
                   <div className="space-y-0">
                     <div className="text-[8px] text-gray-300 uppercase tracking-wide">Portador</div>
-                    <div className="text-[9px] sm:text-[10px] font-medium uppercase">
+                    <div className="text-[10px] sm:text-xs font-medium uppercase">
                       {cardName || "NOME DO TITULAR"}
                     </div>
                   </div>
                   <div className="space-y-0 text-right">
                     <div className="text-[8px] text-gray-300 uppercase tracking-wide">Válido até</div>
-                    <div className="text-[9px] sm:text-[10px] font-medium">
+                    <div className="text-[10px] sm:text-xs font-medium">
                       {cardExpiry || "MM/AA"}
                     </div>
                   </div>
@@ -94,8 +94,8 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
           </div>
         </div>
 
-        {/* Form Fields - Right Side */}
-        <div className="lg:col-span-2 space-y-2">
+        {/* Form Fields - Right Side - Now 3 columns out of 5 */}
+        <div className="lg:col-span-3 space-y-2">
           {/* Linha 1: Número do cartão */}
           <FormField
             control={form.control}
@@ -121,7 +121,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
           />
 
           {/* Linha 2: Vencimento e CVV lado a lado */}
-          <div className="grid grid-cols-2 gap-4 items-end">
+          <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="cardExpiry"
