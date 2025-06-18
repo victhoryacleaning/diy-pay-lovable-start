@@ -1,12 +1,10 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreditCardForm } from "./CreditCardForm";
 import { PixPaymentInfo } from "./PixPaymentInfo";
 import { BankSlipPaymentInfo } from "./BankSlipPaymentInfo";
 import { UseFormReturn } from "react-hook-form";
-import { CreditCard } from "lucide-react";
 import { SiPix } from "react-icons/si";
-import { FaBarcode } from "react-icons/fa6";
+import { FaBarcode, FaCreditCard } from "react-icons/fa6";
 import { useEffect } from "react";
 
 interface PaymentMethodTabsProps {
@@ -48,7 +46,7 @@ export const PaymentMethodTabs = ({
   const getMethodIcon = (method: string) => {
     switch (method) {
       case "credit_card":
-        return <CreditCard className="w-5 h-5" />;
+        return <FaCreditCard className="w-5 h-5" />;
       case "pix":
         return <SiPix className="w-5 h-5" />;
       case "bank_slip":
