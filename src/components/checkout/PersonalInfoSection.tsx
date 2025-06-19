@@ -2,14 +2,12 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { User, Smartphone } from "lucide-react";
+import { User } from "lucide-react";
 
-// Importe o PhoneInput e seus estilos
+// Importe o PhoneInput e os tipos necessários
 import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css'; // Garanta que este CSS seja importado
-
-// Importe os tipos necessários para a lista de países
 import { getCountries, Country } from 'react-phone-number-input/input';
+import 'react-phone-number-input/style.css';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -19,25 +17,12 @@ interface PersonalInfoSectionProps {
 // Função de formatação manual para CPF/CNPJ
 const formatCPF_CNPJ = (value: string) => {
   const cleaned = (value || '').replace(/\D/g, '');
-
   if (cleaned.length <= 11) {
-    // Formato CPF: 999.999.999-99
-    return cleaned
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .slice(0, 14);
+    return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
   } else {
-    // Formato CNPJ: 99.999.999/9999-99
-    return cleaned
-      .slice(0, 14)
-      .replace(/^(\d{2})(\d)/, '$1.$2')
-      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/\.(\d{3})(\d)/, '.$1/$2')
-      .replace(/(\d{4})(\d)/, '$1-$2');
+    return cleaned.slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
   }
 };
-
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
   // Lógica para os países preferidos
@@ -85,7 +70,9 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                   international
                   withCountryCallingCode
                   enableSearch
-                  className="flex items-center h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  countryCallingCodeEditable={false}
+                  className="PhoneInput"
+                  countrySelectProps={{ 'aria-label': 'Selecionar país' }}
                 />
               </FormControl>
               <FormMessage />
@@ -108,7 +95,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                     const formattedValue = formatCPF_CNPJ(e.target.value);
                     field.onChange(formattedValue);
                   }}
-                  maxLength={18} // 18 é o tamanho de um CNPJ formatado
+                  maxLength={18}
                 />
               </FormControl>
               <FormMessage />
