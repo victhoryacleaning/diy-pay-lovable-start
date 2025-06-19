@@ -1,3 +1,4 @@
+// >>> CÓDIGO FINAL E DEFINITIVO PARA PersonalInfoSection.tsx <<<
 
 import { useEffect, useRef } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -5,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
 
-// Importa a nova biblioteca
-import intlTelInput from 'intl-tel-input';
-import { Iti } from "intl-tel-input"; // Importa o tipo da instância
+// Importa a nova biblioteca e seus tipos
+import intlTelInput, { type Iti } from 'intl-tel-input';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -28,30 +28,35 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
   const itiRef = useRef<Iti | null>(null);
 
   useEffect(() => {
-    if (phoneInputRef.current) {
-      // Inicializa a biblioteca no input com as configurações válidas
+    if (phoneInputRef.current && !itiRef.current) {
+      
       itiRef.current = intlTelInput(phoneInputRef.current, {
+        // As propriedades corretas e essenciais:
         initialCountry: "br",
-        onlyCountries: ['br', 'us', 'pt', 'mx', 'ar'],
+        preferredCountries: ['br', 'us', 'pt', 'mx', 'ar'],
         separateDialCode: true,
+        // O utilsScript é a chave para a validação e formatação.
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js",
       });
 
-      // Sincroniza com o react-hook-form
+      const inputElement = phoneInputRef.current;
+
       const handlePhoneChange = () => {
         if (itiRef.current) {
-          const number = itiRef.current.getNumber(); // Pega o número no formato E.164
+          const number = itiRef.current.getNumber();
           form.setValue('phone', number, { shouldValidate: true });
         }
       };
 
-      phoneInputRef.current.addEventListener('countrychange', handlePhoneChange);
-      phoneInputRef.current.addEventListener('input', handlePhoneChange);
+      // Adiciona os listeners
+      inputElement.addEventListener('input', handlePhoneChange);
+      inputElement.addEventListener('countrychange', handlePhoneChange);
       
-      // Cleanup
+      // Função de limpeza para quando o componente for desmontado
       return () => {
-        if (itiRef.current) {
-          itiRef.current.destroy();
-        }
+        inputElement.removeEventListener('input', handlePhoneChange);
+        inputElement.removeEventListener('countrychange', handlePhoneChange);
+        itiRef.current?.destroy();
       };
     }
   }, [form]);
@@ -66,7 +71,6 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* CAMPO DE TELEFONE COM A NOVA BIBLIOTECA */}
         <FormField
           control={form.control}
           name="phone"
@@ -74,12 +78,13 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
-                {/* Usamos um input normal, e a mágica acontece via ref */}
+                {/* A biblioteca vai operar neste input via ref */}
                 <Input 
                   ref={phoneInputRef} 
                   type="tel"
-                  placeholder="Digite seu número"
-                  {...field}
+                  // Passamos o `onBlur` e `name` do field, mas o `value` e `onChange` são controlados pelo useEffect
+                  onBlur={field.onBlur}
+                  name={field.name}
                 />
               </FormControl>
               <FormMessage />
@@ -87,7 +92,6 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           )}
         />
 
-        {/* CAMPO CPF/CNPJ FUNCIONAL */}
         <FormField
           control={form.control}
           name="cpfCnpj"
