@@ -1,4 +1,3 @@
-// >>> CÓDIGO FINAL E COMPLETO PARA SUBSTITUIR EM: src/components/checkout/PersonalInfoSection.tsx <<<
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
