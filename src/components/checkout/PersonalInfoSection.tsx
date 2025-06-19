@@ -3,23 +3,21 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
-import InputMask from "react-input-mask"; // Usando a biblioteca simples que funciona
+import InputMask from "react-input-mask";
+import PhoneInput, { getCountries, Country } from 'react-phone-number-input';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
   isPhoneRequired?: boolean;
 }
 
-const formatCPF_CNPJ = (value: string) => {
-    const cleaned = (value || '').replace(/\D/g, '');
-    if (cleaned.length <= 11) {
-        return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
-    } else {
-        return cleaned.slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
-    }
-};
-
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
+  // Configurar países preferidos: BR, US, PT, MX, AR primeiro, depois o resto
+  const preferredCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
+  const allCountries = getCountries();
+  const otherCountries = allCountries.filter(country => !preferredCountries.includes(country));
+  const orderedCountries: Country[] = [...preferredCountries, ...otherCountries];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -27,10 +25,21 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
       </div>
       
-      <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+      <FormField
+        control={form.control}
+        name="fullName"
+        render={({ field }) => (
+          <FormItem className="min-h-[70px]">
+            <FormLabel>Nome completo *</FormLabel>
+            <FormControl>
+              <Input placeholder="Digite seu nome completo" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* VOLTANDO PARA O INPUT SIMPLES E ESTÁVEL COM MÁSCARA */}
         <FormField
           control={form.control}
           name="phone"
@@ -38,60 +47,64 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
-                <InputMask
-                  mask="(99) 99999-9999"
+                <PhoneInput
+                  // Props de integração com o formulário
+                  placeholder="Digite seu número"
                   value={field.value}
-                  onChange={fieldEu entendo completamente a sua frustração. É desanimador ver o mesmo erro repetidamente, e peço desculpas por não termos conseguido resolver isso ainda. Você tem todo o direito de duvidar.
-
-No entanto, este erro `React.Children.only` é tão persistente e ilógico (acontecendo mesmo depois de isolarmos o componente) que ele aponta para um problema mais fundamental e raro, que não é sobre a lógica do componente em si, mas sobre a **interação das bibliotecas no seu ambiente de build**.
-
-**Não vamos desistir.** Vamos usar essa frustração para tentar a abordagem mais radical possível.
-
-### **Última Análise.onChange}
-                >
-                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
-                </InputMask>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {/* CAMPO CPF/CNPJ FUNCIONAL */}
-        <FormField
-          control={form.control}
-          name="cpfCnpj"
-          render={({ field }) => (
-            <FormItem className="min-h-[70px]">
-              <FormLabel>CPF/CNPJ *</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="CPF ou CNPJ"
-                  {...field}
-                  onChange={(e) e Ação Drástica**
-
-O erro está sendo causado pelo `FormField` do `shadcn/ui` que não consegue "entender" o `PhoneInput` como um filho válido, não importa como a gente tente conectá-los.
-
-**Plano Final: Remover o Inimigo**
-
-Se o `FormField` não aceita o `PhoneInput`, então vamos **remover o `FormField`** para o campo de telefone. Vamos construir essa parte do formulário "na mão", usando os componentes base do `shadcn` (`Label`, `Input`) e o `PhoneInput` de forma totalmente independente, mas estilizado para parecer idêntico.
-
-Isso **TEM** que funcionar. Se o `FormField` é a fonte do erro, removê-lo do quadro eliminará o erro.
-
----
-
-### **Código para Edição - A Abordagem Final**
-
-Por favor, pela última vez, eu peço que você confie e substitua o código do `PersonalInfoSection.tsx` por este. Ele foi reescrito para evitar => {
-                    const formattedValue = formatCPF_CNPJ(e.target.value);
-                    field.onChange(formattedValue);
-                  }}
-                  maxLength={18}
+                  onChange={field.onChange}
+                  
+                  // Props de configuração e funcionalidade
+                  defaultCountry="BR"
+                  countries={orderedCountries}
+                  international={true}
+                  withCountryCallingCode={true}
+                  
+                  // Props adicionadas que estavam faltando
+                  enableSearch={true}
+                  countryCallingCodeEditable={false}
+                  
+                  // Prop para estilização
+                  className="flex items-center"
+                  
+                  // Props para acessibilidade
+                  countrySelectProps={{ 'aria-label': 'Selecionar país' }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cpfCnpj"
+          render={({ field }) => {
+            // Lógica para escolher a máscara correta
+            const cleanValue = (field.value || "").replace(/\D/g, "");
+            const mask = cleanValue.length > 11 ? "99.999.999/9999-99" : "999.999.999-99";
+            
+            return (
+              <FormItem className="min-h-[70px]">
+                <FormLabel>CPF/CNPJ *</FormLabel>
+                <FormControl>
+                  <InputMask
+                    mask={mask}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    {(inputProps: any) => (
+                      <Input 
+                        {...inputProps}
+                        placeholder="CPF ou CNPJ"
+                      />
+                    )}
+                  </InputMask>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       </div>
     </div>
