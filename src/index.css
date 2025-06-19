@@ -1,9 +1,7 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import react-phone-number-input styles */
-@import 'react-phone-number-input/style.css';
 
 @layer base {
   :root {
@@ -105,4 +103,126 @@
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* React Phone Number Input custom styles */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  ring-offset: hsl(var(--ring-offset));
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.PhoneInput:focus-within {
+  outline: none;
+  ring: 2px solid hsl(var(--ring));
+  ring-offset: 2px;
+}
+
+.PhoneInput--focus {
+  border-color: hsl(var(--ring));
+}
+
+.PhoneInputCountrySelect {
+  background: transparent;
+  border: none;
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  min-width: 3rem;
+}
+
+.PhoneInputCountrySelect:focus {
+  outline: none;
+}
+
+.PhoneInputCountrySelectArrow {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: 0.25rem;
+  opacity: 0.5;
+}
+
+.PhoneInputCountryIcon {
+  width: 1.25rem;
+  height: auto;
+  margin-right: 0.25rem;
+  border-radius: 0.125rem;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+}
+
+.PhoneInputInput::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.PhoneInputInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Dropdown styles */
+.PhoneInputCountrySelectDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin-top: 0.25rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.PhoneInputCountrySelectOption {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+}
+
+.PhoneInputCountrySelectOption:hover {
+  background: hsl(var(--accent));
+}
+
+.PhoneInputCountrySelectOption--selected {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.PhoneInputCountrySelectOption__icon {
+  width: 1.25rem;
+  height: auto;
+  margin-right: 0.5rem;
+  border-radius: 0.125rem;
+}
+
+.PhoneInputCountrySelectOption__country-name {
+  margin-right: 0.5rem;
+}
+
+.PhoneInputCountrySelectOption__calling-code {
+  margin-left: auto;
+  opacity: 0.7;
+  font-size: 0.75rem;
 }
