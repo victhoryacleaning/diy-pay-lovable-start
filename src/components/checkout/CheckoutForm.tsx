@@ -35,7 +35,11 @@ interface CheckoutFormProps {
 // Base schema for all product types
 const baseSchema = {
   fullName: z.string().min(2, "Nome completo é obrigatório"),
-  cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
+  cpfCnpj: z.string()
+    .transform(value => value.replace(/\D/g, '')) // Remove tudo que não é dígito
+    .refine(value => value.length === 11 || value.length === 14, {
+      message: "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos",
+    }),
   paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
   cardNumber: z.string().optional(),
   cardName: z.string().optional(),
