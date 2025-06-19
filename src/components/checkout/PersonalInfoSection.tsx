@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
 import InputMask from "react-input-mask";
-import PhoneInput, { getCountries, Country } from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -13,12 +11,6 @@ interface PersonalInfoSectionProps {
 }
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
-  // Configurar países preferidos: BR, US, PT, MX, AR primeiro, depois o resto
-  const preferredCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
-  const allCountries = getCountries();
-  const otherCountries = allCountries.filter(country => !preferredCountries.includes(country));
-  const orderedCountries: Country[] = [...preferredCountries, ...otherCountries];
-
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -48,17 +40,9 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
-                <PhoneInput
-                  className="PhoneInput"
+                <Input 
                   placeholder="Digite seu número"
-                  value={field.value}
-                  onChange={field.onChange}
-                  defaultCountry="BR"
-                  countries={orderedCountries}
-                  international
-                  withCountryCallingCode
-                  enableSearch
-                  countrySelectComponentProps={{ 'aria-label': 'Selecionar país' }}
+                  {...field}
                 />
               </FormControl>
               <FormMessage />
