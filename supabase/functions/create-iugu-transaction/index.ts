@@ -17,6 +17,8 @@ interface TransactionPayload {
   buyer_cpf_cnpj?: string;
   notification_url_base?: string;
   donation_amount_cents?: number; // Campo para doações
+  quantity?: number; // Para eventos
+  attendees?: Array<{ name: string; email: string }>; // Para eventos
 }
 
 // Função para atualizar o saldo do produtor
@@ -261,6 +263,8 @@ Deno.serve(async (req) => {
     console.log('[DEBUG] *** PROCESSANDO TRANSAÇÃO PARA PRODUTO ***:', payload.product_id);
     console.log('[DEBUG] *** BUYER_PROFILE_ID RECEBIDO NO PAYLOAD ***:', payload.buyer_profile_id);
     console.log('[DEBUG] *** DONATION_AMOUNT_CENTS RECEBIDO ***:', payload.donation_amount_cents);
+    console.log('[DEBUG] *** QUANTITY RECEBIDO (EVENTOS) ***:', payload.quantity);
+    console.log('[DEBUG] *** ATTENDEES RECEBIDO (EVENTOS) ***:', payload.attendees);
 
     // *** VALIDAÇÃO DETALHADA DOS CAMPOS OBRIGATÓRIOS ***
     console.log('[DEBUG] *** VALIDAÇÃO DETALHADA DOS CAMPOS OBRIGATÓRIOS ***');
@@ -340,11 +344,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // *** CORREÇÃO CRÍTICA: USAR VALOR DINÂMICO PARA DOAÇÕES ***
+    // *** CÁLCULO DO VALOR BASEADO NO TIPO DE PRODUTO ***
     let amountTotalCents = product.price_cents;
+    
     if (product.product_type === 'donation') {
       if (payload.donation_amount_cents) {
-        // *** ROBUSTEZ: GARANTIR QUE É UM NÚMERO ***
         amountTotalCents = Number(payload.donation_amount_cents);
         console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', amountTotalCents);
       } else {
@@ -362,6 +366,14 @@ Deno.serve(async (req) => {
           }
         );
       }
+    } else if (product.product_type === 'event') {
+      const quantity = payload.quantity || 1;
+      amountTotalCents = product.price_cents * quantity;
+      console.log('[DEBUG] *** PRODUTO EVENTO - CALCULANDO VALOR TOTAL ***:', {
+        price_per_ticket: product.price_cents,
+        quantity,
+        total: amountTotalCents
+      });
     }
 
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
@@ -372,7 +384,7 @@ Deno.serve(async (req) => {
       platformFeeCents,
       producerShareCents,
       platformFeePercentage,
-      isDonation: product.product_type === 'donation'
+      product_type: product.product_type
     });
 
     // Validate installments
@@ -396,17 +408,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create initial sale record with buyer_profile_id
+    // Create initial sale record with buyer_profile_id and event data
     console.log('[DEBUG] *** CRIANDO REGISTRO DE VENDA INICIAL ***');
     console.log('[DEBUG] *** GARANTINDO INCLUSÃO EXPLÍCITA DO BUYER_PROFILE_ID ***:', payload.buyer_profile_id);
     let sale;
     
     try {
-      const saleToInsert = {
+      const saleToInsert: any = {
         product_id: payload.product_id,
         buyer_email: payload.buyer_email,
         buyer_profile_id: payload.buyer_profile_id || null,
-        amount_total_cents: amountTotalCents, // Usando valor calculado (pode ser doação)
+        amount_total_cents: amountTotalCents,
         platform_fee_cents: platformFeeCents,
         producer_share_cents: producerShareCents,
         payment_method_used: payload.payment_method_selected,
@@ -414,7 +426,13 @@ Deno.serve(async (req) => {
         status: 'pending'
       };
 
-      console.log('[DEBUG] *** OBJETO EXATO PARA INSERT DA VENDA (COM BUYER_PROFILE_ID EXPLÍCITO) ***:', JSON.stringify(saleToInsert, null, 2));
+      // Adicionar dados específicos para eventos
+      if (product.product_type === 'event' && payload.attendees) {
+        saleToInsert.event_attendees = payload.attendees;
+        console.log('[DEBUG] *** ADICIONANDO DADOS DOS PARTICIPANTES DO EVENTO ***:', payload.attendees);
+      }
+
+      console.log('[DEBUG] *** OBJETO EXATO PARA INSERT DA VENDA ***:', JSON.stringify(saleToInsert, null, 2));
 
       const { data, error: saleError } = await supabase
         .from('sales')
@@ -443,6 +461,7 @@ Deno.serve(async (req) => {
       sale = data;
       console.log('[DEBUG] *** REGISTRO DE VENDA CRIADO COM ID ***:', sale.id);
       console.log('[DEBUG] *** BUYER_PROFILE_ID SALVO NA VENDA ***:', sale.buyer_profile_id);
+      console.log('[DEBUG] *** EVENT_ATTENDEES SALVO NA VENDA ***:', sale.event_attendees);
     } catch (dbError) {
       console.error('[ERRO] *** ERRO AO CRIAR VENDA NO BANCO ***:', dbError);
       return new Response(
@@ -464,13 +483,15 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${btoa(iuguApiKey + ':')}`;
     console.log('[DEBUG] Header de autenticação criado (primeiros 30 chars):', authHeader.substring(0, 30) + '...');
 
-    // *** CORREÇÃO CRÍTICA: USAR VALOR CORRETO NOS ITEMS ***
+    // *** USAR VALOR CORRETO NOS ITEMS BASEADO NO TIPO DE PRODUTO ***
     const items = [{
-      description: product.name,
-      quantity: 1,
-      price_cents: amountTotalCents // *** USAR O VALOR CALCULADO (PRODUTO NORMAL OU DOAÇÃO) ***
+      description: product.product_type === 'event' && payload.quantity && payload.quantity > 1 
+        ? `${product.name} (${payload.quantity} ingressos)`
+        : product.name,
+      quantity: product.product_type === 'event' ? (payload.quantity || 1) : 1,
+      price_cents: product.product_type === 'event' ? product.price_cents : amountTotalCents
     }];
-    console.log('[DEBUG] *** ITEMS PARA IUGU (COM VALOR CORRETO) ***:', JSON.stringify(items, null, 2));
+    console.log('[DEBUG] *** ITEMS PARA IUGU ***:', JSON.stringify(items, null, 2));
 
     let iuguResponse;
     let updateData: any = {};
@@ -570,7 +591,7 @@ Deno.serve(async (req) => {
       const invoicePayload: any = {
         email: payload.buyer_email,
         due_date: dueDate.toISOString().split('T')[0], // YYYY-MM-DD format
-        items: items, // Usando items com valor correto (produto normal ou doação)
+        items: items,
         payable_with: payload.payment_method_selected,
         notification_url: webhookUrl,
         ...(payload.iugu_customer_id && { customer_id: payload.iugu_customer_id })

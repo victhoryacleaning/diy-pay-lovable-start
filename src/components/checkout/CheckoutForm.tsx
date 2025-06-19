@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { EmailSection } from "./EmailSection";
+import { EventTicketsSection } from "./EventTicketsSection";
 import { PaymentMethodTabs } from "./PaymentMethodTabs";
 import { CheckoutButton } from "./CheckoutButton";
 import { DonationValueSection } from "./DonationValueSection";
@@ -28,9 +29,10 @@ interface Product {
 interface CheckoutFormProps {
   product: Product;
   onDonationAmountChange?: (amount: string) => void;
+  onEventQuantityChange?: (quantity: number) => void;
 }
 
-const createCheckoutSchema = (isEmailOptional: boolean) => {
+const createCheckoutSchema = (isEmailOptional: boolean, isEvent: boolean) => {
   const baseSchema = {
     fullName: z.string().min(2, "Nome completo é obrigatório"),
     phone: z.string().min(10, "Telefone é obrigatório"),
@@ -44,6 +46,15 @@ const createCheckoutSchema = (isEmailOptional: boolean) => {
     saveData: z.boolean().default(false),
     donationAmount: z.string().optional(),
   };
+
+  // Adicionar campos específicos para eventos
+  if (isEvent) {
+    baseSchema.quantity = z.string().min(1, "Quantidade é obrigatória");
+    baseSchema.attendees = z.array(z.object({
+      name: z.string().min(2, "Nome do participante é obrigatório"),
+      email: z.string().email("Email inválido")
+    })).min(1, "Pelo menos um participante é obrigatório");
+  }
 
   if (isEmailOptional) {
     return z.object({
@@ -63,10 +74,13 @@ const createCheckoutSchema = (isEmailOptional: boolean) => {
   }
 };
 
-export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormProps) => {
+export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityChange }: CheckoutFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
+  const [eventQuantity, setEventQuantity] = useState<number>(1);
+  
   const isDonation = product.product_type === 'donation';
+  const isEvent = product.product_type === 'event';
   const isEmailOptional = product.is_email_optional || false;
 
   // Convert Json to string array with fallback
@@ -74,7 +88,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     ? product.allowed_payment_methods as string[]
     : ["credit_card", "pix", "bank_slip"];
 
-  const checkoutSchema = createCheckoutSchema(isEmailOptional);
+  const checkoutSchema = createCheckoutSchema(isEmailOptional, isEvent);
   type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
   const form = useForm<CheckoutFormData>({
@@ -84,6 +98,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       installments: 1,
       saveData: false,
       donationAmount: isDonation ? "" : undefined,
+      quantity: isEvent ? "1" : undefined,
+      attendees: isEvent ? [] : undefined,
       email: "",
       confirmEmail: "",
     },
@@ -94,6 +110,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
     onDonationAmountChange?.(donationAmount);
   }
 
+  const handleEventQuantityChange = (quantity: number) => {
+    setEventQuantity(quantity);
+    onEventQuantityChange?.(quantity);
+  };
+
   const validateRequiredFields = (data: CheckoutFormData): boolean => {
     if (isDonation) {
       if (!data.donationAmount || convertToCents(data.donationAmount) === 0) {
@@ -103,6 +124,40 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
           variant: "destructive" 
         });
         return false;
+      }
+    }
+
+    if (isEvent) {
+      const quantity = parseInt(data.quantity || "0");
+      if (quantity < 1) {
+        toast({ 
+          title: "Quantidade obrigatória", 
+          description: "Por favor, informe a quantidade de ingressos.", 
+          variant: "destructive" 
+        });
+        return false;
+      }
+
+      if (!data.attendees || data.attendees.length !== quantity) {
+        toast({ 
+          title: "Dados dos participantes", 
+          description: "Por favor, preencha os dados de todos os participantes.", 
+          variant: "destructive" 
+        });
+        return false;
+      }
+
+      // Validar se todos os campos dos participantes estão preenchidos
+      for (let i = 0; i < data.attendees.length; i++) {
+        const attendee = data.attendees[i];
+        if (!attendee.name || !attendee.email) {
+          toast({ 
+            title: "Dados incompletos", 
+            description: `Por favor, preencha nome e email do participante ${i + 1}.`, 
+            variant: "destructive" 
+          });
+          return false;
+        }
       }
     }
     
@@ -177,7 +232,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
       const transactionPayload: any = {
         product_id: product.id,
-        buyer_email: data.email || data.phone, // Use phone if email is not provided
+        buyer_email: data.email || data.phone,
         iugu_customer_id,
         buyer_profile_id,
         payment_method_selected: data.paymentMethod,
@@ -189,6 +244,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
       if (isDonation) {
         transactionPayload.donation_amount_cents = convertToCents(data.donationAmount);
+      }
+
+      if (isEvent) {
+        transactionPayload.quantity = parseInt(data.quantity || "1");
+        transactionPayload.attendees = data.attendees;
       }
       
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
@@ -223,6 +283,9 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       const donationValue = form.getValues('donationAmount');
       return convertToCents(donationValue);
     }
+    if (isEvent) {
+      return product.price_cents * eventQuantity;
+    }
     return product.price_cents;
   };
 
@@ -241,6 +304,16 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
               {!isEmailOptional && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
                   <EmailSection form={form} isEmailOptional={isEmailOptional} />
+                </div>
+              )}
+
+              {/* Event Tickets Section */}
+              {isEvent && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
+                  <EventTicketsSection 
+                    form={form}
+                    onQuantityChange={handleEventQuantityChange}
+                  />
                 </div>
               )}
               

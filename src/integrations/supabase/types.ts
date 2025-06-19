@@ -180,6 +180,7 @@ export type Database = {
           created_at: string
           error_message_internal: string | null
           error_message_iugu: string | null
+          event_attendees: Json | null
           id: string
           installments_chosen: number | null
           iugu_bank_slip_barcode: string | null
@@ -203,6 +204,7 @@ export type Database = {
           created_at?: string
           error_message_internal?: string | null
           error_message_iugu?: string | null
+          event_attendees?: Json | null
           id?: string
           installments_chosen?: number | null
           iugu_bank_slip_barcode?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           created_at?: string
           error_message_internal?: string | null
           error_message_iugu?: string | null
+          event_attendees?: Json | null
           id?: string
           installments_chosen?: number | null
           iugu_bank_slip_barcode?: string | null

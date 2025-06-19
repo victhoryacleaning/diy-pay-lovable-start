@@ -12,6 +12,7 @@ const Checkout = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [donationAmount, setDonationAmount] = useState<string>("");
+  const [eventQuantity, setEventQuantity] = useState<number>(1);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', slug],
@@ -87,6 +88,7 @@ const Checkout = () => {
               <ProductInfo 
                 product={product} 
                 donationAmount={donationAmount}
+                eventQuantity={eventQuantity}
               />
             </div>
 
@@ -95,6 +97,7 @@ const Checkout = () => {
               <CheckoutForm 
                 product={product}
                 onDonationAmountChange={setDonationAmount}
+                onEventQuantityChange={setEventQuantity}
               />
             </div>
           </div>
@@ -104,6 +107,7 @@ const Checkout = () => {
             <CheckoutForm 
               product={product}
               onDonationAmountChange={setDonationAmount}
+              onEventQuantityChange={setEventQuantity}
             />
           </div>
         )}
