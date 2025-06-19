@@ -66,6 +66,7 @@ export type Database = {
           file_url_or_access_info: string | null
           id: string
           is_active: boolean | null
+          is_email_optional: boolean
           max_installments_allowed: number | null
           name: string
           price_cents: number
@@ -88,6 +89,7 @@ export type Database = {
           file_url_or_access_info?: string | null
           id?: string
           is_active?: boolean | null
+          is_email_optional?: boolean
           max_installments_allowed?: number | null
           name: string
           price_cents: number
@@ -110,6 +112,7 @@ export type Database = {
           file_url_or_access_info?: string | null
           id?: string
           is_active?: boolean | null
+          is_email_optional?: boolean
           max_installments_allowed?: number | null
           name?: string
           price_cents?: number

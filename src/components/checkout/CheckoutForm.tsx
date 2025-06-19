@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +22,7 @@ interface Product {
   donation_title?: string;
   donation_description?: string;
   allowed_payment_methods: Json;
+  is_email_optional?: boolean;
 }
 
 interface CheckoutFormProps {
@@ -30,36 +30,52 @@ interface CheckoutFormProps {
   onDonationAmountChange?: (amount: string) => void;
 }
 
-const checkoutSchema = z.object({
-  fullName: z.string().min(2, "Nome completo é obrigatório"),
-  phone: z.string().optional(),
-  cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
-  email: z.string().email("Email inválido"),
-  confirmEmail: z.string().email("Email inválido"),
-  paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
-  cardNumber: z.string().optional(),
-  cardName: z.string().optional(),
-  cardExpiry: z.string().optional(),
-  cardCvv: z.string().optional(),
-  installments: z.number().min(1).default(1),
-  saveData: z.boolean().default(false),
-  donationAmount: z.string().optional(),
-}).refine((data) => data.email === data.confirmEmail, {
-  message: "Os emails devem ser iguais",
-  path: ["confirmEmail"],
-});
+const createCheckoutSchema = (isEmailOptional: boolean) => {
+  const baseSchema = {
+    fullName: z.string().min(2, "Nome completo é obrigatório"),
+    phone: z.string().min(10, "Telefone é obrigatório"),
+    cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
+    paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
+    cardNumber: z.string().optional(),
+    cardName: z.string().optional(),
+    cardExpiry: z.string().optional(),
+    cardCvv: z.string().optional(),
+    installments: z.number().min(1).default(1),
+    saveData: z.boolean().default(false),
+    donationAmount: z.string().optional(),
+  };
 
-type CheckoutFormData = z.infer<typeof checkoutSchema>;
+  if (isEmailOptional) {
+    return z.object({
+      ...baseSchema,
+      email: z.string().email("Email inválido").optional().or(z.literal("")),
+      confirmEmail: z.string().optional(),
+    });
+  } else {
+    return z.object({
+      ...baseSchema,
+      email: z.string().email("Email inválido"),
+      confirmEmail: z.string().email("Email inválido"),
+    }).refine((data) => data.email === data.confirmEmail, {
+      message: "Os emails devem ser iguais",
+      path: ["confirmEmail"],
+    });
+  }
+};
 
 export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
   const isDonation = product.product_type === 'donation';
+  const isEmailOptional = product.is_email_optional || false;
 
   // Convert Json to string array with fallback
   const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
     ? product.allowed_payment_methods as string[]
     : ["credit_card", "pix", "bank_slip"];
+
+  const checkoutSchema = createCheckoutSchema(isEmailOptional);
+  type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -68,12 +84,14 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
       installments: 1,
       saveData: false,
       donationAmount: isDonation ? "" : undefined,
+      email: "",
+      confirmEmail: "",
     },
   });
 
   const donationAmount = form.watch('donationAmount');
   if (isDonation && donationAmount !== undefined) {
-    onDonationAmountChange(donationAmount);
+    onDonationAmountChange?.(donationAmount);
   }
 
   const validateRequiredFields = (data: CheckoutFormData): boolean => {
@@ -87,6 +105,17 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
         return false;
       }
     }
+    
+    // Validar se pelo menos e-mail ou telefone foi fornecido quando e-mail é opcional
+    if (isEmailOptional && !data.email && !data.phone) {
+      toast({ 
+        title: "Contato obrigatório", 
+        description: "Por favor, forneça pelo menos um e-mail ou telefone para contato.", 
+        variant: "destructive" 
+      });
+      return false;
+    }
+    
     if (data.paymentMethod === "credit_card" && (!data.cardNumber || !data.cardName || !data.cardExpiry || !data.cardCvv)) {
       toast({ 
         title: "Campos obrigatórios", 
@@ -148,7 +177,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
 
       const transactionPayload: any = {
         product_id: product.id,
-        buyer_email: data.email,
+        buyer_email: data.email || data.phone, // Use phone if email is not provided
         iugu_customer_id,
         buyer_profile_id,
         payment_method_selected: data.paymentMethod,
@@ -205,12 +234,12 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               {/* Personal Info Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
-                <PersonalInfoSection form={form} />
+                <PersonalInfoSection form={form} isPhoneRequired={isEmailOptional} />
               </div>
 
               {/* Email Section */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
-                <EmailSection form={form} />
+                <EmailSection form={form} isEmailOptional={isEmailOptional} />
               </div>
               
               {/* Donation Section */}

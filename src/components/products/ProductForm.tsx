@@ -31,6 +31,7 @@ interface ProductFormData {
   donation_description: string;
   checkout_image_url: string;
   checkout_background_color: string;
+  is_email_optional: boolean;
 }
 
 interface ProductFormProps {
@@ -57,7 +58,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     donation_title: '',
     donation_description: '',
     checkout_image_url: '',
-    checkout_background_color: '#F3F4F6'
+    checkout_background_color: '#F3F4F6',
+    is_email_optional: false
   });
 
   // Fetch product data for edit mode
@@ -101,7 +103,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         donation_title: product.donation_title || '',
         donation_description: product.donation_description || '',
         checkout_image_url: product.checkout_image_url || '',
-        checkout_background_color: product.checkout_background_color || '#F3F4F6'
+        checkout_background_color: product.checkout_background_color || '#F3F4F6',
+        is_email_optional: product.is_email_optional || false
       });
     }
   }, [product, mode]);
@@ -141,7 +144,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         donation_title: data.donation_title || null,
         donation_description: data.donation_description || null,
         checkout_image_url: data.checkout_image_url || null,
-        checkout_background_color: data.checkout_background_color || null
+        checkout_background_color: data.checkout_background_color || null,
+        is_email_optional: data.is_email_optional
       };
 
       if (mode === 'create') {
@@ -417,6 +421,18 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                 <Label htmlFor="show_order_summary">Exibir Resumo do Pedido</Label>
                 <p className="text-xs text-gray-500 ml-2">
                   Mostra um resumo detalhado do pedido na lateral do checkout
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_email_optional"
+                  checked={formData.is_email_optional}
+                  onCheckedChange={(checked) => handleInputChange('is_email_optional', checked)}
+                />
+                <Label htmlFor="is_email_optional">E-mail opcional no checkout</Label>
+                <p className="text-xs text-gray-500 ml-2">
+                  Quando ativo, o e-mail não é obrigatório e o telefone se torna o contato principal
                 </p>
               </div>
 
