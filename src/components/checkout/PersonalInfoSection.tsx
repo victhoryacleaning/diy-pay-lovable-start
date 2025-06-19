@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
 
-// Vamos usar a biblioteca de máscara simples que já funciona
-import InputMask from "react-input-mask";
+// Importe o PhoneInput e os tipos necessários
+import PhoneInput, { getCountries, Country, isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -17,80 +18,56 @@ const formatCPF_CNPJ = (value: string) => {
     if (cleaned.length <= 11) {
         return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
     } else {
-        return cleaned.slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{Ok, isso é o que chamamos de "beco sem saída" na depuração.
-
-Se o erro `React.Children.only` persiste mesmo depois de removermos o `<PhoneInput>` de dentro do `FormField` e do `FormControl` e até mesmo de tentarmos a abordagem com o `<Controller>`, isso3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+        return cleaned.slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
     }
 };
 
-export const Personal significa que o problema é mais profundo do que uma simples incompatibilidade de componentes.
+export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
+  const preferredCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
+  const allCountries = getCountries();
+  const otherCountries = allCountries.filter(country => !preferredCountries.includes(country));
+  const orderedCountries: Country[] = [...preferredCountries, ...otherCountries];
+  
+  // Pegar erros manualmente para o campo de telefone
+  const phoneError = form.formState.errors.phone;
 
-**Análise do Impasse:**InfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x
-
-O erro `React.Children.only` é disparado por um componente pai que espera um único filho. No-2 mb-3">
+      <div className="flex items-center space-x-2 mb-3">
         <User className="w-5 h-5 text-gray-500" />
-        <h3 className="text-lg font-semibold text-gray-900"> nosso caso, é quase certo que seja o `FormItem` ou algum componente interno do `shadcn/ui` queInformações Pessoais</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
       </div>
       
-      <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel ele usa. Por algum motivo, a simples presença do `<PhoneInput>` como um "irmão" de outros componentes dentro do `FormItem` está quebrando essa expectativa.
-
-Não podemos continuar tentando adivinhar. Precisamos de uma solução>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+      <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* VOLTANDO PARA O INPUT SIMPLES COM MÁSCARA */} que **contorne o problema fundamental**.
-
-**A Solução Final (Abordagem de Isolamento Total):**
-
-Vamos desistir de tentar fazer o `<PhoneInput>` viver "dentro" do ecossistema do `FormItem` do shad
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem className="min-h-[70px]">
-              <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
-              <FormControl>
-                <Inputcn. Vamos isolá-lo completamente e usar o CSS para que ele *pareça* estar alinhado.
-
----
-
-### **Código Corrigido - A Abordagem de Isolamento**
-
-**Ação:** Substitua o conteúdo inteiro do seu arquivo `src/components/checkout/PersonalInfoSection.tsx` por este código.
-
-Mask
-                  mask="(99) 99999-9999"
-                  value={field.value}
-                  onChange={field.onChange}
-                >
-                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
-                </Input```tsx
-// >>> CÓDIGO FINAL v5 PARA PersonalInfoSection.tsx (ISOLAMENTO TOTAL) <<<
-
-import { useState } from 'react';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { UseMask>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         
-        {/* CAMPO CPF/CNPJ FUNCIONAL */}
+        {/* CAMPO DE TELEFONE RENDERIZADO FORA DO FORMFIELD PADRÃO */}
+        <div className="min-h-[70px]">
+          <FormLabel className={phoneError ? 'text-destructive' : ''}>
+            Celular{isPhoneRequired ? " *" : ""}
+          </FormLabel>
+          <PhoneInput
+            name="phone"
+            className={`PhoneInput mt-2 ${phoneError ? 'PhoneInput--error' : ''}`}
+            placeholder="Digite seu número"
+            value={form.getValues('phone')}
+            onChange={(value) => form.setValue('phone', value, { shouldValidate: true })}
+            defaultCountry="BR"
+            countries={orderedCountries}
+            international
+            withCountryCallingCode
+            enableSearch
+          />
+          {phoneError && <p className="text-sm font-medium text-destructive mt-2">{phoneError.message as string}</p>}
+        </div>
+
+        {/* CAMPO CPF/CNPJ */}
         <FormField
           control={form.control}
           name="cpfCnpj"
           render={({ field }) => (
-            <FormItemFormReturn } from "react-hook-form";
-import { User } from "lucide-react";
-
-import PhoneInput, { getCountries, Country, isValidPhoneNumber, E164Number } from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
-
-interface PersonalInfoSectionProps className="min-h-[70px]">
+            <FormItem className="min-h-[70px]">
               <FormLabel>CPF/CNPJ *</FormLabel>
               <FormControl>
                 <Input 
@@ -101,15 +78,7 @@ interface PersonalInfoSectionProps className="min-h-[70px]">
                     field.onChange(formattedValue);
                   }}
                   maxLength={18}
- {
-  form: UseFormReturn<any>;
-  isPhoneRequired?: boolean;
-}
-
-const formatCPF_CNPJ = (value: string) => {
-    const cleaned = (value || '').replace(/\D/g, '');
-    if (cleaned.length <= 11) {
-        return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$                />
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
