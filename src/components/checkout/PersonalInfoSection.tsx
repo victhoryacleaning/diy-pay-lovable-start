@@ -1,3 +1,5 @@
+// >>> CÓDIGO DE CONTINGÊNCIA FINAL PARA PersonalInfoSection.tsx <<<
+// Remove TODAS as dependências externas de telefone e volta para o básico e estável
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -30,7 +32,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* Campo de telefone com máscara simples e estável */}
+        {/* VOLTANDO PARA O INPUT SIMPLES COM MÁSCARA PARA O CELULAR */}
         <FormField
           control={form.control}
           name="phone"
@@ -40,7 +42,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
               <FormControl>
                 <InputMask
                   mask="(99) 99999-9999"
-                  value={field.value || ""}
+                  value={field.value}
                   onChange={field.onChange}
                 >
                   {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
@@ -51,7 +53,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           )}
         />
         
-        {/* CAMPO CPF/CNPJ FUNCIONAL */}
+        {/* CAMPO CPF/CNPJ COM FORMATAÇÃO MANUAL QUE JÁ FUNCIONA */}
         <FormField
           control={form.control}
           name="cpfCnpj"
