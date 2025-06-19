@@ -29,12 +29,11 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
 
   useEffect(() => {
     if (phoneInputRef.current) {
-      // Inicializa a biblioteca no input com as configurações corretas
+      // Inicializa a biblioteca no input com as configurações válidas
       itiRef.current = intlTelInput(phoneInputRef.current, {
         initialCountry: "br",
         onlyCountries: ['br', 'us', 'pt', 'mx', 'ar'],
         separateDialCode: true,
-        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js",
       });
 
       // Sincroniza com o react-hook-form
