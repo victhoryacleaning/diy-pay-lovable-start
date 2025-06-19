@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
 import InputMask from "react-input-mask";
-import PhoneInput, { getCountries, getCountryCallingCode, CountryCode } from 'react-phone-number-input';
+import PhoneInput, { getCountries, Country } from 'react-phone-number-input';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -13,10 +13,10 @@ interface PersonalInfoSectionProps {
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
   // Configurar países preferidos: BR, US, PT, MX, AR primeiro, depois o resto
-  const preferredCountries: CountryCode[] = ['BR', 'US', 'PT', 'MX', 'AR'];
+  const preferredCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
   const allCountries = getCountries();
   const otherCountries = allCountries.filter(country => !preferredCountries.includes(country));
-  const orderedCountries: CountryCode[] = [...preferredCountries, ...otherCountries];
+  const orderedCountries: Country[] = [...preferredCountries, ...otherCountries];
 
   return (
     <div className="space-y-4">
