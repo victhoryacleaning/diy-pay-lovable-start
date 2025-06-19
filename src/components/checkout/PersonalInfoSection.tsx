@@ -3,7 +3,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
-import InputMask from "react-input-mask"; // Usando a biblioteca simples que sabemos que funciona
+import InputMask from "react-input-mask";
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -30,7 +30,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* VOLTANDO PARA O INPUT SIMPLES E ESTÁVEL COM MÁSCARA */}
+        {/* Campo de telefone com máscara simples e estável */}
         <FormField
           control={form.control}
           name="phone"
@@ -40,7 +40,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
               <FormControl>
                 <InputMask
                   mask="(99) 99999-9999"
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={field.onChange}
                 >
                   {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
