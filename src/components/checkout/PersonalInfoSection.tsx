@@ -35,45 +35,49 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         )}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Smartphone className="w-4 h-4" />
-                Celular{isPhoneRequired ? " *" : ""}
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="(11) 99999-9999" 
-                  className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <div className="flex space-x-4 items-baseline">
+        <div className="w-1/2">
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" />
+                  Celular{isPhoneRequired ? " *" : ""}
+                </FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="(11) 99999-9999" 
+                    className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="cpfCnpj"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">CPF/CNPJ *</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="000.000.000-00" 
-                  className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="w-1/2">
+          <FormField
+            control={form.control}
+            name="cpfCnpj"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700">CPF/CNPJ *</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="000.000.000-00" 
+                    className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </div>
     </div>
   );
