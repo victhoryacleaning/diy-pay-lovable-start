@@ -32,7 +32,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       // Inicializa a biblioteca no input com as configurações corretas
       itiRef.current = intlTelInput(phoneInputRef.current, {
         initialCountry: "br",
-        preferredCountries: ['br', 'us', 'pt', 'mx', 'ar'],
+        onlyCountries: ['br', 'us', 'pt', 'mx', 'ar'],
         separateDialCode: true,
         utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js",
       });
