@@ -5,6 +5,7 @@ import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
 import InputMask from "react-input-mask";
 import PhoneInput, { getCountries, Country } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -48,26 +49,16 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
                 <PhoneInput
-                  // Props de integração com o formulário
+                  className="PhoneInput"
                   placeholder="Digite seu número"
                   value={field.value}
                   onChange={field.onChange}
-                  
-                  // Props de configuração e funcionalidade
                   defaultCountry="BR"
                   countries={orderedCountries}
-                  international={true}
-                  withCountryCallingCode={true}
-                  
-                  // Props adicionadas que estavam faltando
-                  enableSearch={true}
-                  countryCallingCodeEditable={false}
-                  
-                  // Prop para estilização
-                  className="flex items-center"
-                  
-                  // Props para acessibilidade
-                  countrySelectProps={{ 'aria-label': 'Selecionar país' }}
+                  international
+                  withCountryCallingCode
+                  enableSearch
+                  countrySelectComponentProps={{ 'aria-label': 'Selecionar país' }}
                 />
               </FormControl>
               <FormMessage />
