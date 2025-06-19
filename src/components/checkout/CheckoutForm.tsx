@@ -348,7 +348,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               {/* Personal Info Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
-                <PersonalInfoSection form={form} isPhoneRequired={isEmailOptional} />
+               // <PersonalInfoSection form={form} isPhoneRequired={isEmailOptional} />
               </div>
 
               {/* Email Section - Only render if email is NOT optional */}
