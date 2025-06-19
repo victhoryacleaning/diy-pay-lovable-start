@@ -48,16 +48,26 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
                 <PhoneInput
+                  // Props de integração com o formulário
                   placeholder="Digite seu número"
                   value={field.value}
                   onChange={field.onChange}
+                  
+                  // Props de configuração e funcionalidade
                   defaultCountry="BR"
                   countries={orderedCountries}
-                  international={false}
+                  international={true}
                   withCountryCallingCode={true}
-                  countrySelectProps={{
-                    'aria-label': 'Selecionar país'
-                  }}
+                  
+                  // Props adicionadas que estavam faltando
+                  enableSearch={true}
+                  countryCallingCodeEditable={false}
+                  
+                  // Prop para estilização
+                  className="flex items-center"
+                  
+                  // Props para acessibilidade
+                  countrySelectProps={{ 'aria-label': 'Selecionar país' }}
                 />
               </FormControl>
               <FormMessage />
