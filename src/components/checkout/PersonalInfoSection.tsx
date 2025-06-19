@@ -4,34 +4,12 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
 import InputMask from "react-input-mask";
+import PhoneInput from 'react-phone-number-input';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
   isPhoneRequired?: boolean;
 }
-
-// Função de formatação manual para CPF/CNPJ
-const formatCPF_CNPJ = (value: string) => {
-  const cleaned = (value || '').replace(/\D/g, '');
-
-  if (cleaned.length <= 11) {
-    // Aplica formato de CPF: 999.999.999-99
-    return cleaned
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .slice(0, 14); // Garante o limite de tamanho formatado
-  } else {
-    // Aplica formato de CNPJ: 99.999.999/9999-99
-    return cleaned
-      .slice(0, 14) // Limita a 14 dígitos numéricos
-      .replace(/^(\d{2})(\d)/, '$1.$2')
-      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/\.(\d{3})(\d)/, '.$1/$2')
-      .replace(/(\d{4})(\d)/, '$1-$2');
-  }
-};
-
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
   return (
@@ -63,41 +41,49 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
-                <InputMask
-                  mask="(99) 99999-9999"
+                <PhoneInput
+                  placeholder="Digite seu número"
                   value={field.value}
                   onChange={field.onChange}
-                >
-                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
-                </InputMask>
+                  defaultCountry="BR"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* CAMPO CPF/CNPJ CORRIGIDO */}
         <FormField
           control={form.control}
           name="cpfCnpj"
-          render={({ field }) => (
+          render={({ field }) => {
+            // Lógica para escolher a máscara correta
+            const cleanValue = (field.value || "").replace(/\D/g, "");
+            const mask = cleanValue.length > 11 ? "99.999.999/9999-99" : "999.999.999-99";
+            
+            return (
               <FormItem className="min-h-[70px]">
                 <FormLabel>CPF/CNPJ *</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="CPF ou CNPJ"
-                    {...field}
-                    onChange={(e) => {
-                      // Aplica a formatação manual a cada mudança
-                      const formattedValue = formatCPF_CNPJ(e.target.value);
-                      field.onChange(formattedValue);
-                    }}
-                    maxLength={18} // 18 é o tamanho de um CNPJ formatado (99.999.999/9999-99)
-                  />
+                  <InputMask
+                    mask={mask}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    {(inputProps: any) => (
+                      <Input 
+                        {...inputProps}
+                        placeholder="CPF ou CNPJ"
+                      />
+                    )}
+                  </InputMask>
                 </FormControl>
                 <FormMessage />
               </FormItem>
-          )}
+            );
+          }}
         />
       </div>
     </div>
