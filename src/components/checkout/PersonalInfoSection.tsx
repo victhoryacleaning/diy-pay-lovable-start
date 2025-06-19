@@ -45,12 +45,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                   <FloatingInputMask
                     mask="(99) 99999-9999"
                     maskChar=""
-                    label={
-                      <span className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4" />
-                        <span>Celular{isPhoneRequired ? " *" : ""}</span>
-                      </span>
-                    }
+                    label={`Celular${isPhoneRequired ? " *" : ""}`}
                     error={!!fieldState.error}
                     value={field.value || ""}
                     onChange={field.onChange}
