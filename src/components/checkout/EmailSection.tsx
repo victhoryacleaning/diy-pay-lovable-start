@@ -1,8 +1,8 @@
 
-import { FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { Mail } from "lucide-react";
-import { FloatingInput } from "@/components/ui/floating-input";
 
 interface EmailSectionProps {
   form: UseFormReturn<any>;
@@ -20,17 +20,20 @@ export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProp
       <FormField
         control={form.control}
         name="email"
-        render={({ field, fieldState }) => (
-          <FormItem className="min-h-[70px]">
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-sm font-medium text-gray-700">
+              Digite seu e-mail{!isEmailOptional ? " *" : ""}
+            </FormLabel>
             <FormControl>
-              <FloatingInput 
+              <Input 
                 type="email" 
-                label={`Digite seu e-mail${!isEmailOptional ? " *" : ""}`}
-                error={!!fieldState.error}
+                placeholder="seuemail@exemplo.com" 
+                className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 {...field} 
               />
             </FormControl>
-            <FormMessage className="text-xs" />
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -39,17 +42,18 @@ export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProp
         <FormField
           control={form.control}
           name="confirmEmail"
-          render={({ field, fieldState }) => (
-            <FormItem className="min-h-[70px]">
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-gray-700">Confirme o e-mail *</FormLabel>
               <FormControl>
-                <FloatingInput 
+                <Input 
                   type="email" 
-                  label="Confirme o e-mail *"
-                  error={!!fieldState.error}
+                  placeholder="seuemail@exemplo.com" 
+                  className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   {...field} 
                 />
               </FormControl>
-              <FormMessage className="text-xs" />
+              <FormMessage />
             </FormItem>
           )}
         />

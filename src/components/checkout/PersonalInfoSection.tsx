@@ -1,8 +1,9 @@
 
-import { FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User, Smartphone } from "lucide-react";
-import { FloatingInput, FloatingInputMask } from "@/components/ui/floating-input";
+import InputMask from "react-input-mask";
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -20,12 +21,13 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField
         control={form.control}
         name="fullName"
-        render={({ field, fieldState }) => (
+        render={({ field }) => (
           <FormItem className="min-h-[70px]">
+            <FormLabel className="text-sm font-medium text-gray-700">Nome completo *</FormLabel>
             <FormControl>
-              <FloatingInput 
-                label="Nome completo *"
-                error={!!fieldState.error}
+              <Input 
+                placeholder="Digite seu nome completo" 
+                className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 {...field} 
               />
             </FormControl>
@@ -39,18 +41,28 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           <FormField
             control={form.control}
             name="phone"
-            render={({ field, fieldState }) => (
+            render={({ field }) => (
               <FormItem className="min-h-[70px]">
+                <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" />
+                  <span>Celular{isPhoneRequired ? " *" : ""}</span>
+                </FormLabel>
                 <FormControl>
-                  <FloatingInputMask
+                  <InputMask
                     mask="(99) 99999-9999"
-                    maskChar=""
-                    label={`Celular${isPhoneRequired ? " *" : ""}`}
-                    error={!!fieldState.error}
+                    maskChar="_"
                     value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                  />
+                  >
+                    {(inputProps: any) => (
+                      <Input 
+                        {...inputProps}
+                        placeholder="(11) 99999-9999" 
+                        className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    )}
+                  </InputMask>
                 </FormControl>
                 <FormMessage className="text-xs" />
               </FormItem>
@@ -62,31 +74,33 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           <FormField
             control={form.control}
             name="cpfCnpj"
-            render={({ field, fieldState }) => {
+            render={({ field }) => {
               // Determina a máscara baseada no comprimento do valor limpo
               const cleanValue = (field.value || "").replace(/\D/g, "");
               const mask = cleanValue.length <= 11 ? "999.999.999-99" : "99.999.999/9999-99";
               
               return (
                 <FormItem className="min-h-[70px]">
+                  <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <div className="w-4" /> 
+                    <span>CPF/CNPJ *</span>
+                  </FormLabel>
                   <FormControl>
-                    <FloatingInputMask
+                    <InputMask
                       mask={mask}
-                      maskChar=""
-                      label="CPF/CNPJ *"
-                      error={!!fieldState.error}
+                      maskChar="_"
                       value={field.value || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const cleanValue = value.replace(/\D/g, "");
-                        
-                        // Permite a transição automática de CPF para CNPJ
-                        if (cleanValue.length <= 14) {
-                          field.onChange(value);
-                        }
-                      }}
+                      onChange={field.onChange}
                       onBlur={field.onBlur}
-                    />
+                    >
+                      {(inputProps: any) => (
+                        <Input 
+                          {...inputProps}
+                          placeholder="000.000.000-00 ou 00.000.000/0000-00" 
+                          className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      )}
+                    </InputMask>
                   </FormControl>
                   <FormMessage className="text-xs" />
                 </FormItem>

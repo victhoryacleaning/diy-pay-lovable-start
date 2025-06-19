@@ -1,10 +1,10 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
 import { CreditCard } from "lucide-react";
-import { FloatingInput } from "@/components/ui/floating-input";
 
 interface CreditCardFormProps {
   form: UseFormReturn<any>;
@@ -55,7 +55,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
     <div className="space-y-3">
       {/* Layout Grid: Mockup Left, Form Fields Right */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Credit Card Mockup - Left Side */}
+        {/* Credit Card Mockup - Left Side - MAIOR E MAIS PROEMINENTE */}
         <div className="flex justify-center lg:justify-start">
           <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white p-6 rounded-2xl shadow-2xl relative overflow-hidden w-full max-w-md" style={{ backgroundColor: '#820ad1', aspectRatio: '1.6/1' }}>
             {/* Background Pattern */}
@@ -100,14 +100,14 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
           <FormField
             control={form.control}
             name="cardNumber"
-            render={({ field, fieldState }) => (
-              <FormItem className="min-h-[70px]">
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-gray-700">Número do cartão *</FormLabel>
                 <FormControl>
-                  <FloatingInput
-                    label="Número do cartão *"
+                  <Input
+                    placeholder="1234 5678 9012 3456"
                     maxLength={19}
-                    className="font-mono"
-                    error={!!fieldState.error}
+                    className="h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base font-mono"
                     {...field}
                     onChange={(e) => {
                       const formatted = formatCardNumber(e.target.value);
@@ -115,7 +115,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                     }}
                   />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -125,14 +125,14 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             <FormField
               control={form.control}
               name="cardExpiry"
-              render={({ field, fieldState }) => (
-                <FormItem className="min-h-[70px]">
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-gray-700">Vencimento *</FormLabel>
                   <FormControl>
-                    <FloatingInput
-                      label="Vencimento *"
+                    <Input
+                      placeholder="MM/AA"
                       maxLength={5}
-                      className="font-mono"
-                      error={!!fieldState.error}
+                      className="h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
                       {...field}
                       onChange={(e) => {
                         const formatted = formatExpiry(e.target.value);
@@ -140,7 +140,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                       }}
                     />
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -148,14 +148,14 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
             <FormField
               control={form.control}
               name="cardCvv"
-              render={({ field, fieldState }) => (
-                <FormItem className="min-h-[70px]">
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-gray-700">CVV *</FormLabel>
                   <FormControl>
-                    <FloatingInput
-                      label="CVV *"
+                    <Input
+                      placeholder="123"
                       maxLength={4}
-                      className="font-mono"
-                      error={!!fieldState.error}
+                      className="h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500 font-mono"
                       {...field}
                       onChange={(e) => {
                         const numbers = e.target.value.replace(/\D/g, '');
@@ -163,7 +163,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                       }}
                     />
                   </FormControl>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -175,18 +175,18 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
       <FormField
         control={form.control}
         name="cardName"
-        render={({ field, fieldState }) => (
-          <FormItem className="min-h-[70px]">
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-sm font-medium text-gray-700">Nome do titular (como está no cartão) *</FormLabel>
             <FormControl>
-              <FloatingInput 
-                label="Nome do titular (como está no cartão) *"
-                className="uppercase"
+              <Input 
+                placeholder="JOÃO DA SILVA" 
+                className="h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase"
                 style={{ textTransform: 'uppercase' }}
-                error={!!fieldState.error}
                 {...field} 
               />
             </FormControl>
-            <FormMessage className="text-xs" />
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -196,12 +196,12 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
         <FormField
           control={form.control}
           name="installments"
-          render={({ field, fieldState }) => (
-            <FormItem className="min-h-[70px]">
+          render={({ field }) => (
+            <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700">Parcelas</FormLabel>
               <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
                 <FormControl>
-                  <SelectTrigger className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione o número de parcelas" />
                   </SelectTrigger>
                 </FormControl>
@@ -213,7 +213,7 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage className="text-xs" />
+              <FormMessage />
             </FormItem>
           )}
         />

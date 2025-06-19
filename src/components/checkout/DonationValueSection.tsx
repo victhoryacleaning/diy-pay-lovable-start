@@ -1,7 +1,7 @@
 
-import { FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { FloatingInput } from "@/components/ui/floating-input";
 
 interface DonationValueSectionProps {
   form: UseFormReturn<any>;
@@ -42,21 +42,21 @@ export const DonationValueSection = ({ form, title, description }: DonationValue
       <FormField
         control={form.control}
         name="donationAmount"
-        render={({ field, fieldState }) => (
-          <FormItem className="min-h-[70px]">
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-blue-900 font-medium">Valor da Doação (R$) *</FormLabel>
             <FormControl>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 z-10">R$</span>
-                <FloatingInput
-                  label="Valor da Doação *"
-                  className="pl-10 text-lg font-semibold border-blue-300 focus:border-blue-500"
-                  error={!!fieldState.error}
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
+                <Input
+                  placeholder="0,00"
                   {...field}
                   onChange={(e) => handleValueChange(e.target.value)}
+                  className="pl-10 text-lg font-semibold border-blue-300 focus:border-blue-500"
                 />
               </div>
             </FormControl>
-            <FormMessage className="text-xs" />
+            <FormMessage />
           </FormItem>
         )}
       />
