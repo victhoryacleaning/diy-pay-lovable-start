@@ -29,12 +29,12 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
 
   useEffect(() => {
     if (phoneInputRef.current) {
-      // Inicializa a biblioteca no input
+      // Inicializa a biblioteca no input com as configurações corretas
       itiRef.current = intlTelInput(phoneInputRef.current, {
         initialCountry: "br",
-        preferredCountries: ['BR', 'US', 'PT', 'MX', 'AR'],
+        preferredCountries: ['br', 'us', 'pt', 'mx', 'ar'],
         separateDialCode: true,
-        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js", // Essencial para validação e formatação
+        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js",
       });
 
       // Sincroniza com o react-hook-form
@@ -46,10 +46,13 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       };
 
       phoneInputRef.current.addEventListener('countrychange', handlePhoneChange);
+      phoneInputRef.current.addEventListener('input', handlePhoneChange);
       
       // Cleanup
       return () => {
-        itiRef.current?.destroy();
+        if (itiRef.current) {
+          itiRef.current.destroy();
+        }
       };
     }
   }, [form]);
@@ -76,6 +79,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                 <Input 
                   ref={phoneInputRef} 
                   type="tel"
+                  placeholder="Digite seu número"
                   {...field}
                 />
               </FormControl>
