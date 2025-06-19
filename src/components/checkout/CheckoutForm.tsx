@@ -35,7 +35,6 @@ interface CheckoutFormProps {
 // Base schema for all product types
 const baseSchema = {
   fullName: z.string().min(2, "Nome completo é obrigatório"),
-  phone: z.string().min(10, "Telefone é obrigatório"),
   cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
   paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
   cardNumber: z.string().optional(),
@@ -76,13 +75,20 @@ const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isE
     schema = regularSchema;
   }
 
+  // Phone validation based on email optionality
+  const phoneSchema = isEmailOptional 
+    ? z.string().min(10, "Telefone é obrigatório")
+    : z.string().optional();
+
   if (isEmailOptional) {
     return schema.extend({
+      phone: phoneSchema,
       email: z.string().email("Email inválido").optional().or(z.literal("")),
       confirmEmail: z.string().optional(),
     });
   } else {
     return schema.extend({
+      phone: phoneSchema,
       email: z.string().email("Email inválido"),
       confirmEmail: z.string().email("Email inválido"),
     }).refine((data) => data.email === data.confirmEmail, {
@@ -124,6 +130,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       ...(isEvent && { quantity: "1", attendees: [] }),
       email: "",
       confirmEmail: "",
+      phone: "",
     } as any,
   });
 

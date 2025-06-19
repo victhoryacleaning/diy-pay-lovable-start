@@ -21,7 +21,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         control={form.control}
         name="fullName"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="min-h-[70px]">
             <FormLabel className="text-sm font-medium text-gray-700">Nome completo *</FormLabel>
             <FormControl>
               <Input 
@@ -30,20 +30,18 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                 {...field} 
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-xs" />
           </FormItem>
         )}
       />
 
-      {/* A classe 'items-end' pode ajudar no alinhamento final dos inputs */}
-      <div className="flex space-x-4 items-end">
+      <div className="flex space-x-4">
         <div className="w-1/2">
           <FormField
             control={form.control}
             name="phone"
             render={({ field }) => (
-              <FormItem>
-                {/* ESTRUTURA PADRONIZADA PARA O RÓTULO */}
+              <FormItem className="min-h-[70px]">
                 <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Smartphone className="w-4 h-4" />
                   <span>Celular{isPhoneRequired ? " *" : ""}</span>
@@ -55,7 +53,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                     {...field} 
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -66,10 +64,8 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             control={form.control}
             name="cpfCnpj"
             render={({ field }) => (
-              <FormItem>
-                {/* ESTRUTURA PADRONIZADA PARA O RÓTULO (COM ÍCONE INVISÍVEL PARA MANTER A ALTURA) */}
+              <FormItem className="min-h-[70px]">
                 <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  {/* Este espaçador tem a mesma largura do ícone do celular, garantindo o alinhamento do texto */}
                   <div className="w-4" /> 
                   <span>CPF/CNPJ *</span>
                 </FormLabel>
@@ -80,7 +76,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                     {...field} 
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
