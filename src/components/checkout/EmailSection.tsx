@@ -14,9 +14,7 @@ export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProp
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
         <Mail className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">
-          {isEmailOptional ? "E-mail para acesso ao produto (opcional)" : "E-mail para acesso ao produto"}
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">E-mail para acesso ao produto</h3>
       </div>
       
       <FormField
@@ -25,7 +23,7 @@ export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProp
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-medium text-gray-700">
-              {isEmailOptional ? "Digite seu e-mail (opcional)" : "Digite seu e-mail *"}
+              Digite seu e-mail{!isEmailOptional ? " *" : ""}
             </FormLabel>
             <FormControl>
               <Input 

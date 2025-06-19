@@ -2,7 +2,7 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { User, Phone } from "lucide-react";
+import { User, Smartphone } from "lucide-react";
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -42,8 +42,8 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                Telefone {isPhoneRequired ? "*" : "(opcional)"}
+                <Smartphone className="w-4 h-4" />
+                Celular{isPhoneRequired ? " *" : ""}
               </FormLabel>
               <FormControl>
                 <Input 
