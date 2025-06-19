@@ -35,16 +35,18 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         )}
       />
 
-      <div className="flex space-x-4 items-baseline">
+      {/* A classe 'items-end' pode ajudar no alinhamento final dos inputs */}
+      <div className="flex space-x-4 items-end">
         <div className="w-1/2">
           <FormField
             control={form.control}
             name="phone"
             render={({ field }) => (
               <FormItem>
+                {/* ESTRUTURA PADRONIZADA PARA O RÓTULO */}
                 <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Smartphone className="w-4 h-4" />
-                  Celular{isPhoneRequired ? " *" : ""}
+                  <span>Celular{isPhoneRequired ? " *" : ""}</span>
                 </FormLabel>
                 <FormControl>
                   <Input 
@@ -65,7 +67,12 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             name="cpfCnpj"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium text-gray-700">CPF/CNPJ *</FormLabel>
+                {/* ESTRUTURA PADRONIZADA PARA O RÓTULO (COM ÍCONE INVISÍVEL PARA MANTER A ALTURA) */}
+                <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  {/* Este espaçador tem a mesma largura do ícone do celular, garantindo o alinhamento do texto */}
+                  <div className="w-4" /> 
+                  <span>CPF/CNPJ *</span>
+                </FormLabel>
                 <FormControl>
                   <Input 
                     placeholder="000.000.000-00" 
