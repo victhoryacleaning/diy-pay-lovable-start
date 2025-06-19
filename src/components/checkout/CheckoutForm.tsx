@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,39 +33,57 @@ interface CheckoutFormProps {
   onEventQuantityChange?: (quantity: number) => void;
 }
 
-const createCheckoutSchema = (isEmailOptional: boolean, isEvent: boolean) => {
-  const baseSchema = {
-    fullName: z.string().min(2, "Nome completo é obrigatório"),
-    phone: z.string().min(10, "Telefone é obrigatório"),
-    cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
-    paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
-    cardNumber: z.string().optional(),
-    cardName: z.string().optional(),
-    cardExpiry: z.string().optional(),
-    cardCvv: z.string().optional(),
-    installments: z.number().min(1).default(1),
-    saveData: z.boolean().default(false),
-    donationAmount: z.string().optional(),
-  };
+// Base schema for all product types
+const baseSchema = {
+  fullName: z.string().min(2, "Nome completo é obrigatório"),
+  phone: z.string().min(10, "Telefone é obrigatório"),
+  cpfCnpj: z.string().min(14, "CPF/CNPJ é obrigatório"),
+  paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
+  cardNumber: z.string().optional(),
+  cardName: z.string().optional(),
+  cardExpiry: z.string().optional(),
+  cardCvv: z.string().optional(),
+  installments: z.number().min(1).default(1),
+  saveData: z.boolean().default(false),
+};
 
-  // Adicionar campos específicos para eventos
-  if (isEvent) {
-    baseSchema.quantity = z.string().min(1, "Quantidade é obrigatória");
-    baseSchema.attendees = z.array(z.object({
-      name: z.string().min(2, "Nome do participante é obrigatório"),
-      email: z.string().email("Email inválido")
-    })).min(1, "Pelo menos um participante é obrigatório");
+// Schema for donations
+const donationSchema = z.object({
+  ...baseSchema,
+  donationAmount: z.string().min(1, "Valor da doação é obrigatório"),
+});
+
+// Schema for events
+const eventSchema = z.object({
+  ...baseSchema,
+  quantity: z.string().min(1, "Quantidade é obrigatória"),
+  attendees: z.array(z.object({
+    name: z.string().min(2, "Nome do participante é obrigatório"),
+    email: z.string().email("Email inválido")
+  })).min(1, "Pelo menos um participante é obrigatório"),
+});
+
+// Schema for regular products
+const regularSchema = z.object(baseSchema);
+
+const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isEvent: boolean) => {
+  let schema;
+  
+  if (isDonation) {
+    schema = donationSchema;
+  } else if (isEvent) {
+    schema = eventSchema;
+  } else {
+    schema = regularSchema;
   }
 
   if (isEmailOptional) {
-    return z.object({
-      ...baseSchema,
+    return schema.extend({
       email: z.string().email("Email inválido").optional().or(z.literal("")),
       confirmEmail: z.string().optional(),
     });
   } else {
-    return z.object({
-      ...baseSchema,
+    return schema.extend({
       email: z.string().email("Email inválido"),
       confirmEmail: z.string().email("Email inválido"),
     }).refine((data) => data.email === data.confirmEmail, {
@@ -88,7 +107,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     ? product.allowed_payment_methods as string[]
     : ["credit_card", "pix", "bank_slip"];
 
-  const checkoutSchema = createCheckoutSchema(isEmailOptional, isEvent);
+  const checkoutSchema = createCheckoutSchema(isEmailOptional, isDonation, isEvent);
   type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
   const form = useForm<CheckoutFormData>({
@@ -97,15 +116,14 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       paymentMethod: "credit_card",
       installments: 1,
       saveData: false,
-      donationAmount: isDonation ? "" : undefined,
-      quantity: isEvent ? "1" : undefined,
-      attendees: isEvent ? [] : undefined,
+      ...(isDonation && { donationAmount: "" }),
+      ...(isEvent && { quantity: "1", attendees: [] }),
       email: "",
       confirmEmail: "",
-    },
+    } as any,
   });
 
-  const donationAmount = form.watch('donationAmount');
+  const donationAmount = isDonation ? (form.watch('donationAmount' as any) as string) : undefined;
   if (isDonation && donationAmount !== undefined) {
     onDonationAmountChange?.(donationAmount);
   }
@@ -117,7 +135,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
 
   const validateRequiredFields = (data: CheckoutFormData): boolean => {
     if (isDonation) {
-      if (!data.donationAmount || convertToCents(data.donationAmount) === 0) {
+      const donationValue = (data as any).donationAmount;
+      if (!donationValue || convertToCents(donationValue) === 0) {
         toast({ 
           title: "Valor obrigatório", 
           description: "Por favor, informe um valor válido para a doação.", 
@@ -128,7 +147,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     }
 
     if (isEvent) {
-      const quantity = parseInt(data.quantity || "0");
+      const eventData = data as any;
+      const quantity = parseInt(eventData.quantity || "0");
       if (quantity < 1) {
         toast({ 
           title: "Quantidade obrigatória", 
@@ -138,7 +158,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
         return false;
       }
 
-      if (!data.attendees || data.attendees.length !== quantity) {
+      if (!eventData.attendees || eventData.attendees.length !== quantity) {
         toast({ 
           title: "Dados dos participantes", 
           description: "Por favor, preencha os dados de todos os participantes.", 
@@ -148,8 +168,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       }
 
       // Validar se todos os campos dos participantes estão preenchidos
-      for (let i = 0; i < data.attendees.length; i++) {
-        const attendee = data.attendees[i];
+      for (let i = 0; i < eventData.attendees.length; i++) {
+        const attendee = eventData.attendees[i];
         if (!attendee.name || !attendee.email) {
           toast({ 
             title: "Dados incompletos", 
@@ -243,12 +263,14 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       };
 
       if (isDonation) {
-        transactionPayload.donation_amount_cents = convertToCents(data.donationAmount);
+        const donationValue = (data as any).donationAmount;
+        transactionPayload.donation_amount_cents = convertToCents(donationValue);
       }
 
       if (isEvent) {
-        transactionPayload.quantity = parseInt(data.quantity || "1");
-        transactionPayload.attendees = data.attendees;
+        const eventData = data as any;
+        transactionPayload.quantity = parseInt(eventData.quantity || "1");
+        transactionPayload.attendees = eventData.attendees;
       }
       
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
@@ -280,7 +302,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   
   const getDisplayAmount = (): number => {
     if (isDonation) {
-      const donationValue = form.getValues('donationAmount');
+      const donationValue = form.getValues('donationAmount' as any) as string;
       return convertToCents(donationValue);
     }
     if (isEvent) {
