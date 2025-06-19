@@ -75,28 +75,47 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             control={form.control}
             name="cpfCnpj"
             render={({ field }) => {
-              // Determina a máscara baseada no comprimento do valor limpo
-              const cleanValue = (field.value || "").replace(/\D/g, "");
-              const mask = cleanValue.length <= 11 ? "999.999.999-99" : "99.999.999/9999-99";
+              // Função para determinar a máscara baseada no valor digitado
+              const getDynamicMask = (value: string) => {
+                const cleanValue = (value || "").replace(/\D/g, "");
+                // Se tem mais de 11 dígitos ou já tem barra (indicando CNPJ), usa máscara de CNPJ
+                if (cleanValue.length > 11 || value.includes('/')) {
+                  return "99.999.999/9999-99";
+                }
+                return "999.999.999-99";
+              };
+
+              const currentMask = getDynamicMask(field.value || "");
               
               return (
                 <FormItem className="min-h-[70px]">
-                  <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <div className="w-4" /> 
-                    <span>CPF/CNPJ *</span>
-                  </FormLabel>
+                  <FormLabel className="text-sm font-medium text-gray-700">CPF/CNPJ *</FormLabel>
                   <FormControl>
                     <InputMask
-                      mask={mask}
+                      mask={currentMask}
                       maskChar="_"
                       value={field.value || ""}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        const cleanValue = newValue.replace(/\D/g, "");
+                        
+                        // Se passou de 11 dígitos, reformata para CNPJ
+                        if (cleanValue.length > 11) {
+                          const cnpjFormatted = cleanValue.replace(
+                            /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+                            "$1.$2.$3/$4-$5"
+                          );
+                          field.onChange(cnpjFormatted);
+                        } else {
+                          field.onChange(newValue);
+                        }
+                      }}
                       onBlur={field.onBlur}
                     >
                       {(inputProps: any) => (
                         <Input 
                           {...inputProps}
-                          placeholder="000.000.000-00 ou 00.000.000/0000-00" 
+                          placeholder="CPF ou CNPJ" 
                           className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         />
                       )}
