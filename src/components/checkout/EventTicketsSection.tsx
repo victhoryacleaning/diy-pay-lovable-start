@@ -3,39 +3,112 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn, useFieldArray } from "react-hook-form";
 import { Ticket, Users } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useCallback, memo } from "react";
 
 interface EventTicketsSectionProps {
   form: UseFormReturn<any>;
   onQuantityChange?: (quantity: number) => void;
 }
 
-export const EventTicketsSection = ({ form, onQuantityChange }: EventTicketsSectionProps) => {
+interface AttendeeFieldProps {
+  form: UseFormReturn<any>;
+  index: number;
+}
+
+// Memoizar os campos individuais de participantes para evitar re-renderizações desnecessárias
+const AttendeeField = memo(({ form, index }: AttendeeFieldProps) => {
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+      <h5 className="text-sm font-medium text-gray-700">
+        Participante {index + 1}
+      </h5>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name={`attendees.${index}.name`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Nome completo *
+              </FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Nome do participante"
+                  className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name={`attendees.${index}.email`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                E-mail *
+              </FormLabel>
+              <FormControl>
+                <Input 
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  );
+});
+
+export const EventTicketsSection = memo(({ form, onQuantityChange }: EventTicketsSectionProps) => {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "attendees"
   });
 
-  const watchedQuantity = form.watch("quantity");
+  const quantity = form.watch("quantity");
 
-  // Atualizar campos de participantes quando a quantidade mudar
+  // Usar useCallback para memoizar a função de mudança de quantidade
+  const handleQuantityChange = useCallback((newQuantity: string) => {
+    const numQuantity = parseInt(newQuantity, 10) || 0;
+    onQuantityChange?.(numQuantity);
+  }, [onQuantityChange]);
+
+  // Gerenciar campos de participantes de forma eficiente
   useEffect(() => {
-    const quantity = parseInt(watchedQuantity) || 0;
-    
-    if (quantity > 0) {
-      // Remover todos os campos atuais
-      while (fields.length > 0) {
-        remove(0);
+    const targetCount = parseInt(quantity, 10) || 0;
+    const currentCount = fields.length;
+
+    if (targetCount <= 0) {
+      // Remover todos os campos se quantidade for 0 ou inválida
+      for (let i = currentCount - 1; i >= 0; i--) {
+        remove(i);
       }
-      
-      // Adicionar novos campos baseado na quantidade
-      for (let i = 0; i < quantity; i++) {
+      return;
+    }
+
+    if (currentCount < targetCount) {
+      // Adicionar novos campos
+      const fieldsToAdd = targetCount - currentCount;
+      for (let i = 0; i < fieldsToAdd; i++) {
         append({ name: "", email: "" });
       }
-      
-      onQuantityChange?.(quantity);
+    } else if (currentCount > targetCount) {
+      // Remover campos excedentes
+      for (let i = currentCount - 1; i >= targetCount; i--) {
+        remove(i);
+      }
     }
-  }, [watchedQuantity, append, remove, fields.length, onQuantityChange]);
+  }, [quantity, fields.length, append, remove]);
 
   return (
     <div className="space-y-4">
@@ -61,7 +134,10 @@ export const EventTicketsSection = ({ form, onQuantityChange }: EventTicketsSect
                 placeholder="1" 
                 className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 {...field}
-                onChange={(e) => field.onChange(e.target.value)}
+                onChange={(e) => {
+                  field.onChange(e.target.value);
+                  handleQuantityChange(e.target.value);
+                }}
               />
             </FormControl>
             <FormMessage />
@@ -78,57 +154,17 @@ export const EventTicketsSection = ({ form, onQuantityChange }: EventTicketsSect
           </div>
           
           {fields.map((field, index) => (
-            <div key={field.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
-              <h5 className="text-sm font-medium text-gray-700">
-                Participante {index + 1}
-              </h5>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name={`attendees.${index}.name`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        Nome completo *
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Nome do participante"
-                          className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name={`attendees.${index}.email`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">
-                        E-mail *
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="email"
-                          placeholder="email@exemplo.com"
-                          className="h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+            <AttendeeField
+              key={field.id}
+              form={form}
+              index={index}
+            />
           ))}
         </div>
       )}
     </div>
   );
-};
+});
+
+AttendeeField.displayName = "AttendeeField";
+EventTicketsSection.displayName = "EventTicketsSection";

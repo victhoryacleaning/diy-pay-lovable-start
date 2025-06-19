@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -103,11 +102,16 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   const isEmailOptional = product.is_email_optional || false;
 
   // Convert Json to string array with fallback
-  const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
-    ? product.allowed_payment_methods as string[]
-    : ["credit_card", "pix", "bank_slip"];
+  const allowedPaymentMethods = useMemo(() => {
+    return Array.isArray(product.allowed_payment_methods) 
+      ? product.allowed_payment_methods as string[]
+      : ["credit_card", "pix", "bank_slip"];
+  }, [product.allowed_payment_methods]);
 
-  const checkoutSchema = createCheckoutSchema(isEmailOptional, isDonation, isEvent);
+  const checkoutSchema = useMemo(() => {
+    return createCheckoutSchema(isEmailOptional, isDonation, isEvent);
+  }, [isEmailOptional, isDonation, isEvent]);
+
   type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
   const form = useForm<CheckoutFormData>({
@@ -123,15 +127,26 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     } as any,
   });
 
-  const donationAmount = isDonation ? (form.watch('donationAmount' as any) as string) : undefined;
-  if (isDonation && donationAmount !== undefined) {
-    onDonationAmountChange?.(donationAmount);
-  }
+  // Memoizar a função de mudança de valor de doação
+  const handleDonationAmountChange = useCallback((amount: string) => {
+    onDonationAmountChange?.(amount);
+  }, [onDonationAmountChange]);
 
-  const handleEventQuantityChange = (quantity: number) => {
+  // Observar mudanças no valor da doação de forma otimizada
+  const donationAmount = isDonation ? form.watch('donationAmount' as any) as string : undefined;
+  
+  // Usar useCallback para evitar re-renders desnecessários
+  const handleEventQuantityChange = useCallback((quantity: number) => {
     setEventQuantity(quantity);
     onEventQuantityChange?.(quantity);
-  };
+  }, [onEventQuantityChange]);
+
+  // Chamar a função de mudança apenas quando necessário
+  useMemo(() => {
+    if (isDonation && donationAmount !== undefined) {
+      handleDonationAmountChange(donationAmount);
+    }
+  }, [isDonation, donationAmount, handleDonationAmountChange]);
 
   const validateRequiredFields = (data: CheckoutFormData): boolean => {
     if (isDonation) {
@@ -300,7 +315,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     }
   };
   
-  const getDisplayAmount = (): number => {
+  const getDisplayAmount = useCallback((): number => {
     if (isDonation) {
       const donationValue = form.getValues('donationAmount' as any) as string;
       return convertToCents(donationValue);
@@ -309,7 +324,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       return product.price_cents * eventQuantity;
     }
     return product.price_cents;
-  };
+  }, [isDonation, isEvent, product.price_cents, eventQuantity, form]);
 
   return (
     <div className="max-w-2xl mx-auto">
