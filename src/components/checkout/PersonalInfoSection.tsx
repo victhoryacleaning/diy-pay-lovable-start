@@ -15,22 +15,10 @@ interface PersonalInfoSectionProps {
 // Função de formatação manual para CPF/CNPJ
 const formatCPF_CNPJ = (value: string) => {
   const cleaned = (value || '').replace(/\D/g, '');
-
   if (cleaned.length <= 11) {
-    // Aplica formato de CPF: 999.999.999-99
-    return cleaned
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .slice(0, 14);
+    return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
   } else {
-    // Aplica formato de CNPJ: 99.999.999/9999-99
-    return cleaned
-      .slice(0, 14)
-      .replace(/^(\d{2})(\d)/, '$1.$2')
-      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/\.(\d{3})(\d)/, '.$1/$2')
-      .replace(/(\d{4})(\d)/, '$1-$2');
+    return cleaned.slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
   }
 };
 
@@ -48,19 +36,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
       </div>
       
-      <FormField
-        control={form.control}
-        name="fullName"
-        render={({ field }) => (
-          <FormItem className="min-h-[70px]">
-            <FormLabel>Nome completo *</FormLabel>
-            <FormControl>
-              <Input placeholder="Digite seu nome completo" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
         {/* CAMPO DE TELEFONE INTERNACIONAL CORRIGIDO */}
@@ -82,7 +58,6 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                   international
                   withCountryCallingCode
                   enableSearch
-                  countryCallingCodeEditable={false}
                 />
               </FormControl>
               <FormMessage />
@@ -105,7 +80,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                     const formattedValue = formatCPF_CNPJ(e.target.value);
                     field.onChange(formattedValue);
                   }}
-                  maxLength={18} // 18 é o tamanho de um CNPJ formatado
+                  maxLength={18}
                 />
               </FormControl>
               <FormMessage />
