@@ -237,10 +237,12 @@ export const CheckoutForm = ({ product, onDonationAmountChange }: CheckoutFormPr
                 <PersonalInfoSection form={form} isPhoneRequired={isEmailOptional} />
               </div>
 
-              {/* Email Section */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
-                <EmailSection form={form} isEmailOptional={isEmailOptional} />
-              </div>
+              {/* Email Section - Only render if email is NOT optional */}
+              {!isEmailOptional && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
+                  <EmailSection form={form} isEmailOptional={isEmailOptional} />
+                </div>
+              )}
               
               {/* Donation Section */}
               {isDonation && (
