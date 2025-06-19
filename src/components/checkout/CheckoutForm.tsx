@@ -36,10 +36,12 @@ interface CheckoutFormProps {
 const baseSchema = {
   fullName: z.string().min(2, "Nome completo é obrigatório"),
   cpfCnpj: z.string()
-    .min(1, "CPF/CNPJ é obrigatório") // Primeiro, garantir que não está vazio
-    .transform(value => value.replace(/\D/g, '')) // Remove tudo que não é dígito
-    .refine(value => value.length === 11 || value.length === 14, {
-      message: "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos",
+    .min(1, "CPF/CNPJ é obrigatório")
+    .refine(value => {
+      const cleanValue = value.replace(/\D/g, ''); // Garante que só estamos validando dígitos
+      return cleanValue.length === 11 || cleanValue.length === 14;
+    }, {
+      message: "Deve conter 11 (CPF) ou 14 (CNPJ) dígitos.",
     }),
   paymentMethod: z.enum(["credit_card", "pix", "bank_slip"]),
   cardNumber: z.string().optional(),
