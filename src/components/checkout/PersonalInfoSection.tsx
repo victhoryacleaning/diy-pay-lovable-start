@@ -1,3 +1,4 @@
+// >>> CÓDIGO FINAL E DEFINITIVO PARA PersonalInfoSection.tsx <<<
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,6 @@ interface PersonalInfoSectionProps {
 }
 
 const formatCPF_CNPJ = (value: string) => {
-    // ... (função formatCPF_CNPJ permanece a mesma)
     const cleaned = (value || '').replace(/\D/g, '');
     if (cleaned.length <= 11) {
         return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
@@ -38,17 +38,16 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* CAMPO DE TELEFONE INTERNACIONAL USANDO CONTROLLER */}
-        <FormField
-          control={form.control}
+        {/* CAMPO DE TELEFONE USANDO O COMPONENTE <Controller /> */}
+        <Controller
           name="phone"
+          control={form.control}
           rules={{ 
-            validate: (value) => (isPhoneRequired ? (value && isValidPhoneNumber(value)) || "Número de celular inválido" : true)
+            validate: value => (isPhoneRequired ? (value && isValidPhoneNumber(value)) || "Número de celular inválido" : true) 
           }}
-          render={({ field }) => (
+          render={({ field, fieldState: { error } }) => (
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
-              {/* NÃO PRECISAMOS MAIS DO FormControl AQUI */}
               <PhoneInput
                 id="phone-input"
                 className="PhoneInput"
@@ -61,11 +60,11 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                 withCountryCallingCode
                 enableSearch
               />
-              <FormMessage />
+              {error && <FormMessage>{error.message}</FormMessage>}
             </FormItem>
           )}
         />
-
+        
         {/* CAMPO CPF/CNPJ CORRIGIDO */}
         <FormField
           control={form.control}
