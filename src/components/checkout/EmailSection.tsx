@@ -58,8 +58,8 @@ export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProp
               <FormMessage />
             </FormItem>
           )}
-        )}
-      />
+        />
+      )}
     </div>
   );
 };
