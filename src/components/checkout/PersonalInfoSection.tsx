@@ -1,13 +1,9 @@
-// >>> CÓDIGO FINAL E DEFINITIVO PARA PersonalInfoSection.tsx <<<
 
-import { useEffect, useRef } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
-
-// Importa a nova biblioteca e seus tipos
-import intlTelInput, { type Iti } from 'intl-tel-input';
+import InputMask from "react-input-mask"; // Usando a biblioteca simples que sabemos que funciona
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -24,43 +20,6 @@ const formatCPF_CNPJ = (value: string) => {
 };
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
-  const phoneInputRef = useRef<HTMLInputElement>(null);
-  const itiRef = useRef<Iti | null>(null);
-
-  useEffect(() => {
-    if (phoneInputRef.current && !itiRef.current) {
-      
-      itiRef.current = intlTelInput(phoneInputRef.current, {
-        // As propriedades corretas e essenciais:
-        initialCountry: "br",
-        preferredCountries: ['br', 'us', 'pt', 'mx', 'ar'],
-        separateDialCode: true,
-        // O utilsScript é a chave para a validação e formatação.
-        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js",
-      });
-
-      const inputElement = phoneInputRef.current;
-
-      const handlePhoneChange = () => {
-        if (itiRef.current) {
-          const number = itiRef.current.getNumber();
-          form.setValue('phone', number, { shouldValidate: true });
-        }
-      };
-
-      // Adiciona os listeners
-      inputElement.addEventListener('input', handlePhoneChange);
-      inputElement.addEventListener('countrychange', handlePhoneChange);
-      
-      // Função de limpeza para quando o componente for desmontado
-      return () => {
-        inputElement.removeEventListener('input', handlePhoneChange);
-        inputElement.removeEventListener('countrychange', handlePhoneChange);
-        itiRef.current?.destroy();
-      };
-    }
-  }, [form]);
-
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -71,6 +30,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
+        {/* VOLTANDO PARA O INPUT SIMPLES E ESTÁVEL COM MÁSCARA */}
         <FormField
           control={form.control}
           name="phone"
@@ -78,20 +38,20 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
-                {/* A biblioteca vai operar neste input via ref */}
-                <Input 
-                  ref={phoneInputRef} 
-                  type="tel"
-                  // Passamos o `onBlur` e `name` do field, mas o `value` e `onChange` são controlados pelo useEffect
-                  onBlur={field.onBlur}
-                  name={field.name}
-                />
+                <InputMask
+                  mask="(99) 99999-9999"
+                  value={field.value}
+                  onChange={field.onChange}
+                >
+                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
+                </InputMask>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
+        
+        {/* CAMPO CPF/CNPJ FUNCIONAL */}
         <FormField
           control={form.control}
           name="cpfCnpj"
