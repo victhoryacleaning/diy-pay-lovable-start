@@ -10,6 +10,29 @@ interface PersonalInfoSectionProps {
   isPhoneRequired?: boolean;
 }
 
+// Função de formatação manual para CPF/CNPJ
+const formatCPF_CNPJ = (value: string) => {
+  const cleaned = (value || '').replace(/\D/g, '');
+
+  if (cleaned.length <= 11) {
+    // Aplica formato de CPF: 999.999.999-99
+    return cleaned
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .slice(0, 14); // Garante o limite de tamanho formatado
+  } else {
+    // Aplica formato de CNPJ: 99.999.999/9999-99
+    return cleaned
+      .slice(0, 14) // Limita a 14 dígitos numéricos
+      .replace(/^(\d{2})(\d)/, '$1.$2')
+      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1/$2')
+      .replace(/(\d{4})(\d)/, '$1-$2');
+  }
+};
+
+
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
   return (
     <div className="space-y-4">
@@ -53,36 +76,28 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           )}
         />
 
+        {/* CAMPO CPF/CNPJ CORRIGIDO */}
         <FormField
           control={form.control}
           name="cpfCnpj"
-          render={({ field }) => {
-            // Lógica para escolher a máscara correta
-            const cleanValue = (field.value || "").replace(/\D/g, "");
-            const mask = cleanValue.length > 11 ? "99.999.999/9999-99" : "999.999.999-99";
-            
-            return (
+          render={({ field }) => (
               <FormItem className="min-h-[70px]">
                 <FormLabel>CPF/CNPJ *</FormLabel>
                 <FormControl>
-                  <InputMask
-                    mask={mask}
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                  >
-                    {(inputProps: any) => (
-                      <Input 
-                        {...inputProps}
-                        placeholder="CPF ou CNPJ"
-                      />
-                    )}
-                  </InputMask>
+                  <Input 
+                    placeholder="CPF ou CNPJ"
+                    {...field}
+                    onChange={(e) => {
+                      // Aplica a formatação manual a cada mudança
+                      const formattedValue = formatCPF_CNPJ(e.target.value);
+                      field.onChange(formattedValue);
+                    }}
+                    maxLength={18} // 18 é o tamanho de um CNPJ formatado (99.999.999/9999-99)
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            );
-          }}
+          )}
         />
       </div>
     </div>
