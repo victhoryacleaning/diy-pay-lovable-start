@@ -56,23 +56,33 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         <FormField
           control={form.control}
           name="cpfCnpj"
-          render={({ field }) => (
-            <FormItem className="min-h-[70px]">
-              <FormLabel>CPF/CNPJ *</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Apenas números" 
-                  {...field}
-                  onChange={(e) => {
-                    const numericValue = e.target.value.replace(/\D/g, '');
-                    field.onChange(numericValue);
-                  }}
-                  maxLength={14}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            // Lógica para escolher a máscara correta
+            const cleanValue = (field.value || "").replace(/\D/g, "");
+            const mask = cleanValue.length > 11 ? "99.999.999/9999-99" : "999.999.999-99";
+            
+            return (
+              <FormItem className="min-h-[70px]">
+                <FormLabel>CPF/CNPJ *</FormLabel>
+                <FormControl>
+                  <InputMask
+                    mask={mask}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    {(inputProps: any) => (
+                      <Input 
+                        {...inputProps}
+                        placeholder="CPF ou CNPJ"
+                      />
+                    )}
+                  </InputMask>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       </div>
     </div>
