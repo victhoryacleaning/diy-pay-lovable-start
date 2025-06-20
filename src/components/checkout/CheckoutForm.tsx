@@ -37,9 +37,9 @@ const baseSchema = {
   fullName: z.string().min(2, "Nome completo é obrigatório"),
   cpfCnpj: z.string()
     .min(1, "CPF/CNPJ é obrigatório")
+    .transform(val => val.replace(/\D/g, '')) // Remove caracteres não numéricos
     .refine(value => {
-      const cleanValue = value.replace(/\D/g, ''); // Garante que só estamos validando dígitos
-      return cleanValue.length === 11 || cleanValue.length === 14;
+      return value.length === 11 || value.length === 14;
     }, {
       message: "Deve conter 11 (CPF) ou 14 (CNPJ) dígitos.",
     }),
