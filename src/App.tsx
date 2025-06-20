@@ -18,76 +18,86 @@ import ProducerSalesPage from "./pages/ProducerSalesPage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import NotFound from "./pages/NotFound";
+import { useState } from "react";
 
-const queryClient = new QueryClient();
+const App = () => {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/checkout/:slug" element={<Checkout />} />
-            <Route path="/payment-confirmation/:saleId" element={<PaymentConfirmation />} />
-            <Route 
-              path="/complete-producer-profile" 
-              element={
-                <ProtectedRoute requiredRole="producer">
-                  <CompleteProducerProfile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/producer-dashboard" 
-              element={
-                <ProtectedRoute requiredRole="producer">
-                  <ProducerDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/products" 
-              element={
-                <ProtectedRoute requiredRole="producer">
-                  <ProductsPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/products/new" 
-              element={
-                <ProtectedRoute requiredRole="producer">
-                  <CreateProductPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/products/edit/:id" 
-              element={
-                <ProtectedRoute requiredRole="producer">
-                  <EditProductPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/sales" 
-              element={
-                <ProtectedRoute requiredRole="producer">
-                  <ProducerSalesPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/checkout/:slug" element={<Checkout />} />
+              <Route path="/payment-confirmation/:saleId" element={<PaymentConfirmation />} />
+              <Route 
+                path="/complete-producer-profile" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <CompleteProducerProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/producer-dashboard" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <ProducerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/products" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <ProductsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/products/new" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <CreateProductPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/products/edit/:id" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <EditProductPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/sales" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <ProducerSalesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
