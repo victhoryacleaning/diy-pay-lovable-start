@@ -1,11 +1,11 @@
-// >>> CÓDIGO DE CONTINGÊNCIA FINAL PARA PersonalInfoSection.tsx <<<
-// Remove TODAS as dependências externas de telefone e volta para o básico e estável
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn } from "react-hook-form";
+import { UseFormReturn, Controller } from "react-hook-form";
 import { User } from "lucide-react";
-import InputMask from "react-input-mask";
+
+import PhoneInput, { Country, isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -22,6 +22,10 @@ const formatCPF_CNPJ = (value: string) => {
 };
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
+  
+  // *** LÓGICA SIMPLIFICADA: APENAS OS PAÍSES QUE QUEREMOS ***
+  const allowedCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -32,28 +36,37 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
 
       <div className="grid grid-cols-2 gap-4">
-        {/* VOLTANDO PARA O INPUT SIMPLES COM MÁSCARA PARA O CELULAR */}
-        <FormField
-          control={form.control}
+        
+        {/* CAMPO DE TELEFONE COM LISTA REDUZIDA */}
+        <Controller
           name="phone"
-          render={({ field }) => (
+          control={form.control}
+          rules={{ 
+            validate: value => isPhoneRequired ? (value && isValidPhoneNumber(value) ? true : "Número de celular inválido") : true 
+          }}
+          render={({ field, fieldState: { error } }) => (
             <FormItem className="min-h-[70px]">
-              <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
-              <FormControl>
-                <InputMask
-                  mask="(99) 99999-9999"
-                  value={field.value}
-                  onChange={field.onChange}
-                >
-                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
-                </InputMask>
-              </FormControl>
-              <FormMessage />
+              <FormLabel className={error ? 'text-destructive' : ''}>
+                Celular{isPhoneRequired ? " *" : ""}
+              </FormLabel>
+              <PhoneInput
+                id="phone-input"
+                className={`PhoneInput ${error ? 'PhoneInput--error' : ''}`}
+                placeholder="Digite seu número"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                defaultCountry="BR"
+                countries={allowedCountries} // <-- Usando a lista reduzida
+                international
+                withCountryCallingCode
+              />
+              {error && <p className="text-sm font-medium text-destructive mt-2">{error.message as string}</p>}
             </FormItem>
           )}
         />
         
-        {/* CAMPO CPF/CNPJ COM FORMATAÇÃO MANUAL QUE JÁ FUNCIONA */}
+        {/* CAMPO CPF/CNPJ */}
         <FormField
           control={form.control}
           name="cpfCnpj"
