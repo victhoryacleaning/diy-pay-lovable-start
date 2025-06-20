@@ -63,10 +63,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           name="phone"
           render={({ field }) => (
             <FormItem className="min-h-[70px]">
-              <FormLabel className="flex items-center">
-                <span className="mr-2">🇧🇷</span>
-                Celular{isPhoneRequired ? " *" : ""}
-              </FormLabel>
+              <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
                 <InputMask
                   mask="(99) 99999-9999"
