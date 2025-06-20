@@ -53,17 +53,17 @@ const ConfigurationTab = ({ formData, onInputChange }: ConfigurationTabProps) =>
 
         <div className="flex items-center justify-between p-4 border rounded-lg">
           <div className="space-y-1">
-            <Label htmlFor="is_active" className="text-base font-medium">
-              Produto Ativo
+            <Label htmlFor="require_email_confirmation" className="text-base font-medium">
+              Exigir Confirmação de E-mail no Checkout
             </Label>
             <p className="text-sm text-gray-500">
-              Produto disponível para venda
+              Quando ativo, o cliente precisará confirmar o e-mail digitando-o duas vezes
             </p>
           </div>
           <Switch
-            id="is_active"
-            checked={formData.is_active}
-            onCheckedChange={(checked) => onInputChange('is_active', checked)}
+            id="require_email_confirmation"
+            checked={formData.require_email_confirmation}
+            onCheckedChange={(checked) => onInputChange('require_email_confirmation', checked)}
           />
         </div>
       </div>

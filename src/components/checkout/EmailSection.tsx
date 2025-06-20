@@ -7,9 +7,10 @@ import { Mail } from "lucide-react";
 interface EmailSectionProps {
   form: UseFormReturn<any>;
   isEmailOptional?: boolean;
+  requireEmailConfirmation?: boolean;
 }
 
-export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProps) => {
+export const EmailSection = ({ form, isEmailOptional = false, requireEmailConfirmation = true }: EmailSectionProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -38,7 +39,7 @@ export const EmailSection = ({ form, isEmailOptional = false }: EmailSectionProp
         )}
       />
 
-      {!isEmailOptional && (
+      {!isEmailOptional && requireEmailConfirmation && (
         <FormField
           control={form.control}
           name="confirmEmail"

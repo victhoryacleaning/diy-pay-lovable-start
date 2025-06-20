@@ -24,6 +24,7 @@ interface Product {
   donation_description?: string;
   allowed_payment_methods: Json;
   is_email_optional?: boolean;
+  require_email_confirmation?: boolean;
 }
 
 interface CheckoutFormProps {
@@ -71,7 +72,7 @@ const eventSchema = z.object({
 // Schema for regular products
 const regularSchema = z.object(baseSchema);
 
-const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isEvent: boolean) => {
+const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isEvent: boolean, requireEmailConfirmation: boolean) => {
   let schema;
   
   if (isDonation) {
@@ -94,14 +95,22 @@ const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isE
       confirmEmail: z.string().optional(),
     });
   } else {
-    return schema.extend({
-      phone: phoneSchema,
-      email: z.string().email("Email inválido"),
-      confirmEmail: z.string().email("Email inválido"),
-    }).refine((data) => data.email === data.confirmEmail, {
-      message: "Os emails devem ser iguais",
-      path: ["confirmEmail"],
-    });
+    if (requireEmailConfirmation) {
+      return schema.extend({
+        phone: phoneSchema,
+        email: z.string().email("Email inválido"),
+        confirmEmail: z.string().email("Email inválido"),
+      }).refine((data) => data.email === data.confirmEmail, {
+        message: "Os emails devem ser iguais",
+        path: ["confirmEmail"],
+      });
+    } else {
+      return schema.extend({
+        phone: phoneSchema,
+        email: z.string().email("Email inválido"),
+        confirmEmail: z.string().optional(),
+      });
+    }
   }
 };
 
@@ -113,6 +122,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   const isDonation = product.product_type === 'donation';
   const isEvent = product.product_type === 'event';
   const isEmailOptional = product.is_email_optional || false;
+  const requireEmailConfirmation = product.require_email_confirmation ?? true;
 
   // Convert Json to string array with fallback
   const allowedPaymentMethods = useMemo(() => {
@@ -122,8 +132,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   }, [product.allowed_payment_methods]);
 
   const checkoutSchema = useMemo(() => {
-    return createCheckoutSchema(isEmailOptional, isDonation, isEvent);
-  }, [isEmailOptional, isDonation, isEvent]);
+    return createCheckoutSchema(isEmailOptional, isDonation, isEvent, requireEmailConfirmation);
+  }, [isEmailOptional, isDonation, isEvent, requireEmailConfirmation]);
 
   type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
@@ -354,7 +364,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
               {/* Email Section - Only render if email is NOT optional */}
               {!isEmailOptional && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
-                  <EmailSection form={form} isEmailOptional={isEmailOptional} />
+                  <EmailSection 
+                    form={form} 
+                    isEmailOptional={isEmailOptional}
+                    requireEmailConfirmation={requireEmailConfirmation}
+                  />
                 </div>
               )}
 

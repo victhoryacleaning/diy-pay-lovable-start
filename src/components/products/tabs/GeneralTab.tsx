@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import ProductTypeSection from '../ProductTypeSection';
 
 interface GeneralTabProps {
@@ -111,9 +112,25 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </p>
       </div>
 
+      <div className="flex items-center justify-between p-4 border rounded-lg">
+        <div className="space-y-1">
+          <Label htmlFor="is_active" className="text-base font-medium">
+            Produto Ativo
+          </Label>
+          <p className="text-sm text-gray-500">
+            Produto disponível para venda
+          </p>
+        </div>
+        <Switch
+          id="is_active"
+          checked={formData.is_active}
+          onCheckedChange={(checked) => onInputChange('is_active', checked)}
+        />
+      </div>
+
       {isDonation && (
         <div className="space-y-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
-          <h4 className="font-semibold text-blue-900">💝 Personalização para Doações</h4>
+          <h4 className="font-semibold text-blue-900">Personalização para Doações</h4>
           
           <div className="space-y-2">
             <Label htmlFor="donation_title" className="text-blue-900">Título da Seção de Doação</Label>

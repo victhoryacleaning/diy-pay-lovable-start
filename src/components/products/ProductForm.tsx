@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -30,6 +30,7 @@ interface ProductFormData {
   checkout_image_url: string;
   checkout_background_color: string;
   is_email_optional: boolean;
+  require_email_confirmation: boolean;
 }
 
 interface ProductFormProps {
@@ -40,6 +41,7 @@ interface ProductFormProps {
 const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('geral');
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -57,7 +59,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     donation_description: '',
     checkout_image_url: '',
     checkout_background_color: '#F3F4F6',
-    is_email_optional: false
+    is_email_optional: false,
+    require_email_confirmation: true
   });
 
   // Fetch product data for edit mode
@@ -102,7 +105,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         donation_description: product.donation_description || '',
         checkout_image_url: product.checkout_image_url || '',
         checkout_background_color: product.checkout_background_color || '#F3F4F6',
-        is_email_optional: product.is_email_optional || false
+        is_email_optional: product.is_email_optional || false,
+        require_email_confirmation: product.require_email_confirmation ?? true
       });
     }
   }, [product, mode]);
@@ -143,7 +147,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         donation_description: data.donation_description || null,
         checkout_image_url: data.checkout_image_url || null,
         checkout_background_color: data.checkout_background_color || null,
-        is_email_optional: data.is_email_optional
+        is_email_optional: data.is_email_optional,
+        require_email_confirmation: data.require_email_confirmation
       };
 
       if (mode === 'create') {
@@ -182,6 +187,25 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     }
   });
 
+  const deleteProductMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Produto excluído com sucesso!');
+      navigate('/products');
+    },
+    onError: (error) => {
+      console.error('Error deleting product:', error);
+      toast.error('Erro ao excluir produto');
+    }
+  });
+
   const handleInputChange = (field: keyof ProductFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -203,6 +227,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     saveProductMutation.mutate(formData);
   };
 
+  const handleDelete = () => {
+    if (confirm('Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.')) {
+      deleteProductMutation.mutate();
+    }
+  };
+
   if (mode === 'edit' && isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -215,43 +245,28 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header with back button and save button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/products')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {mode === 'create' ? 'Criar Novo Produto' : 'Editar Produto'}
-            </h2>
-            <p className="text-gray-600">
-              {mode === 'create' 
-                ? 'Preencha as informações do seu produto' 
-                : 'Altere as informações do produto'
-              }
-            </p>
-          </div>
-        </div>
-        
+    <div className="max-w-4xl mx-auto space-y-6 pb-24">
+      {/* Header with back button */}
+      <div className="flex items-center gap-4">
         <Button
-          onClick={handleSubmit}
-          className="bg-diypay-600 hover:bg-diypay-700"
-          disabled={saveProductMutation.isPending}
+          variant="outline"
+          onClick={() => navigate('/products')}
+          className="flex items-center gap-2"
         >
-          {saveProductMutation.isPending
-            ? 'Salvando...'
-            : mode === 'create'
-            ? 'Criar Produto'
-            : 'Salvar Alterações'
-          }
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
         </Button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {mode === 'create' ? 'Criar Novo Produto' : 'Editar Produto'}
+          </h2>
+          <p className="text-gray-600">
+            {mode === 'create' 
+              ? 'Preencha as informações do seu produto' 
+              : 'Altere as informações do produto'
+            }
+          </p>
+        </div>
       </div>
 
       <Card className="w-full">
@@ -259,7 +274,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
           <CardTitle>Configurações do Produto</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="geral" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
@@ -301,6 +316,38 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Fixed Footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div>
+            {mode === 'edit' && activeTab === 'geral' && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleteProductMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleteProductMutation.isPending ? 'Excluindo...' : 'Excluir Produto'}
+              </Button>
+            )}
+          </div>
+          
+          <Button
+            onClick={handleSubmit}
+            className="bg-diypay-600 hover:bg-diypay-700"
+            disabled={saveProductMutation.isPending}
+          >
+            {saveProductMutation.isPending
+              ? 'Salvando...'
+              : mode === 'create'
+              ? 'Criar Produto'
+              : 'Salvar Alterações'
+            }
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
