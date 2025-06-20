@@ -72,6 +72,7 @@ export type Database = {
           price_cents: number
           producer_id: string
           product_type: string
+          require_email_confirmation: boolean
           show_order_summary: boolean
           subscription_frequency: string | null
           type: string | null
@@ -95,6 +96,7 @@ export type Database = {
           price_cents: number
           producer_id: string
           product_type?: string
+          require_email_confirmation?: boolean
           show_order_summary?: boolean
           subscription_frequency?: string | null
           type?: string | null
@@ -118,6 +120,7 @@ export type Database = {
           price_cents?: number
           producer_id?: string
           product_type?: string
+          require_email_confirmation?: boolean
           show_order_summary?: boolean
           subscription_frequency?: string | null
           type?: string | null
