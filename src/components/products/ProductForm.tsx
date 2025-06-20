@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import GeneralTab from './tabs/GeneralTab';
 import ConfigurationTab from './tabs/ConfigurationTab';
 import CheckoutTab from './tabs/CheckoutTab';
 import LinksTab from './tabs/LinksTab';
+import TicketsTab from './tabs/TicketsTab';
 
 interface ProductFormData {
   name: string;
@@ -276,10 +276,13 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className={`grid w-full ${product?.product_type === 'event' ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
               <TabsTrigger value="checkout">Checkout</TabsTrigger>
+              {product?.product_type === 'event' && (
+                <TabsTrigger value="ingressos">Ingressos</TabsTrigger>
+              )}
               <TabsTrigger value="links" disabled={mode === 'create'}>
                 Links
               </TabsTrigger>
@@ -321,6 +324,14 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                   onInputChange={handleInputChange}
                 />
               </TabsContent>
+              
+              {product?.product_type === 'event' && (
+                <TabsContent value="ingressos" className="space-y-6">
+                  <TicketsTab 
+                    productId={productId}
+                  />
+                </TabsContent>
+              )}
               
               <TabsContent value="links" className="space-y-6">
                 <LinksTab 
