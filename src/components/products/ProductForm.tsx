@@ -246,7 +246,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-24">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header with back button */}
       <div className="flex items-center gap-4">
         <Button
@@ -291,6 +291,21 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                   formData={formData} 
                   onInputChange={handleInputChange}
                 />
+                
+                {/* Delete button in General tab for edit mode */}
+                {mode === 'edit' && (
+                  <div className="flex justify-start pt-4 border-t">
+                    <Button
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={deleteProductMutation.isPending}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {deleteProductMutation.isPending ? 'Excluindo...' : 'Excluir Produto'}
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="configuracao" className="space-y-6">
@@ -315,40 +330,24 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
               </TabsContent>
             </div>
           </Tabs>
+
+          {/* Save button at the bottom of the form */}
+          <div className="flex justify-end pt-6 mt-6 border-t">
+            <Button
+              onClick={handleSubmit}
+              className="bg-diypay-600 hover:bg-diypay-700"
+              disabled={saveProductMutation.isPending}
+            >
+              {saveProductMutation.isPending
+                ? 'Salvando...'
+                : mode === 'create'
+                ? 'Criar Produto'
+                : 'Salvar Alterações'
+              }
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Fixed Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            {mode === 'edit' && activeTab === 'geral' && (
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleteProductMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                {deleteProductMutation.isPending ? 'Excluindo...' : 'Excluir Produto'}
-              </Button>
-            )}
-          </div>
-          
-          <Button
-            onClick={handleSubmit}
-            className="bg-diypay-600 hover:bg-diypay-700"
-            disabled={saveProductMutation.isPending}
-          >
-            {saveProductMutation.isPending
-              ? 'Salvando...'
-              : mode === 'create'
-              ? 'Criar Produto'
-              : 'Salvar Alterações'
-            }
-          </Button>
-        </div>
-      </div>
     </div>
   );
 };
