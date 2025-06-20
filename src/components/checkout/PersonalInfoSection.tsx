@@ -11,21 +11,24 @@ interface PersonalInfoSectionProps {
   isPhoneRequired?: boolean;
 }
 
-// Função para formatar CPF/CNPJ dinamicamente
+// Função para formatar CPF/CNPJ dinamicamente com limite de 14 dígitos
 const formatCPFCNPJ = (value: string): string => {
-  // Remove todos os caracteres não numéricos
+  // 1. Remove todos os caracteres não numéricos
   const cleanValue = value.replace(/\D/g, '');
   
-  // Aplica a máscara baseada no comprimento
-  if (cleanValue.length <= 11) {
+  // 2. Limita a no máximo 14 dígitos
+  const limitedValue = cleanValue.slice(0, 14);
+  
+  // 3. Aplica a máscara baseada no comprimento
+  if (limitedValue.length <= 11) {
     // Máscara de CPF: 999.999.999-99
-    return cleanValue
+    return limitedValue
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
   } else {
     // Máscara de CNPJ: 99.999.999/9999-99
-    return cleanValue
+    return limitedValue
       .replace(/(\d{2})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d)/, '$1.$2')
       .replace(/(\d{3})(\d)/, '$1/$2')
@@ -34,7 +37,7 @@ const formatCPFCNPJ = (value: string): string => {
 };
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
-  // Lista de países permitidos (reduzida)
+  // Lista de países permitidos (restrita aos 8 países especificados)
   const allowedCountries: Country[] = ['BR', 'US', 'MX', 'CO', 'CL', 'AR', 'ES', 'PT'];
 
   return (
@@ -72,6 +75,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                   onChange={field.onChange}
                   defaultCountry="BR"
                   countries={allowedCountries}
+                  enableSearch={true}
                   international={true}
                   withCountryCallingCode={true}
                 />
