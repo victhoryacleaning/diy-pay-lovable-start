@@ -3,8 +3,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
-import PhoneInput from 'react-phone-number-input';
-import type { Country } from 'react-phone-number-input';
+import InputMask from 'react-input-mask';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
@@ -37,9 +36,6 @@ const formatCPFCNPJ = (value: string): string => {
 };
 
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
-  // Lista de países permitidos (restrita aos 8 países especificados)
-  const allowedCountries: Country[] = ['BR', 'US', 'MX', 'CO', 'CL', 'AR', 'ES', 'PT'];
-
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -67,18 +63,18 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
           name="phone"
           render={({ field }) => (
             <FormItem className="min-h-[70px]">
-              <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
+              <FormLabel className="flex items-center">
+                <span className="mr-2">🇧🇷</span>
+                Celular{isPhoneRequired ? " *" : ""}
+              </FormLabel>
               <FormControl>
-                <PhoneInput
-                  placeholder="Digite seu número"
+                <InputMask
+                  mask="(99) 99999-9999"
                   value={field.value}
                   onChange={field.onChange}
-                  defaultCountry="BR"
-                  countries={allowedCountries}
-                  enableSearch={true}
-                  international={true}
-                  withCountryCallingCode={true}
-                />
+                >
+                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
+                </InputMask>
               </FormControl>
               <FormMessage />
             </FormItem>
