@@ -1,30 +1,22 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn, Controller } from "react-hook-form";
+import { UseFormReturn } from "react-hook-form";
 import { User } from "lucide-react";
-
-import PhoneInput, { Country, isValidPhoneNumber } from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
+import InputMask from "react-input-mask";
+import PhoneInput, { getCountries, Country } from 'react-phone-number-input';
 
 interface PersonalInfoSectionProps {
   form: UseFormReturn<any>;
   isPhoneRequired?: boolean;
 }
 
-const formatCPF_CNPJ = (value: string) => {
-    const cleaned = (value || '').replace(/\D/g, '');
-    if (cleaned.length <= 11) {
-        return cleaned.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
-    } else {
-        return cleaned.slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
-    }
-};
-
 export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalInfoSectionProps) => {
-  
-  // *** LÓGICA SIMPLIFICADA: APENAS OS PAÍSES QUE QUEREMOS ***
-  const allowedCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
+  // Configurar países preferidos: BR, US, PT, MX, AR primeiro, depois o resto
+  const preferredCountries: Country[] = ['BR', 'US', 'PT', 'MX', 'AR'];
+  const allCountries = getCountries();
+  const otherCountries = allCountries.filter(country => !preferredCountries.includes(country));
+  const orderedCountries: Country[] = [...preferredCountries, ...otherCountries];
 
   return (
     <div className="space-y-4">
@@ -33,60 +25,86 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
       </div>
       
-      <FormField control={form.control} name="fullName" render={({ field }) => ( <FormItem className="min-h-[70px]"> <FormLabel>Nome completo *</FormLabel> <FormControl> <Input placeholder="Digite seu nome completo" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+      <FormField
+        control={form.control}
+        name="fullName"
+        render={({ field }) => (
+          <FormItem className="min-h-[70px]">
+            <FormLabel>Nome completo *</FormLabel>
+            <FormControl>
+              <Input placeholder="Digite seu nome completo" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-2 gap-4">
-        
-        {/* CAMPO DE TELEFONE COM LISTA REDUZIDA */}
-        <Controller
-          name="phone"
-          control={form.control}
-          rules={{ 
-            validate: value => isPhoneRequired ? (value && isValidPhoneNumber(value) ? true : "Número de celular inválido") : true 
-          }}
-          render={({ field, fieldState: { error } }) => (
-            <FormItem className="min-h-[70px]">
-              <FormLabel className={error ? 'text-destructive' : ''}>
-                Celular{isPhoneRequired ? " *" : ""}
-              </FormLabel>
-              <PhoneInput
-                id="phone-input"
-                className={`PhoneInput ${error ? 'PhoneInput--error' : ''}`}
-                placeholder="Digite seu número"
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                defaultCountry="BR"
-                countries={allowedCountries} // <-- Usando a lista reduzida
-                international
-                withCountryCallingCode
-              />
-              {error && <p className="text-sm font-medium text-destructive mt-2">{error.message as string}</p>}
-            </FormItem>
-          )}
-        />
-        
-        {/* CAMPO CPF/CNPJ */}
         <FormField
           control={form.control}
-          name="cpfCnpj"
+          name="phone"
           render={({ field }) => (
             <FormItem className="min-h-[70px]">
-              <FormLabel>CPF/CNPJ *</FormLabel>
+              <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="CPF ou CNPJ"
-                  {...field}
-                  onChange={(e) => {
-                    const formattedValue = formatCPF_CNPJ(e.target.value);
-                    field.onChange(formattedValue);
-                  }}
-                  maxLength={18}
+                <PhoneInput
+                  // Props de integração com o formulário
+                  placeholder="Digite seu número"
+                  value={field.value}
+                  onChange={field.onChange}
+                  
+                  // Props de configuração e funcionalidade
+                  defaultCountry="BR"
+                  countries={orderedCountries}
+                  international={true}
+                  withCountryCallingCode={true}
+                  
+                  // Props adicionadas que estavam faltando
+                  enableSearch={true}
+                  countryCallingCodeEditable={false}
+                  
+                  // Prop para estilização
+                  className="flex items-center"
+                  
+                  // Props para acessibilidade
+                  countrySelectProps={{ 'aria-label': 'Selecionar país' }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cpfCnpj"
+          render={({ field }) => {
+            // Lógica para escolher a máscara correta
+            const cleanValue = (field.value || "").replace(/\D/g, "");
+            const mask = cleanValue.length > 11 ? "99.999.999/9999-99" : "999.999.999-99";
+            
+            return (
+              <FormItem className="min-h-[70px]">
+                <FormLabel>CPF/CNPJ *</FormLabel>
+                <FormControl>
+                  <InputMask
+                    mask={mask}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    {(inputProps: any) => (
+                      <Input 
+                        {...inputProps}
+                        placeholder="CPF ou CNPJ"
+                      />
+                    )}
+                  </InputMask>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       </div>
     </div>
