@@ -189,6 +189,20 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     }));
   };
 
+  const handleSubmit = () => {
+    if (!formData.name.trim()) {
+      toast.error('Nome do produto é obrigatório');
+      return;
+    }
+
+    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price) <= 0)) {
+      toast.error('Valor do produto deve ser maior que zero');
+      return;
+    }
+
+    saveProductMutation.mutate(formData);
+  };
+
   if (mode === 'edit' && isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
