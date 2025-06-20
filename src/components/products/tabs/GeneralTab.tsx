@@ -3,7 +3,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import ProductTypeSection from '../ProductTypeSection';
 
 interface GeneralTabProps {
@@ -110,22 +109,6 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         <p className="text-sm text-gray-500">
           Link para download, acesso à plataforma ou instruções que serão enviadas ao cliente após a compra
         </p>
-      </div>
-
-      <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-        <div className="space-y-1">
-          <Label htmlFor="is_active" className="text-sm font-medium">
-            Produto Ativo
-          </Label>
-          <p className="text-sm text-gray-500">
-            Disponível para venda
-          </p>
-        </div>
-        <Switch
-          id="is_active"
-          checked={formData.is_active}
-          onCheckedChange={(checked) => onInputChange('is_active', checked)}
-        />
       </div>
 
       {isDonation && (
