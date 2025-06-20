@@ -1,23 +1,19 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Form } from "@/components/ui/form";
-import { ProductFormNavigation } from './ProductFormNavigation';
-import { GeneralSection } from './sections/GeneralSection';
-import { PricingSection } from './sections/PricingSection';
-import { CustomizationSection } from './sections/CustomizationSection';
-import { AutomationSection } from './sections/AutomationSection';
-import { LinksSection } from './sections/LinksSection';
+import ProductTypeSection from './ProductTypeSection';
+import PaymentMethodsSection from './PaymentMethodsSection';
 
 interface ProductFormData {
   name: string;
@@ -46,7 +42,6 @@ interface ProductFormProps {
 const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('general');
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -65,10 +60,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     checkout_image_url: '',
     checkout_background_color: '#F3F4F6',
     is_email_optional: false
-  });
-
-  const form = useForm<ProductFormData>({
-    defaultValues: formData
   });
 
   // Fetch product data for edit mode
@@ -92,11 +83,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   // Populate form with existing product data
   useEffect(() => {
     if (product && mode === 'edit') {
+      // Safely cast the allowed_payment_methods from Json to string[]
       const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
         ? product.allowed_payment_methods as string[]
         : ['credit_card', 'pix', 'bank_slip'];
 
-      const newFormData = {
+      setFormData({
         name: product.name,
         description: product.description || '',
         price: (product.price_cents / 100).toString(),
@@ -113,23 +105,21 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         checkout_image_url: product.checkout_image_url || '',
         checkout_background_color: product.checkout_background_color || '#F3F4F6',
         is_email_optional: product.is_email_optional || false
-      };
-      
-      setFormData(newFormData);
-      form.reset(newFormData);
+      });
     }
-  }, [product, mode, form]);
+  }, [product, mode]);
 
   const generateSlug = (name: string) => {
     const baseSlug = name
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
       .trim()
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-'); // Remove multiple hyphens
     
+    // Add timestamp to ensure uniqueness
     const timestamp = Date.now().toString().slice(-6);
     return `${baseSlug}-${timestamp}`;
   };
@@ -194,19 +184,23 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     }
   });
 
-  const handleSubmit = form.handleSubmit((data) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
     // Validation
-    if (!data.name.trim()) {
+    if (!formData.name.trim()) {
       toast.error('Nome do produto é obrigatório');
       return;
     }
     
-    if (data.product_type !== 'donation' && (!data.price || parseFloat(data.price) <= 0)) {
+    // Validar preço apenas se não for doação
+    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price) <= 0)) {
       toast.error('Preço deve ser maior que zero');
       return;
     }
 
-    if (data.product_type === 'subscription' && !data.subscription_frequency) {
+    // Validar frequência para assinaturas
+    if (formData.product_type === 'subscription' && !formData.subscription_frequency) {
       toast.error('Frequência de cobrança é obrigatória para assinaturas');
       return;
     }
@@ -216,60 +210,19 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       return;
     }
 
-    if (data.max_installments_allowed < 1 || data.max_installments_allowed > 12) {
+    if (formData.max_installments_allowed < 1 || formData.max_installments_allowed > 12) {
       toast.error('Número de parcelas deve ser entre 1 e 12');
       return;
     }
 
-    saveProductMutation.mutate({ ...formData, ...data });
-  });
-
-  const handleInputChange = (field: keyof ProductFormData, value: any) => {
-    const newFormData = { ...formData, [field]: value };
-    setFormData(newFormData);
-    form.setValue(field, value);
+    saveProductMutation.mutate(formData);
   };
 
-  const renderActiveSection = () => {
-    switch (activeSection) {
-      case 'general':
-        return (
-          <GeneralSection
-            form={form}
-            formData={formData}
-            onProductTypeChange={(value) => handleInputChange('product_type', value)}
-            onSubscriptionFrequencyChange={(value) => handleInputChange('subscription_frequency', value)}
-          />
-        );
-      case 'pricing':
-        return (
-          <PricingSection
-            form={form}
-            formData={formData}
-            onPaymentMethodsChange={(methods) => handleInputChange('allowed_payment_methods', methods)}
-          />
-        );
-      case 'customization':
-        return (
-          <CustomizationSection
-            form={form}
-            formData={formData}
-            onInputChange={handleInputChange}
-          />
-        );
-      case 'automation':
-        return <AutomationSection />;
-      case 'links':
-        return (
-          <LinksSection
-            productId={productId}
-            mode={mode}
-            checkoutSlug={product?.checkout_link_slug}
-          />
-        );
-      default:
-        return null;
-    }
+  const handleInputChange = (field: keyof ProductFormData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   if (mode === 'edit' && isLoading) {
@@ -283,91 +236,274 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     );
   }
 
+  const isPriceDisabled = formData.product_type === 'donation';
+  const isDonation = formData.product_type === 'donation';
+
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/products')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {mode === 'create' ? 'Criar Novo Produto' : 'Editar Produto'}
-            </h2>
-            <p className="text-gray-600">
-              {mode === 'create' 
-                ? 'Configure todas as opções do seu produto' 
-                : 'Altere as configurações do produto'
-              }
-            </p>
-          </div>
-        </div>
-        
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
         <Button
-          onClick={handleSubmit}
-          className="bg-diypay-600 hover:bg-diypay-700 flex items-center gap-2"
-          disabled={saveProductMutation.isPending}
+          variant="outline"
+          onClick={() => navigate('/products')}
+          className="flex items-center gap-2"
         >
-          <Save className="h-4 w-4" />
-          {saveProductMutation.isPending
-            ? 'Salvando...'
-            : mode === 'create'
-            ? 'Criar Produto'
-            : 'Salvar Alterações'
-          }
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
         </Button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {mode === 'create' ? 'Criar Novo Produto' : 'Editar Produto'}
+          </h2>
+          <p className="text-gray-600">
+            {mode === 'create' 
+              ? 'Preencha as informações do seu produto' 
+              : 'Altere as informações do produto'
+            }
+          </p>
+        </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Navigation Sidebar */}
-        <div className="col-span-3">
-          <Card className="sticky top-6">
-            <CardContent className="p-4">
-              <ProductFormNavigation
-                activeSection={activeSection}
-                onSectionChange={setActiveSection}
-                mode={mode}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações do Produto</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <ProductTypeSection
+              productType={formData.product_type}
+              subscriptionFrequency={formData.subscription_frequency}
+              onProductTypeChange={(value) => handleInputChange('product_type', value)}
+              onSubscriptionFrequencyChange={(value) => handleInputChange('subscription_frequency', value)}
+            />
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Produto *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="Ex: Curso de Marketing Digital"
+                required
               />
-              
-              <div className="mt-6 pt-4 border-t">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição do Produto</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Descreva seu produto..."
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="price">
+                  {isPriceDisabled ? 'Valor (Definido pelo Cliente)' : 'Valor do Produto (R$) *'}
+                </Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  placeholder={isPriceDisabled ? "Valor livre" : "0.00"}
+                  disabled={isPriceDisabled}
+                  required={!isPriceDisabled}
+                />
+                {isPriceDisabled && (
+                  <p className="text-sm text-gray-500">
+                    Para doações, o valor será definido pelo cliente no momento da compra
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="installments">Parcelas Máximas</Label>
+                <Input
+                  id="installments"
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={formData.max_installments_allowed}
+                  onChange={(e) => handleInputChange('max_installments_allowed', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Tipo de Produto</Label>
+              <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="digital_file">Arquivo Digital</SelectItem>
+                  <SelectItem value="ebook">E-book</SelectItem>
+                  <SelectItem value="course">Curso Online</SelectItem>
+                  <SelectItem value="service">Serviço</SelectItem>
+                  <SelectItem value="subscription">Assinatura</SelectItem>
+                  <SelectItem value="other">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file_url">URL do Arquivo ou Informação de Acesso</Label>
+              <Input
+                id="file_url"
+                value={formData.file_url_or_access_info}
+                onChange={(e) => handleInputChange('file_url_or_access_info', e.target.value)}
+                placeholder="https://... ou instruções de acesso"
+              />
+              <p className="text-sm text-gray-500">
+                Link para download, acesso à plataforma ou instruções que serão enviadas ao cliente após a compra
+              </p>
+            </div>
+
+            <PaymentMethodsSection
+              allowedPaymentMethods={formData.allowed_payment_methods}
+              onPaymentMethodsChange={(methods) => handleInputChange('allowed_payment_methods', methods)}
+            />
+
+            {/* Personalização do Checkout */}
+            <div className="space-y-6 p-4 border rounded-lg bg-gray-50">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">🎨 Personalização do Checkout</h3>
+                <p className="text-sm text-gray-600">Customize a aparência e comportamento da página de checkout</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="checkout_image_url">URL da Imagem do Checkout</Label>
+                  <Input
+                    id="checkout_image_url"
+                    value={formData.checkout_image_url}
+                    onChange={(e) => handleInputChange('checkout_image_url', e.target.value)}
+                    placeholder="https://exemplo.com/imagem.jpg"
                   />
-                  <Label htmlFor="is_active" className="text-sm">
-                    Produto ativo
-                  </Label>
+                  <p className="text-xs text-gray-500">
+                    Imagem exibida no topo da página de checkout
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Produto disponível para venda
+
+                <div className="space-y-2">
+                  <Label htmlFor="checkout_background_color">Cor de Fundo do Checkout</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      className="w-16 h-10 p-1 border"
+                      value={formData.checkout_background_color}
+                      onChange={(e) => handleInputChange('checkout_background_color', e.target.value)}
+                    />
+                    <Input
+                      id="checkout_background_color"
+                      value={formData.checkout_background_color}
+                      onChange={(e) => handleInputChange('checkout_background_color', e.target.value)}
+                      placeholder="#F3F4F6"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Cor de fundo da página de checkout (formato HEX)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="show_order_summary"
+                  checked={formData.show_order_summary}
+                  onCheckedChange={(checked) => handleInputChange('show_order_summary', checked)}
+                />
+                <Label htmlFor="show_order_summary">Exibir Resumo do Pedido</Label>
+                <p className="text-xs text-gray-500 ml-2">
+                  Mostra um resumo detalhado do pedido na lateral do checkout
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Content Area */}
-        <div className="col-span-9">
-          <Card>
-            <CardContent className="p-6">
-              <Form {...form}>
-                <form onSubmit={handleSubmit}>
-                  {renderActiveSection()}
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_email_optional"
+                  checked={formData.is_email_optional}
+                  onCheckedChange={(checked) => handleInputChange('is_email_optional', checked)}
+                />
+                <Label htmlFor="is_email_optional">E-mail opcional no checkout</Label>
+                <p className="text-xs text-gray-500 ml-2">
+                  Quando ativo, o e-mail não é obrigatório e o telefone se torna o contato principal
+                </p>
+              </div>
+
+              {isDonation && (
+                <div className="space-y-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
+                  <h4 className="font-semibold text-blue-900">💝 Personalização para Doações</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="donation_title" className="text-blue-900">Título da Seção de Doação</Label>
+                    <Input
+                      id="donation_title"
+                      value={formData.donation_title}
+                      onChange={(e) => handleInputChange('donation_title', e.target.value)}
+                      placeholder="Ex: Apoie este Projeto"
+                    />
+                    <p className="text-xs text-blue-600">
+                      Título personalizado para a seção onde o cliente define o valor
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="donation_description" className="text-blue-900">Descrição da Doação</Label>
+                    <Textarea
+                      id="donation_description"
+                      value={formData.donation_description}
+                      onChange={(e) => handleInputChange('donation_description', e.target.value)}
+                      placeholder="Descreva como a doação será utilizada..."
+                      rows={3}
+                    />
+                    <p className="text-xs text-blue-600">
+                      Texto explicativo sobre o propósito da doação
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+              />
+              <Label htmlFor="is_active">Produto ativo (disponível para venda)</Label>
+            </div>
+
+            <div className="flex gap-4 pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/products')}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-diypay-600 hover:bg-diypay-700"
+                disabled={saveProductMutation.isPending}
+              >
+                {saveProductMutation.isPending
+                  ? 'Salvando...'
+                  : mode === 'create'
+                  ? 'Criar Produto'
+                  : 'Salvar Alterações'
+                }
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
