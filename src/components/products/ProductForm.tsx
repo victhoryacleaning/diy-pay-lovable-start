@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,11 @@ interface ProductFormProps {
 const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('geral');
+  
+  // Read product type from URL parameter
+  const productTypeFromUrl = searchParams.get('type') || 'single_payment';
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -52,7 +57,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     file_url_or_access_info: '',
     max_installments_allowed: 1,
     is_active: true,
-    product_type: 'single_payment',
+    product_type: productTypeFromUrl,
     subscription_frequency: '',
     allowed_payment_methods: ['credit_card', 'pix', 'bank_slip'],
     show_order_summary: true,
@@ -236,6 +241,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
   // Check if this is an event product
   const isEventProduct = formData.product_type === 'event';
+  
+  // Determine which tabs to show based on product type
+  const shouldShowTicketsTab = isEventProduct && mode === 'edit';
+  const tabCount = shouldShowTicketsTab ? 5 : 4;
 
   if (mode === 'edit' && isLoading) {
     return (
@@ -279,15 +288,15 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full ${isEventProduct && mode === 'edit' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <TabsList className={`grid w-full grid-cols-${tabCount}`}>
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
               <TabsTrigger value="checkout">Checkout</TabsTrigger>
               <TabsTrigger value="links" disabled={mode === 'create'}>
                 Links
               </TabsTrigger>
-              {/* Nova aba Ingressos - apenas para eventos em modo de edição */}
-              {isEventProduct && mode === 'edit' && (
+              {/* Tickets tab - only for events in edit mode */}
+              {shouldShowTicketsTab && (
                 <TabsTrigger value="ingressos">
                   Ingressos
                 </TabsTrigger>
@@ -338,8 +347,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                 />
               </TabsContent>
 
-              {/* Nova aba Ingressos */}
-              {isEventProduct && mode === 'edit' && (
+              {/* Tickets tab - only for events in edit mode */}
+              {shouldShowTicketsTab && (
                 <TabsContent value="ingressos" className="space-y-6">
                   <TicketsTab 
                     productId={productId}

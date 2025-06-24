@@ -7,13 +7,15 @@ interface ProductTypeSectionProps {
   subscriptionFrequency: string;
   onProductTypeChange: (value: string) => void;
   onSubscriptionFrequencyChange: (value: string) => void;
+  showSubscriptionFrequency?: boolean;
 }
 
 const ProductTypeSection = ({
   productType,
   subscriptionFrequency,
   onProductTypeChange,
-  onSubscriptionFrequencyChange
+  onSubscriptionFrequencyChange,
+  showSubscriptionFrequency = true
 }: ProductTypeSectionProps) => {
   const productTypeOptions = [
     { value: 'single_payment', label: 'Pagamento Único' },
@@ -49,7 +51,8 @@ const ProductTypeSection = ({
         </Select>
       </div>
 
-      {productType === 'subscription' && (
+      {/* Only show subscription frequency if it's a subscription product and showSubscriptionFrequency is true */}
+      {productType === 'subscription' && showSubscriptionFrequency && (
         <div className="space-y-2">
           <Label htmlFor="subscription_frequency">Frequência de Cobrança *</Label>
           <Select value={subscriptionFrequency} onValueChange={onSubscriptionFrequencyChange}>

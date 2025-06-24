@@ -14,6 +14,7 @@ interface GeneralTabProps {
 const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
   const isPriceDisabled = formData.product_type === 'donation';
   const isDonation = formData.product_type === 'donation';
+  const isSubscription = formData.product_type === 'subscription';
 
   return (
     <div className="space-y-6">
@@ -22,6 +23,7 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         subscriptionFrequency={formData.subscription_frequency}
         onProductTypeChange={(value) => onInputChange('product_type', value)}
         onSubscriptionFrequencyChange={(value) => onInputChange('subscription_frequency', value)}
+        showSubscriptionFrequency={isSubscription}
       />
 
       <div className="space-y-2">
@@ -128,6 +130,7 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         />
       </div>
 
+      {/* Donation customization section - only show for donations */}
       {isDonation && (
         <div className="space-y-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
           <h4 className="font-semibold text-blue-900">Personalização para Doações</h4>
