@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -19,6 +20,11 @@ interface TransactionPayload {
   donation_amount_cents?: number; // Campo para doações
   quantity?: number; // Para eventos
   attendees?: Array<{ name: string; email: string }>; // Para eventos
+}
+
+// Função para gerar UUID v4
+function generateUUID(): string {
+  return crypto.randomUUID();
 }
 
 // Função para atualizar o saldo do produtor
@@ -345,12 +351,14 @@ Deno.serve(async (req) => {
     }
 
     // *** CÁLCULO DO VALOR BASEADO NO TIPO DE PRODUTO ***
-    let amountTotalCents = product.price_cents;
-    
+    let finalAmountCents = 0;
+    let finalQuantity = 1;
+    let eventAttendeesData = null;
+
     if (product.product_type === 'donation') {
       if (payload.donation_amount_cents) {
-        amountTotalCents = Number(payload.donation_amount_cents);
-        console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', amountTotalCents);
+        finalAmountCents = Number(payload.donation_amount_cents);
+        console.log('[DEBUG] *** PRODUTO DE DOAÇÃO - USANDO VALOR DINÂMICO ***:', finalAmountCents);
       } else {
         console.error('[ERRO] *** PRODUTO DE DOAÇÃO SEM VALOR ESPECIFICADO ***');
         return new Response(
@@ -367,20 +375,56 @@ Deno.serve(async (req) => {
         );
       }
     } else if (product.product_type === 'event') {
-      const quantity = payload.quantity || 1;
-      amountTotalCents = product.price_cents * quantity;
+      finalQuantity = payload.quantity || 1;
+      finalAmountCents = product.price_cents * finalQuantity;
+      
+      // Processar dados dos participantes para eventos
+      if (payload.attendees && Array.isArray(payload.attendees)) {
+        eventAttendeesData = payload.attendees.map((attendee, index) => ({
+          id: generateUUID(),
+          name: attendee.name,
+          email: attendee.email,
+          checked_in: false,
+          checked_in_at: null,
+          lote: 'Primeiro Lote',
+          order_index: index + 1
+        }));
+        console.log('[DEBUG] *** DADOS DOS PARTICIPANTES PROCESSADOS ***:', eventAttendeesData);
+      }
+      
       console.log('[DEBUG] *** PRODUTO EVENTO - CALCULANDO VALOR TOTAL ***:', {
         price_per_ticket: product.price_cents,
-        quantity,
-        total: amountTotalCents
+        quantity: finalQuantity,
+        total: finalAmountCents
       });
+    } else {
+      // *** LÓGICA PARA PRODUTO PADRÃO (PAGAMENTO ÚNICO) ***
+      finalAmountCents = product.price_cents;
+      console.log('[DEBUG] *** PRODUTO PAGAMENTO ÚNICO - USANDO PREÇO DO PRODUTO ***:', finalAmountCents);
     }
 
-    const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
-    const producerShareCents = amountTotalCents - platformFeeCents;
+    // Validação final do valor
+    if (finalAmountCents <= 0) {
+      console.error('[ERRO] *** VALOR FINAL INVÁLIDO ***:', finalAmountCents);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: true,
+          message: 'O valor final da transação não pode ser zero ou negativo',
+          functionName: 'create-iugu-transaction'
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const platformFeeCents = Math.round(finalAmountCents * platformFeePercentage);
+    const producerShareCents = finalAmountCents - platformFeeCents;
 
     console.log('[DEBUG] *** CÁLCULOS DE VALORES ***:', {
-      amountTotalCents,
+      finalAmountCents,
       platformFeeCents,
       producerShareCents,
       platformFeePercentage,
@@ -418,7 +462,7 @@ Deno.serve(async (req) => {
         product_id: payload.product_id,
         buyer_email: payload.buyer_email,
         buyer_profile_id: payload.buyer_profile_id || null,
-        amount_total_cents: amountTotalCents,
+        amount_total_cents: finalAmountCents,
         platform_fee_cents: platformFeeCents,
         producer_share_cents: producerShareCents,
         payment_method_used: payload.payment_method_selected,
@@ -427,9 +471,9 @@ Deno.serve(async (req) => {
       };
 
       // Adicionar dados específicos para eventos
-      if (product.product_type === 'event' && payload.attendees) {
-        saleToInsert.event_attendees = payload.attendees;
-        console.log('[DEBUG] *** ADICIONANDO DADOS DOS PARTICIPANTES DO EVENTO ***:', payload.attendees);
+      if (product.product_type === 'event' && eventAttendeesData) {
+        saleToInsert.event_attendees = eventAttendeesData;
+        console.log('[DEBUG] *** ADICIONANDO DADOS DOS PARTICIPANTES DO EVENTO ***:', eventAttendeesData);
       }
 
       console.log('[DEBUG] *** OBJETO EXATO PARA INSERT DA VENDA ***:', JSON.stringify(saleToInsert, null, 2));
@@ -485,11 +529,11 @@ Deno.serve(async (req) => {
 
     // *** USAR VALOR CORRETO NOS ITEMS BASEADO NO TIPO DE PRODUTO ***
     const items = [{
-      description: product.product_type === 'event' && payload.quantity && payload.quantity > 1 
-        ? `${product.name} (${payload.quantity} ingressos)`
+      description: product.product_type === 'event' && finalQuantity > 1 
+        ? `${product.name} (${finalQuantity} ingressos)`
         : product.name,
-      quantity: product.product_type === 'event' ? (payload.quantity || 1) : 1,
-      price_cents: product.product_type === 'event' ? product.price_cents : amountTotalCents
+      quantity: finalQuantity,
+      price_cents: Math.round(finalAmountCents / finalQuantity) // Preço unitário
     }];
     console.log('[DEBUG] *** ITEMS PARA IUGU ***:', JSON.stringify(items, null, 2));
 

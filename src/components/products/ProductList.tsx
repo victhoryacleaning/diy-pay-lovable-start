@@ -1,216 +1,155 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Edit, Eye, Plus, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Eye, MoreHorizontal, Ticket } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Product {
   id: string;
   name: string;
-  description: string | null;
   price_cents: number;
   type: string;
+  product_type: string;
   is_active: boolean;
-  checkout_link_slug: string | null;
-  created_at: string;
+  checkout_link_slug?: string;
 }
 
-const ProductList = () => {
-  const { user } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ProductListProps {
+  products: Product[];
+}
 
-  const fetchProducts = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('producer_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast.error('Erro ao carregar produtos');
-        return;
-      }
-
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erro inesperado ao carregar produtos');
-    } finally {
-      setLoading(false);
+const ProductList = ({ products }: ProductListProps) => {
+  const formatPrice = (priceCents: number, productType: string) => {
+    if (productType === 'donation') {
+      return 'Valor livre';
     }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este produto?')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting product:', error);
-        toast.error('Erro ao excluir produto');
-        return;
-      }
-
-      toast.success('Produto excluído com sucesso');
-      fetchProducts(); // Refresh the list
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erro inesperado ao excluir produto');
-    }
-  };
-
-  const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
-    }).format(cents / 100);
+      currency: 'BRL',
+    }).format(priceCents / 100);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+  const getProductTypeLabel = (productType: string) => {
+    switch (productType) {
+      case 'single_payment':
+        return 'Pagamento Único';
+      case 'subscription':
+        return 'Assinatura';
+      case 'donation':
+        return 'Doação';
+      case 'event':
+        return 'Evento';
+      default:
+        return 'Pagamento Único';
+    }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, [user]);
+  const getProductTypeBadgeVariant = (productType: string) => {
+    switch (productType) {
+      case 'single_payment':
+        return 'default';
+      case 'subscription':
+        return 'secondary';
+      case 'donation':
+        return 'outline';
+      case 'event':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
 
-  if (loading) {
+  if (products.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold">Produtos</h2>
-            <p className="text-gray-600">Gerencie seus produtos digitais</p>
-          </div>
-          <div className="w-32 h-10 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-        
-        <div className="grid gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded animate-pulse"></div>
-          ))}
-        </div>
+      <div className="text-center py-12">
+        <p className="text-gray-500 mb-4">Você ainda não criou nenhum produto.</p>
+        <Link to="/products/create">
+          <Button>Criar Primeiro Produto</Button>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Produtos</h2>
-          <p className="text-gray-600 mt-2">Gerencie seus produtos digitais</p>
-        </div>
-        <Link to="/products/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Produto
-          </Button>
-        </Link>
-      </div>
-
-      {products.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nenhum produto cadastrado
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Comece criando seu primeiro produto digital
+    <div className="space-y-4">
+      {products.map((product) => (
+        <div
+          key={product.id}
+          className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+                <Badge 
+                  variant={product.is_active ? "default" : "secondary"}
+                  className={product.is_active ? "bg-green-100 text-green-800" : ""}
+                >
+                  {product.is_active ? "Ativo" : "Inativo"}
+                </Badge>
+                <Badge variant={getProductTypeBadgeVariant(product.product_type)}>
+                  {getProductTypeLabel(product.product_type)}
+                </Badge>
+              </div>
+              <p className="text-2xl font-bold text-diypay-600 mb-2">
+                {formatPrice(product.price_cents, product.product_type)}
               </p>
-              <Link to="/products/new">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Criar Primeiro Produto
-                </Button>
-              </Link>
+              <p className="text-sm text-gray-500">
+                Tipo: {product.type === 'digital_file' ? 'Arquivo Digital' : 'Outro'}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {products.map((product) => (
-            <Card key={product.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <Badge variant={product.is_active ? "default" : "secondary"}>
-                        {product.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </div>
-                    {product.description && (
-                      <CardDescription className="text-sm text-gray-600">
-                        {product.description}
-                      </CardDescription>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-green-600">
-                      {formatCurrency(product.price_cents)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Criado em {formatDate(product.created_at)}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="flex gap-2">
-                  <Link to={`/products/edit/${product.id}`}>
-                    <Button variant="outline" size="sm">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </Button>
-                  </Link>
-                  
-                  {product.checkout_link_slug && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a 
-                        href={`/checkout/${product.checkout_link_slug}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Página
-                      </a>
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleDelete(product.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Excluir
+            <div className="flex items-center space-x-2">
+              {product.checkout_link_slug && (
+                <Link
+                  to={`/checkout/${product.checkout_link_slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Checkout
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </Link>
+              )}
+              
+              {/* Botão Ingressos - apenas para eventos */}
+              {product.product_type === 'event' && (
+                <Link to={`/products/edit/${product.id}?tab=ingressos`}>
+                  <Button variant="outline" size="sm">
+                    <Ticket className="h-4 w-4 mr-2" />
+                    Ingressos
+                  </Button>
+                </Link>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to={`/products/edit/${product.id}`}
+                      className="flex items-center"
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
-      )}
+      ))}
     </div>
   );
 };

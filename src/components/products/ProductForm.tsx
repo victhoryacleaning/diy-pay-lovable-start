@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import GeneralTab from './tabs/GeneralTab';
 import ConfigurationTab from './tabs/ConfigurationTab';
 import CheckoutTab from './tabs/CheckoutTab';
 import LinksTab from './tabs/LinksTab';
+import TicketsTab from './tabs/TicketsTab';
 
 interface ProductFormData {
   name: string;
@@ -234,6 +234,9 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     }
   };
 
+  // Check if this is an event product
+  const isEventProduct = formData.product_type === 'event';
+
   if (mode === 'edit' && isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -276,13 +279,19 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className={`grid w-full ${isEventProduct && mode === 'edit' ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
               <TabsTrigger value="checkout">Checkout</TabsTrigger>
               <TabsTrigger value="links" disabled={mode === 'create'}>
                 Links
               </TabsTrigger>
+              {/* Nova aba Ingressos - apenas para eventos em modo de edição */}
+              {isEventProduct && mode === 'edit' && (
+                <TabsTrigger value="ingressos">
+                  Ingressos
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <div className="mt-6">
@@ -328,6 +337,15 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                   checkoutSlug={product?.checkout_link_slug}
                 />
               </TabsContent>
+
+              {/* Nova aba Ingressos */}
+              {isEventProduct && mode === 'edit' && (
+                <TabsContent value="ingressos" className="space-y-6">
+                  <TicketsTab 
+                    productId={productId}
+                  />
+                </TabsContent>
+              )}
             </div>
           </Tabs>
 
