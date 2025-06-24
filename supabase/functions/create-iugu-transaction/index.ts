@@ -40,19 +40,19 @@ serve(async (req) => {
     const requestBody = await req.json()
     console.log('[DEBUG] Body completo recebido:', JSON.stringify(requestBody, null, 2))
 
-    // Extrair dados com fallbacks seguros
+    // Extrair dados usando os nomes corretos das propriedades enviadas pelo frontend
     const { 
-      productId, 
-      paymentMethod, 
-      buyerEmail, 
-      amount,
-      donationAmount,
+      product_id: productId,
+      payment_method_selected: paymentMethod,
+      buyer_email: buyerEmail,
+      amount_cents: amount,
+      donation_amount_cents: donationAmount,
       quantity,
-      eventAttendees,
+      event_attendees: eventAttendees,
       installments = 1
     } = requestBody
 
-    console.log('[DEBUG] Dados extraídos:', { 
+    console.log('[DEBUG] Valores extraídos:', { 
       productId, 
       paymentMethod, 
       buyerEmail, 
