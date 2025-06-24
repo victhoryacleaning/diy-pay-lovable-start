@@ -158,6 +158,158 @@ async function fetchPixDataFromIugu(invoiceId: string, authHeader: string): Prom
   return {};
 }
 
+// Função para criar ou verificar plano na Iugu
+async function createOrGetIuguPlan(productId: string, productName: string, priceCents: number, frequency: string, authHeader: string) {
+  console.log('[DEBUG] *** CRIANDO/VERIFICANDO PLANO NA IUGU ***:', { productId, productName, priceCents, frequency });
+  
+  // Mapear frequência para interval_type da Iugu
+  const frequencyMap: { [key: string]: { interval: number, intervalType: string } } = {
+    'monthly': { interval: 1, intervalType: 'months' },
+    'quarterly': { interval: 3, intervalType: 'months' },
+    'biannual': { interval: 6, intervalType: 'months' },
+    'annual': { interval: 1, intervalType: 'years' }
+  };
+
+  const intervalConfig = frequencyMap[frequency];
+  if (!intervalConfig) {
+    throw new Error(`Frequência de assinatura não suportada: ${frequency}`);
+  }
+
+  const planIdentifier = `diypay-plan-${productId}`;
+  
+  try {
+    // Verificar se o plano já existe
+    console.log('[DEBUG] Verificando se plano já existe:', planIdentifier);
+    const checkResponse = await fetch(`https://api.iugu.com/v1/plans/${planIdentifier}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+      },
+    });
+
+    if (checkResponse.ok) {
+      const existingPlan = await checkResponse.json();
+      console.log('[DEBUG] *** PLANO JÁ EXISTE ***:', existingPlan.id);
+      return existingPlan;
+    }
+
+    // Criar novo plano
+    console.log('[DEBUG] Criando novo plano na Iugu');
+    const planPayload = {
+      name: productName,
+      identifier: planIdentifier,
+      interval: intervalConfig.interval,
+      interval_type: intervalConfig.intervalType,
+      prices: [
+        {
+          currency: 'BRL',
+          value_cents: priceCents
+        }
+      ]
+    };
+
+    console.log('[DEBUG] Payload do plano:', JSON.stringify(planPayload, null, 2));
+
+    const createResponse = await fetch('https://api.iugu.com/v1/plans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+      },
+      body: JSON.stringify(planPayload),
+    });
+
+    const createText = await createResponse.text();
+    console.log('[DEBUG] Resposta da criação do plano (status: ' + createResponse.status + '):', createText);
+
+    if (createResponse.ok) {
+      const newPlan = JSON.parse(createText);
+      console.log('[DEBUG] *** NOVO PLANO CRIADO ***:', newPlan.id);
+      return newPlan;
+    } else {
+      throw new Error(`Erro ao criar plano: ${createText}`);
+    }
+  } catch (error) {
+    console.error('[ERRO] Erro ao criar/verificar plano:', error);
+    throw error;
+  }
+}
+
+// Função para adicionar método de pagamento ao cliente
+async function addPaymentMethodToCustomer(customerId: string, cardToken: string, authHeader: string) {
+  console.log('[DEBUG] *** ADICIONANDO MÉTODO DE PAGAMENTO AO CLIENTE ***:', customerId);
+  
+  try {
+    const paymentMethodPayload = {
+      description: 'Cartão de Crédito',
+      token: cardToken,
+      set_as_default: true
+    };
+
+    console.log('[DEBUG] Payload do método de pagamento:', JSON.stringify(paymentMethodPayload, null, 2));
+
+    const response = await fetch(`https://api.iugu.com/v1/customers/${customerId}/payment_methods`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+      },
+      body: JSON.stringify(paymentMethodPayload),
+    });
+
+    const responseText = await response.text();
+    console.log('[DEBUG] Resposta da adição do método de pagamento (status: ' + response.status + '):', responseText);
+
+    if (response.ok) {
+      const paymentMethod = JSON.parse(responseText);
+      console.log('[DEBUG] *** MÉTODO DE PAGAMENTO ADICIONADO ***:', paymentMethod.id);
+      return paymentMethod;
+    } else {
+      throw new Error(`Erro ao adicionar método de pagamento: ${responseText}`);
+    }
+  } catch (error) {
+    console.error('[ERRO] Erro ao adicionar método de pagamento:', error);
+    throw error;
+  }
+}
+
+// Função para criar assinatura na Iugu
+async function createIuguSubscription(customerId: string, planIdentifier: string, authHeader: string) {
+  console.log('[DEBUG] *** CRIANDO ASSINATURA NA IUGU ***:', { customerId, planIdentifier });
+  
+  try {
+    const subscriptionPayload = {
+      customer_id: customerId,
+      plan_identifier: planIdentifier
+    };
+
+    console.log('[DEBUG] Payload da assinatura:', JSON.stringify(subscriptionPayload, null, 2));
+
+    const response = await fetch('https://api.iugu.com/v1/subscriptions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+      },
+      body: JSON.stringify(subscriptionPayload),
+    });
+
+    const responseText = await response.text();
+    console.log('[DEBUG] Resposta da criação da assinatura (status: ' + response.status + '):', responseText);
+
+    if (response.ok) {
+      const subscription = JSON.parse(responseText);
+      console.log('[DEBUG] *** ASSINATURA CRIADA ***:', subscription.id);
+      return subscription;
+    } else {
+      throw new Error(`Erro ao criar assinatura: ${responseText}`);
+    }
+  } catch (error) {
+    console.error('[ERRO] Erro ao criar assinatura:', error);
+    throw error;
+  }
+}
+
 Deno.serve(async (req) => {
   console.log('[DEBUG] *** INÍCIO DA FUNÇÃO create-iugu-transaction ***');
   console.log('[DEBUG] Método da requisição:', req.method);
@@ -397,6 +549,78 @@ Deno.serve(async (req) => {
         quantity: finalQuantity,
         total: finalAmountCents
       });
+    } else if (product.product_type === 'subscription') {
+      // *** NOVA LÓGICA PARA ASSINATURAS ***
+      finalAmountCents = product.price_cents;
+      console.log('[DEBUG] *** PRODUTO ASSINATURA - USANDO PREÇO DO PRODUTO ***:', finalAmountCents);
+      
+      // Validar se é cartão de crédito
+      if (payload.payment_method_selected !== 'credit_card') {
+        console.error('[ERRO] *** ASSINATURA REQUER CARTÃO DE CRÉDITO ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Assinaturas só podem ser pagas com cartão de crédito',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Validar se tem token do cartão
+      if (!payload.card_token) {
+        console.error('[ERRO] *** ASSINATURA REQUER TOKEN DO CARTÃO ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Token do cartão é obrigatório para assinaturas',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Validar se tem customer_id
+      if (!payload.iugu_customer_id) {
+        console.error('[ERRO] *** ASSINATURA REQUER CUSTOMER_ID ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'ID do cliente é obrigatório para assinaturas',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Validar se tem frequência da assinatura
+      if (!product.subscription_frequency) {
+        console.error('[ERRO] *** PRODUTO DE ASSINATURA SEM FREQUÊNCIA ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Frequência da assinatura não configurada no produto',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     } else {
       // *** LÓGICA PARA PRODUTO PADRÃO (PAGAMENTO ÚNICO) ***
       finalAmountCents = product.price_cents;
@@ -542,8 +766,56 @@ Deno.serve(async (req) => {
 
     console.log('[DEBUG] *** MÉTODO DE PAGAMENTO SELECIONADO ***:', payload.payment_method_selected);
 
+    // *** NOVA LÓGICA PARA ASSINATURAS ***
+    if (product.product_type === 'subscription') {
+      console.log('[DEBUG] *** PROCESSANDO ASSINATURA ***');
+      
+      try {
+        // 1. Criar ou verificar plano na Iugu
+        const plan = await createOrGetIuguPlan(
+          product.id,
+          product.name,
+          product.price_cents,
+          product.subscription_frequency!,
+          authHeader
+        );
+
+        // 2. Adicionar método de pagamento ao cliente
+        const paymentMethod = await addPaymentMethodToCustomer(
+          payload.iugu_customer_id!,
+          payload.card_token!,
+          authHeader
+        );
+
+        // 3. Criar assinatura
+        const subscription = await createIuguSubscription(
+          payload.iugu_customer_id!,
+          plan.identifier,
+          authHeader
+        );
+
+        console.log('[DEBUG] *** ASSINATURA CRIADA COM SUCESSO ***:', subscription.id);
+
+        // Para assinaturas, consideramos como "ativa" imediatamente
+        updateData = {
+          iugu_subscription_id: subscription.id,
+          status: 'active',
+          paid_at: new Date().toISOString()
+        };
+
+        // Atualizar saldo do produtor para assinaturas
+        await updateProducerFinancials(supabase, product.producer_id, producerShareCents);
+
+        iuguResponse = { success: true, subscription_id: subscription.id };
+
+      } catch (error) {
+        console.error('[ERRO] *** ERRO NO PROCESSAMENTO DA ASSINATURA ***:', error);
+        updateData.error_message_internal = 'Erro ao processar assinatura: ' + error.message;
+        updateData.status = 'failed';
+      }
+    }
     // Payment method specific logic
-    if (payload.payment_method_selected === 'credit_card' && payload.card_token) {
+    else if (payload.payment_method_selected === 'credit_card' && payload.card_token) {
       console.log('[DEBUG] *** TENTANDO COBRANÇA DIRETA COM TOKEN DO CARTÃO ***');
       
       const chargePayload = {
@@ -818,8 +1090,9 @@ Deno.serve(async (req) => {
         console.log('[DEBUG] *** REGISTRO DE VENDA ATUALIZADO COM SUCESSO ***');
         
         // VERIFICAÇÃO FINAL DOS CAMPOS IMPORTANTES
-        console.log('[DEBUG] *** VERIFICAÇÃO FINAL DOS CAMPOS PIX APÓS UPDATE ***:', {
+        console.log('[DEBUG] *** VERIFICAÇÃO FINAL DOS CAMPOS APÓS UPDATE ***:', {
           sale_id: updateResult?.id,
+          iugu_subscription_id: updateResult?.iugu_subscription_id ? 'PRESENTE' : 'NULL',
           iugu_pix_qr_code_base64: updateResult?.iugu_pix_qr_code_base64 ? `PRESENTE (length: ${updateResult.iugu_pix_qr_code_base64.length})` : 'NULL',
           iugu_pix_qr_code_text: updateResult?.iugu_pix_qr_code_text ? `PRESENTE (length: ${updateResult.iugu_pix_qr_code_text.length}, começa com: ${updateResult.iugu_pix_qr_code_text.substring(0, 10)}...)` : 'NULL',
           iugu_bank_slip_barcode: updateResult?.iugu_bank_slip_barcode ? `PRESENTE (length: ${updateResult.iugu_bank_slip_barcode.length})` : 'NULL'
@@ -830,7 +1103,7 @@ Deno.serve(async (req) => {
     }
 
     // Prepare response
-    if (iuguResponse && (iuguResponse.success || iuguResponse.id)) {
+    if (iuguResponse && (iuguResponse.success || iuguResponse.id || iuguResponse.subscription_id)) {
       const responseData: any = {
         success: true,
         sale_id: sale.id,
@@ -848,6 +1121,11 @@ Deno.serve(async (req) => {
         responseData.pix_qr_code_text = updateData.iugu_pix_qr_code_text;
         responseData.pix_qr_code_base64 = updateData.iugu_pix_qr_code_base64;
         responseData.bank_slip_barcode = updateData.iugu_bank_slip_barcode;
+      }
+
+      if (updateData.iugu_subscription_id) {
+        responseData.iugu_subscription_id = updateData.iugu_subscription_id;
+        responseData.subscription_status = updateData.status;
       }
 
       console.log('[DEBUG] *** RETORNANDO RESPOSTA DE SUCESSO ***:', JSON.stringify(responseData, null, 2));

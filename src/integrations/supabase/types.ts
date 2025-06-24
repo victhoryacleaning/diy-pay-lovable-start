@@ -192,6 +192,7 @@ export type Database = {
           iugu_invoice_secure_url: string | null
           iugu_pix_qr_code_base64: string | null
           iugu_pix_qr_code_text: string | null
+          iugu_subscription_id: string | null
           paid_at: string | null
           payment_method_used: string
           platform_fee_cents: number
@@ -216,6 +217,7 @@ export type Database = {
           iugu_invoice_secure_url?: string | null
           iugu_pix_qr_code_base64?: string | null
           iugu_pix_qr_code_text?: string | null
+          iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used: string
           platform_fee_cents?: number
@@ -240,6 +242,7 @@ export type Database = {
           iugu_invoice_secure_url?: string | null
           iugu_pix_qr_code_base64?: string | null
           iugu_pix_qr_code_text?: string | null
+          iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used?: string
           platform_fee_cents?: number

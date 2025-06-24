@@ -8,6 +8,7 @@ interface Product {
   product_type?: string;
   donation_title?: string;
   donation_description?: string;
+  subscription_frequency?: string;
 }
 
 interface ProductInfoProps {
@@ -19,6 +20,7 @@ interface ProductInfoProps {
 export const ProductInfo = ({ product, donationAmount, eventQuantity = 1 }: ProductInfoProps) => {
   const isDonation = product.product_type === 'donation';
   const isEvent = product.product_type === 'event';
+  const isSubscription = product.product_type === 'subscription';
   
   const getDisplayPrice = () => {
     if (isDonation && donationAmount) {
@@ -34,6 +36,19 @@ export const ProductInfo = ({ product, donationAmount, eventQuantity = 1 }: Prod
     }
     
     return product.price_cents;
+  };
+
+  const getSubscriptionFrequencyText = () => {
+    if (!isSubscription || !product.subscription_frequency) return '';
+    
+    const frequencyMap: { [key: string]: string } = {
+      'monthly': 'mês',
+      'quarterly': 'trimestre', 
+      'biannual': 'semestre',
+      'annual': 'ano'
+    };
+    
+    return frequencyMap[product.subscription_frequency] || 'período';
   };
 
   const displayPrice = getDisplayPrice();
@@ -54,7 +69,10 @@ export const ProductInfo = ({ product, donationAmount, eventQuantity = 1 }: Prod
             {isEvent ? `Valor unitário:` : 'Valor:'}
           </span>
           <span className="font-medium">
-            {formatCurrency(product.price_cents)}
+            {isSubscription 
+              ? `${formatCurrency(product.price_cents)} / ${getSubscriptionFrequencyText()}`
+              : formatCurrency(product.price_cents)
+            }
           </span>
         </div>
         
@@ -73,8 +91,21 @@ export const ProductInfo = ({ product, donationAmount, eventQuantity = 1 }: Prod
         
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
-          <span className="text-blue-600">{formatCurrency(displayPrice)}</span>
+          <span className="text-blue-600">
+            {isSubscription 
+              ? `${formatCurrency(displayPrice)} / ${getSubscriptionFrequencyText()}`
+              : formatCurrency(displayPrice)
+            }
+          </span>
         </div>
+        
+        {isSubscription && (
+          <div className="mt-3 p-3 bg-blue-50 rounded-md">
+            <p className="text-sm text-blue-800">
+              <strong>Assinatura Recorrente:</strong> Você será cobrado automaticamente a cada {getSubscriptionFrequencyText()}.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

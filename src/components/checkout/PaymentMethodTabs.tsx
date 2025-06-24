@@ -16,6 +16,7 @@ interface PaymentMethodTabsProps {
   productPriceCents: number;
   product: {
     allowed_payment_methods: string[];
+    product_type: string;
   };
 }
 
@@ -27,7 +28,10 @@ export const PaymentMethodTabs = ({
   productPriceCents,
   product,
 }: PaymentMethodTabsProps) => {
-  const allowedMethods = product.allowed_payment_methods || ["credit_card", "pix", "bank_slip"];
+  // Para assinaturas, forçar apenas cartão de crédito
+  const allowedMethods = product.product_type === 'subscription' 
+    ? ["credit_card"] 
+    : (product.allowed_payment_methods || ["credit_card", "pix", "bank_slip"]);
   
   // Set default payment method to the first allowed method
   useEffect(() => {
@@ -119,7 +123,14 @@ export const PaymentMethodTabs = ({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Método de Pagamento</h3>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Método de Pagamento</h3>
+        {product.product_type === 'subscription' && (
+          <p className="text-sm text-gray-600 mb-4">
+            Assinaturas são processadas apenas via cartão de crédito para garantir a cobrança recorrente.
+          </p>
+        )}
+      </div>
       
       <Tabs value={paymentMethod} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full h-auto bg-transparent p-0 space-x-2" style={{ gridTemplateColumns: `repeat(${allowedMethods.length}, 1fr)` }}>
