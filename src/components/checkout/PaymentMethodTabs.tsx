@@ -28,10 +28,8 @@ export const PaymentMethodTabs = ({
   productPriceCents,
   product,
 }: PaymentMethodTabsProps) => {
-  // Para assinaturas, forçar apenas cartão de crédito
-  const allowedMethods = product.product_type === 'subscription' 
-    ? ["credit_card"] 
-    : (product.allowed_payment_methods || ["credit_card", "pix", "bank_slip"]);
+  // Usar os métodos permitidos diretamente, sem restrição para assinaturas
+  const allowedMethods = product.allowed_payment_methods || ["credit_card", "pix", "bank_slip"];
   
   // Set default payment method to the first allowed method
   useEffect(() => {
@@ -127,7 +125,7 @@ export const PaymentMethodTabs = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Método de Pagamento</h3>
         {product.product_type === 'subscription' && (
           <p className="text-sm text-gray-600 mb-4">
-            Assinaturas são processadas apenas via cartão de crédito para garantir a cobrança recorrente.
+            Para assinaturas, a primeira cobrança pode ser paga via PIX, Boleto ou Cartão. As cobranças recorrentes seguintes serão processadas automaticamente.
           </p>
         )}
       </div>

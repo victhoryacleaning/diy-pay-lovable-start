@@ -164,9 +164,13 @@ async function createOrGetIuguPlan(productId: string, productName: string, price
   
   // Mapear frequência para interval_type da Iugu
   const frequencyMap: { [key: string]: { interval: number, intervalType: string } } = {
+    'weekly': { interval: 1, intervalType: 'weeks' },
     'monthly': { interval: 1, intervalType: 'months' },
+    'bimonthly': { interval: 2, intervalType: 'months' },
     'quarterly': { interval: 3, intervalType: 'months' },
+    'semiannually': { interval: 6, intervalType: 'months' },
     'biannual': { interval: 6, intervalType: 'months' },
+    'annually': { interval: 1, intervalType: 'years' },
     'annual': { interval: 1, intervalType: 'years' }
   };
 
@@ -235,7 +239,7 @@ async function createOrGetIuguPlan(productId: string, productName: string, price
   }
 }
 
-// Função para adicionar método de pagamento ao cliente
+// Função para adicionar método de pagamento ao cliente (apenas para cartão)
 async function addPaymentMethodToCustomer(customerId: string, cardToken: string, authHeader: string) {
   console.log('[DEBUG] *** ADICIONANDO MÉTODO DE PAGAMENTO AO CLIENTE ***:', customerId);
   
@@ -274,14 +278,22 @@ async function addPaymentMethodToCustomer(customerId: string, cardToken: string,
 }
 
 // Função para criar assinatura na Iugu
-async function createIuguSubscription(customerId: string, planIdentifier: string, authHeader: string) {
-  console.log('[DEBUG] *** CRIANDO ASSINATURA NA IUGU ***:', { customerId, planIdentifier });
+async function createIuguSubscription(customerId: string, planIdentifier: string, paymentMethodSelected: string, authHeader: string) {
+  console.log('[DEBUG] *** CRIANDO ASSINATURA NA IUGU ***:', { customerId, planIdentifier, paymentMethodSelected });
   
   try {
-    const subscriptionPayload = {
+    const subscriptionPayload: any = {
       customer_id: customerId,
       plan_identifier: planIdentifier
     };
+
+    // Só adicionar o método de pagamento padrão se for cartão de crédito
+    // Para PIX e Boleto, deixar a primeira fatura ser paga manualmente
+    if (paymentMethodSelected === 'credit_card') {
+      subscriptionPayload.payable_with = 'credit_card';
+    } else {
+      subscriptionPayload.payable_with = paymentMethodSelected;
+    }
 
     console.log('[DEBUG] Payload da assinatura:', JSON.stringify(subscriptionPayload, null, 2));
 
@@ -554,40 +566,6 @@ Deno.serve(async (req) => {
       finalAmountCents = product.price_cents;
       console.log('[DEBUG] *** PRODUTO ASSINATURA - USANDO PREÇO DO PRODUTO ***:', finalAmountCents);
       
-      // Validar se é cartão de crédito
-      if (payload.payment_method_selected !== 'credit_card') {
-        console.error('[ERRO] *** ASSINATURA REQUER CARTÃO DE CRÉDITO ***');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: true,
-            message: 'Assinaturas só podem ser pagas com cartão de crédito',
-            functionName: 'create-iugu-transaction'
-          }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-
-      // Validar se tem token do cartão
-      if (!payload.card_token) {
-        console.error('[ERRO] *** ASSINATURA REQUER TOKEN DO CARTÃO ***');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: true,
-            message: 'Token do cartão é obrigatório para assinaturas',
-            functionName: 'create-iugu-transaction'
-          }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-
       // Validar se tem customer_id
       if (!payload.iugu_customer_id) {
         console.error('[ERRO] *** ASSINATURA REQUER CUSTOMER_ID ***');
@@ -613,6 +591,23 @@ Deno.serve(async (req) => {
             success: false, 
             error: true,
             message: 'Frequência da assinatura não configurada no produto',
+            functionName: 'create-iugu-transaction'
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Validar se tem token do cartão quando necessário
+      if (payload.payment_method_selected === 'credit_card' && !payload.card_token) {
+        console.error('[ERRO] *** ASSINATURA COM CARTÃO REQUER TOKEN ***');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: true,
+            message: 'Token do cartão é obrigatório para assinaturas com cartão de crédito',
             functionName: 'create-iugu-transaction'
           }),
           { 
@@ -780,33 +775,107 @@ Deno.serve(async (req) => {
           authHeader
         );
 
-        // 2. Adicionar método de pagamento ao cliente
-        const paymentMethod = await addPaymentMethodToCustomer(
-          payload.iugu_customer_id!,
-          payload.card_token!,
-          authHeader
-        );
+        // 2. Adicionar método de pagamento ao cliente apenas se for cartão
+        if (payload.payment_method_selected === 'credit_card' && payload.card_token) {
+          await addPaymentMethodToCustomer(
+            payload.iugu_customer_id!,
+            payload.card_token!,
+            authHeader
+          );
+        }
 
         // 3. Criar assinatura
         const subscription = await createIuguSubscription(
           payload.iugu_customer_id!,
           plan.identifier,
+          payload.payment_method_selected,
           authHeader
         );
 
         console.log('[DEBUG] *** ASSINATURA CRIADA COM SUCESSO ***:', subscription.id);
 
-        // Para assinaturas, consideramos como "ativa" imediatamente
+        // 4. Verificar se existe uma primeira fatura para PIX/Boleto
+        let firstInvoiceData = null;
+        if (subscription.recent_invoices && subscription.recent_invoices.length > 0) {
+          const firstInvoice = subscription.recent_invoices[0];
+          console.log('[DEBUG] *** PRIMEIRA FATURA DA ASSINATURA ***:', firstInvoice.id);
+          
+          // Para PIX/Boleto, buscar dados de pagamento da primeira fatura
+          if (payload.payment_method_selected === 'pix' || payload.payment_method_selected === 'bank_slip') {
+            try {
+              const invoiceDetailResponse = await fetch(`https://api.iugu.com/v1/invoices/${firstInvoice.id}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': authHeader,
+                },
+              });
+
+              if (invoiceDetailResponse.ok) {
+                firstInvoiceData = await invoiceDetailResponse.json();
+                console.log('[DEBUG] *** DADOS DA PRIMEIRA FATURA OBTIDOS ***');
+              }
+            } catch (error) {
+              console.error('[ERRO] Erro ao buscar dados da primeira fatura:', error);
+            }
+          }
+        }
+
+        // Para assinaturas com cartão, consideramos como "active" imediatamente
+        // Para PIX/Boleto, manter como "pending" até o pagamento da primeira fatura
+        const subscriptionStatus = payload.payment_method_selected === 'credit_card' ? 'active' : 'pending';
+        
         updateData = {
           iugu_subscription_id: subscription.id,
-          status: 'active',
-          paid_at: new Date().toISOString()
+          status: subscriptionStatus,
+          paid_at: payload.payment_method_selected === 'credit_card' ? new Date().toISOString() : null
         };
 
-        // Atualizar saldo do produtor para assinaturas
-        await updateProducerFinancials(supabase, product.producer_id, producerShareCents);
+        // Adicionar dados de pagamento PIX/Boleto se existirem
+        if (firstInvoiceData) {
+          updateData.iugu_invoice_id = firstInvoiceData.id;
+          updateData.iugu_invoice_secure_url = firstInvoiceData.secure_url;
 
-        iuguResponse = { success: true, subscription_id: subscription.id };
+          if (payload.payment_method_selected === 'pix') {
+            // Extrair dados PIX
+            let pixQrCodeBase64 = null;
+            let pixQrCodeText = null;
+
+            if (firstInvoiceData.pix?.qrcode && !firstInvoiceData.pix.qrcode.startsWith('http')) {
+              pixQrCodeBase64 = firstInvoiceData.pix.qrcode;
+            } else if (firstInvoiceData.pix?.qrcode_base64) {
+              pixQrCodeBase64 = firstInvoiceData.pix.qrcode_base64;
+            }
+
+            if (firstInvoiceData.pix?.qrcode_text && !firstInvoiceData.pix.qrcode_text.startsWith('http')) {
+              pixQrCodeText = firstInvoiceData.pix.qrcode_text;
+            } else if (firstInvoiceData.pix?.emv) {
+              pixQrCodeText = firstInvoiceData.pix.emv;
+            }
+
+            updateData.iugu_pix_qr_code_base64 = pixQrCodeBase64;
+            updateData.iugu_pix_qr_code_text = pixQrCodeText;
+          } 
+          
+          if (payload.payment_method_selected === 'bank_slip') {
+            // Extrair dados do boleto
+            let bankSlipBarcode = null;
+            
+            if (firstInvoiceData.bank_slip_barcode) {
+              bankSlipBarcode = firstInvoiceData.bank_slip_barcode;
+            } else if (firstInvoiceData.digitable_line) {
+              bankSlipBarcode = firstInvoiceData.digitable_line;
+            }
+
+            updateData.iugu_bank_slip_barcode = bankSlipBarcode;
+          }
+        }
+
+        // Atualizar saldo do produtor apenas para cartão de crédito (pagamento imediato)
+        if (payload.payment_method_selected === 'credit_card') {
+          await updateProducerFinancials(supabase, product.producer_id, producerShareCents);
+        }
+
+        iuguResponse = { success: true, subscription_id: subscription.id, first_invoice: firstInvoiceData };
 
       } catch (error) {
         console.error('[ERRO] *** ERRO NO PROCESSAMENTO DA ASSINATURA ***:', error);

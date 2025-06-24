@@ -42,9 +42,13 @@ export const ProductInfo = ({ product, donationAmount, eventQuantity = 1 }: Prod
     if (!isSubscription || !product.subscription_frequency) return '';
     
     const frequencyMap: { [key: string]: string } = {
+      'weekly': 'semana',
       'monthly': 'mês',
+      'bimonthly': 'bimestre',
       'quarterly': 'trimestre', 
+      'semiannually': 'semestre',
       'biannual': 'semestre',
+      'annually': 'ano',
       'annual': 'ano'
     };
     
