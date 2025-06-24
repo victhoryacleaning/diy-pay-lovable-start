@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import ProductTypeSection from '../ProductTypeSection';
+import { useSearchParams } from 'react-router-dom';
 
 interface GeneralTabProps {
   formData: any;
@@ -12,17 +14,51 @@ interface GeneralTabProps {
 }
 
 const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
+  const [searchParams] = useSearchParams();
+  const urlProductType = searchParams.get('type');
   const isPriceDisabled = formData.product_type === 'donation';
   const isDonation = formData.product_type === 'donation';
+  
+  // Show product type selector only if no type was pre-selected from URL
+  const showProductTypeSelector = !urlProductType;
+
+  const getProductTypeLabel = (productType: string) => {
+    switch (productType) {
+      case 'single_payment':
+        return 'Pagamento Único';
+      case 'subscription':
+        return 'Assinatura Recorrente';
+      case 'donation':
+        return 'Doação';
+      case 'event':
+        return 'Evento Presencial';
+      default:
+        return 'Pagamento Único';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <ProductTypeSection
-        productType={formData.product_type}
-        subscriptionFrequency={formData.subscription_frequency}
-        onProductTypeChange={(value) => onInputChange('product_type', value)}
-        onSubscriptionFrequencyChange={(value) => onInputChange('subscription_frequency', value)}
-      />
+      {showProductTypeSelector ? (
+        <ProductTypeSection
+          productType={formData.product_type}
+          subscriptionFrequency={formData.subscription_frequency}
+          onProductTypeChange={(value) => onInputChange('product_type', value)}
+          onSubscriptionFrequencyChange={(value) => onInputChange('subscription_frequency', value)}
+        />
+      ) : (
+        <div className="p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-3">
+            <Label className="text-base font-medium">Tipo de Produto:</Label>
+            <Badge variant="default" className="text-sm">
+              {getProductTypeLabel(formData.product_type)}
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            O tipo de produto foi pré-selecionado e não pode ser alterado durante a criação.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="name">Nome do Produto *</Label>

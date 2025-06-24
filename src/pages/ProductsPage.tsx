@@ -2,6 +2,9 @@
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
 import ProductList from "@/components/products/ProductList";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,9 +35,17 @@ const ProductsPage = () => {
         <ProducerSidebar />
         <SidebarInset>
           <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-            <div className="flex items-center gap-2 px-4 py-2 border-b">
-              <SidebarTrigger />
-              <h1 className="text-xl font-semibold">Produtos</h1>
+            <div className="flex items-center justify-between gap-2 px-4 py-2 border-b">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger />
+                <h1 className="text-xl font-semibold">Produtos</h1>
+              </div>
+              <Link to="/products/select-type">
+                <Button className="bg-diypay-600 hover:bg-diypay-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Novo Produto
+                </Button>
+              </Link>
             </div>
             
             <div className="container mx-auto px-4 py-8">

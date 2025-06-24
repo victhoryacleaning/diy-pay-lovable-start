@@ -69,7 +69,7 @@ const ProductList = ({ products }: ProductListProps) => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 mb-4">Você ainda não criou nenhum produto.</p>
-        <Link to="/products/create">
+        <Link to="/products/select-type">
           <Button>Criar Primeiro Produto</Button>
         </Link>
       </div>
