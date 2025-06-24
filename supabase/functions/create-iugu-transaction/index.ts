@@ -95,9 +95,19 @@ serve(async (req) => {
 
     // Calcular valores finais baseado no tipo de produto
     let finalAmountCents = 0
+    let finalQuantity = 1
     let processedEventAttendees = null
 
-    if (product.product_type === 'event') {
+    if (product.product_type === 'donation') {
+      console.log('[DEBUG] Processando produto do tipo DONATION')
+      
+      if (!donationAmount || donationAmount <= 0) {
+        throw new Error('Valor da doação é obrigatório para doações')
+      }
+
+      finalAmountCents = donationAmount
+
+    } else if (product.product_type === 'event') {
       console.log('[DEBUG] Processando produto do tipo EVENT')
       
       if (!quantity || quantity <= 0) {
@@ -112,7 +122,8 @@ serve(async (req) => {
         throw new Error('Número de participantes deve corresponder à quantidade')
       }
 
-      finalAmountCents = product.price_cents * quantity
+      finalQuantity = quantity
+      finalAmountCents = product.price_cents * finalQuantity
 
       // Processar participantes com IDs únicos
       processedEventAttendees = eventAttendees.map((attendee: any) => ({
@@ -126,23 +137,18 @@ serve(async (req) => {
 
       console.log('[DEBUG] Participantes processados:', processedEventAttendees.length)
 
-    } else if (product.product_type === 'donation') {
-      console.log('[DEBUG] Processando produto do tipo DONATION')
-      
-      if (!donationAmount || donationAmount <= 0) {
-        throw new Error('Valor da doação é obrigatório para doações')
-      }
-
-      finalAmountCents = donationAmount
-
     } else {
-      console.log('[DEBUG] Processando produto do tipo PADRÃO')
+      // LÓGICA PADRÃO PARA PAGAMENTO ÚNICO
+      console.log('[DEBUG] Processando produto do tipo PADRÃO (PAGAMENTO ÚNICO)')
       
-      if (!amount || amount <= 0) {
-        throw new Error('Valor do produto é obrigatório')
-      }
+      // Para produtos de pagamento único, usar o preço do produto
+      finalAmountCents = product.price_cents
+    }
 
-      finalAmountCents = amount
+    // Validação final do valor
+    if (!finalAmountCents || finalAmountCents <= 0) {
+      console.error('[ERROR] Valor final inválido:', finalAmountCents)
+      throw new Error('O valor final da transação não pode ser zero ou negativo')
     }
 
     console.log('[DEBUG] Valor final calculado:', finalAmountCents)
