@@ -12,7 +12,6 @@ import Register from "./pages/Register";
 import CompleteProducerProfile from "./pages/CompleteProducerProfile";
 import ProducerDashboard from "./pages/ProducerDashboard";
 import ProductsPage from "./pages/ProductsPage";
-import SelectProductTypePage from "./pages/SelectProductTypePage";
 import CreateProductPage from "./pages/CreateProductPage";
 import EditProductPage from "./pages/EditProductPage";
 import ProducerSalesPage from "./pages/ProducerSalesPage";
@@ -69,23 +68,7 @@ const App = () => {
                 } 
               />
               <Route 
-                path="/products/select-type" 
-                element={
-                  <ProtectedRoute requiredRole="producer">
-                    <SelectProductTypePage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
                 path="/products/new" 
-                element={
-                  <ProtectedRoute requiredRole="producer">
-                    <CreateProductPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/products/create" 
                 element={
                   <ProtectedRoute requiredRole="producer">
                     <CreateProductPage />

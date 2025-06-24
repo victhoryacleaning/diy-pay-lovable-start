@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,8 +42,6 @@ interface ProductFormProps {
 const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const urlProductType = searchParams.get('type');
   const [activeTab, setActiveTab] = useState('geral');
   
   const [formData, setFormData] = useState<ProductFormData>({
@@ -55,7 +52,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     file_url_or_access_info: '',
     max_installments_allowed: 1,
     is_active: true,
-    product_type: urlProductType || 'single_payment',
+    product_type: 'single_payment',
     subscription_frequency: '',
     allowed_payment_methods: ['credit_card', 'pix', 'bank_slip'],
     show_order_summary: true,
@@ -239,35 +236,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
   // Check if this is an event product
   const isEventProduct = formData.product_type === 'event';
-  const isSubscriptionProduct = formData.product_type === 'subscription';
-  const isDonationProduct = formData.product_type === 'donation';
-
-  // Determine which tabs to show based on product type
-  const getAvailableTabs = () => {
-    const tabs = ['geral'];
-    
-    // Configuration tab - always show for subscriptions, optional for others
-    if (isSubscriptionProduct || !mode || mode === 'edit') {
-      tabs.push('configuracao');
-    }
-    
-    // Checkout tab - show for all types
-    tabs.push('checkout');
-    
-    // Links tab - only in edit mode
-    if (mode === 'edit') {
-      tabs.push('links');
-    }
-    
-    // Tickets tab - only for events in edit mode
-    if (isEventProduct && mode === 'edit') {
-      tabs.push('ingressos');
-    }
-    
-    return tabs;
-  };
-
-  const availableTabs = getAvailableTabs();
 
   if (mode === 'edit' && isLoading) {
     return (
@@ -311,22 +279,15 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full grid-cols-${availableTabs.length}`}>
-              {availableTabs.includes('geral') && (
-                <TabsTrigger value="geral">Geral</TabsTrigger>
-              )}
-              {availableTabs.includes('configuracao') && (
-                <TabsTrigger value="configuracao">Configuração</TabsTrigger>
-              )}
-              {availableTabs.includes('checkout') && (
-                <TabsTrigger value="checkout">Checkout</TabsTrigger>
-              )}
-              {availableTabs.includes('links') && (
-                <TabsTrigger value="links" disabled={mode === 'create'}>
-                  Links
-                </TabsTrigger>
-              )}
-              {availableTabs.includes('ingressos') && (
+            <TabsList className={`grid w-full ${isEventProduct && mode === 'edit' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+              <TabsTrigger value="geral">Geral</TabsTrigger>
+              <TabsTrigger value="configuracao">Configuração</TabsTrigger>
+              <TabsTrigger value="checkout">Checkout</TabsTrigger>
+              <TabsTrigger value="links" disabled={mode === 'create'}>
+                Links
+              </TabsTrigger>
+              {/* Nova aba Ingressos - apenas para eventos em modo de edição */}
+              {isEventProduct && mode === 'edit' && (
                 <TabsTrigger value="ingressos">
                   Ingressos
                 </TabsTrigger>
@@ -334,58 +295,51 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
             </TabsList>
             
             <div className="mt-6">
-              {availableTabs.includes('geral') && (
-                <TabsContent value="geral" className="space-y-6">
-                  <GeneralTab 
-                    formData={formData} 
-                    onInputChange={handleInputChange}
-                  />
-                  
-                  {/* Delete button in General tab for edit mode */}
-                  {mode === 'edit' && (
-                    <div className="flex justify-start pt-4 border-t">
-                      <Button
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={deleteProductMutation.isPending}
-                        className="flex items-center gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {deleteProductMutation.isPending ? 'Excluindo...' : 'Excluir Produto'}
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-              )}
+              <TabsContent value="geral" className="space-y-6">
+                <GeneralTab 
+                  formData={formData} 
+                  onInputChange={handleInputChange}
+                />
+                
+                {/* Delete button in General tab for edit mode */}
+                {mode === 'edit' && (
+                  <div className="flex justify-start pt-4 border-t">
+                    <Button
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={deleteProductMutation.isPending}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {deleteProductMutation.isPending ? 'Excluindo...' : 'Excluir Produto'}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
               
-              {availableTabs.includes('configuracao') && (
-                <TabsContent value="configuracao" className="space-y-6">
-                  <ConfigurationTab 
-                    formData={formData} 
-                    onInputChange={handleInputChange}
-                  />
-                </TabsContent>
-              )}
+              <TabsContent value="configuracao" className="space-y-6">
+                <ConfigurationTab 
+                  formData={formData} 
+                  onInputChange={handleInputChange}
+                />
+              </TabsContent>
               
-              {availableTabs.includes('checkout') && (
-                <TabsContent value="checkout" className="space-y-6">
-                  <CheckoutTab 
-                    formData={formData} 
-                    onInputChange={handleInputChange}
-                  />
-                </TabsContent>
-              )}
+              <TabsContent value="checkout" className="space-y-6">
+                <CheckoutTab 
+                  formData={formData} 
+                  onInputChange={handleInputChange}
+                />
+              </TabsContent>
               
-              {availableTabs.includes('links') && (
-                <TabsContent value="links" className="space-y-6">
-                  <LinksTab 
-                    productId={productId}
-                    checkoutSlug={product?.checkout_link_slug}
-                  />
-                </TabsContent>
-              )}
+              <TabsContent value="links" className="space-y-6">
+                <LinksTab 
+                  productId={productId}
+                  checkoutSlug={product?.checkout_link_slug}
+                />
+              </TabsContent>
 
-              {availableTabs.includes('ingressos') && (
+              {/* Nova aba Ingressos */}
+              {isEventProduct && mode === 'edit' && (
                 <TabsContent value="ingressos" className="space-y-6">
                   <TicketsTab 
                     productId={productId}
