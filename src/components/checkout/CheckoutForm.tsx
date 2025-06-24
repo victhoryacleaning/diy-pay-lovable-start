@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -403,7 +402,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
                   maxInstallments={product.max_installments_allowed}
                   productPriceCents={getDisplayAmount()}
                   product={{
-                    allowed_payment_methods: allowedPaymentMethods
+                    allowed_payment_methods: allowedPaymentMethods,
+                    product_type: product.product_type || 'single_payment'
                   }}
                 />
               </div>
