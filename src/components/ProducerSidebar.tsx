@@ -13,8 +13,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -25,7 +23,6 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  Plus
 } from 'lucide-react';
 
 const menuItems = [
@@ -38,13 +35,6 @@ const menuItems = [
     title: "Produtos",
     url: "/products",
     icon: Package,
-    subItems: [
-      {
-        title: "Criar Novo Produto",
-        url: "/products/new",
-        icon: Plus,
-      }
-    ]
   },
   {
     title: "Vendas",
@@ -73,15 +63,6 @@ const menuItems = [
 export function ProducerSidebar() {
   const { profile, signOut } = useAuth();
   const location = useLocation();
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
-
-  const toggleExpanded = (title: string) => {
-    setExpandedItems(prev => 
-      prev.includes(title) 
-        ? prev.filter(item => item !== title)
-        : [...prev, title]
-    );
-  };
 
   const isActive = (url: string) => {
     if (url === "/producer-dashboard") {
