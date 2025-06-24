@@ -22,9 +22,10 @@ interface Product {
 
 interface ProductListProps {
   products: Product[];
+  onCreateProduct?: () => void;
 }
 
-const ProductList = ({ products }: ProductListProps) => {
+const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
   const formatPrice = (priceCents: number, productType: string) => {
     if (productType === 'donation') {
       return 'Valor livre';
@@ -69,15 +70,22 @@ const ProductList = ({ products }: ProductListProps) => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 mb-4">Você ainda não criou nenhum produto.</p>
-        <Link to="/products/create">
-          <Button>Criar Primeiro Produto</Button>
-        </Link>
+        <Button onClick={onCreateProduct}>
+          Criar Primeiro Produto
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Seus Produtos</h2>
+        <Button onClick={onCreateProduct}>
+          Criar Novo Produto
+        </Button>
+      </div>
+
       {products.map((product) => (
         <div
           key={product.id}

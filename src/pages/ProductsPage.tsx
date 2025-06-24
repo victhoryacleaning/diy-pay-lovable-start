@@ -2,12 +2,15 @@
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
 import ProductList from "@/components/products/ProductList";
+import ProductTypeSelectionModal from "@/components/products/ProductTypeSelectionModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 const ProductsPage = () => {
   const { user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products', user?.id],
@@ -47,12 +50,20 @@ const ProductsPage = () => {
                   <p className="text-red-500">Erro ao carregar produtos</p>
                 </div>
               ) : (
-                <ProductList products={products} />
+                <ProductList 
+                  products={products} 
+                  onCreateProduct={() => setIsModalOpen(true)}
+                />
               )}
             </div>
           </div>
         </SidebarInset>
       </div>
+
+      <ProductTypeSelectionModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </SidebarProvider>
   );
 };
