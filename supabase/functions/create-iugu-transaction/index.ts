@@ -37,16 +37,47 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const requestBody = await req.json()
+    console.log('[DEBUG] Body completo recebido:', JSON.stringify(requestBody, null, 2))
+
+    // Extrair dados com fallbacks seguros
     const { 
       productId, 
       paymentMethod, 
       buyerEmail, 
-      amount, 
-      installments = 1,
-      eventAttendees = []
-    } = await req.json()
+      amount,
+      donationAmount,
+      quantity,
+      eventAttendees,
+      installments = 1
+    } = requestBody
 
-    console.log('[DEBUG] Dados recebidos:', { productId, paymentMethod, buyerEmail, amount, installments, eventAttendees })
+    console.log('[DEBUG] Dados extraídos:', { 
+      productId, 
+      paymentMethod, 
+      buyerEmail, 
+      amount, 
+      donationAmount, 
+      quantity, 
+      eventAttendees: eventAttendees?.length || 0, 
+      installments 
+    })
+
+    // Validação básica dos campos obrigatórios
+    if (!productId) {
+      console.error('[ERROR] productId é obrigatório')
+      throw new Error('Product ID é obrigatório')
+    }
+
+    if (!paymentMethod) {
+      console.error('[ERROR] paymentMethod é obrigatório')
+      throw new Error('Método de pagamento é obrigatório')
+    }
+
+    if (!buyerEmail) {
+      console.error('[ERROR] buyerEmail é obrigatório')
+      throw new Error('Email do comprador é obrigatório')
+    }
 
     // Get product details
     const { data: product, error: productError } = await supabaseClient
@@ -62,14 +93,28 @@ serve(async (req) => {
 
     console.log('[DEBUG] Produto encontrado:', product)
 
-    // Calculate fees (assuming 5% platform fee)
-    const platformFeePercent = 0.05
-    const platformFeeCents = Math.round(amount * platformFeePercent)
-    const producerShareCents = amount - platformFeeCents
-
-    // Process event attendees with unique IDs if it's an event
+    // Calcular valores finais baseado no tipo de produto
+    let finalAmountCents = 0
     let processedEventAttendees = null
-    if (product.product_type === 'event' && eventAttendees.length > 0) {
+
+    if (product.product_type === 'event') {
+      console.log('[DEBUG] Processando produto do tipo EVENT')
+      
+      if (!quantity || quantity <= 0) {
+        throw new Error('Quantidade é obrigatória para eventos')
+      }
+
+      if (!eventAttendees || !Array.isArray(eventAttendees) || eventAttendees.length === 0) {
+        throw new Error('Dados dos participantes são obrigatórios para eventos')
+      }
+
+      if (eventAttendees.length !== quantity) {
+        throw new Error('Número de participantes deve corresponder à quantidade')
+      }
+
+      finalAmountCents = product.price_cents * quantity
+
+      // Processar participantes com IDs únicos
       processedEventAttendees = eventAttendees.map((attendee: any) => ({
         id: crypto.randomUUID(),
         name: attendee.name,
@@ -78,8 +123,36 @@ serve(async (req) => {
         checked_in: false,
         checked_in_at: null
       }))
-      console.log('[DEBUG] Participantes processados:', processedEventAttendees)
+
+      console.log('[DEBUG] Participantes processados:', processedEventAttendees.length)
+
+    } else if (product.product_type === 'donation') {
+      console.log('[DEBUG] Processando produto do tipo DONATION')
+      
+      if (!donationAmount || donationAmount <= 0) {
+        throw new Error('Valor da doação é obrigatório para doações')
+      }
+
+      finalAmountCents = donationAmount
+
+    } else {
+      console.log('[DEBUG] Processando produto do tipo PADRÃO')
+      
+      if (!amount || amount <= 0) {
+        throw new Error('Valor do produto é obrigatório')
+      }
+
+      finalAmountCents = amount
     }
+
+    console.log('[DEBUG] Valor final calculado:', finalAmountCents)
+
+    // Calculate fees (assuming 5% platform fee)
+    const platformFeePercent = 0.05
+    const platformFeeCents = Math.round(finalAmountCents * platformFeePercent)
+    const producerShareCents = finalAmountCents - platformFeeCents
+
+    console.log('[DEBUG] Taxas calculadas:', { platformFeeCents, producerShareCents })
 
     // Create sale record
     const { data: sale, error: saleError } = await supabaseClient
@@ -87,7 +160,7 @@ serve(async (req) => {
       .insert({
         product_id: productId,
         buyer_email: buyerEmail,
-        amount_total_cents: amount,
+        amount_total_cents: finalAmountCents,
         platform_fee_cents: platformFeeCents,
         producer_share_cents: producerShareCents,
         payment_method_used: paymentMethod,
@@ -102,7 +175,7 @@ serve(async (req) => {
       throw new Error('Erro ao processar pagamento')
     }
 
-    console.log('[DEBUG] Venda criada:', sale)
+    console.log('[DEBUG] Venda criada com sucesso:', sale.id)
 
     // Mock payment processing (in real implementation, integrate with payment provider)
     const mockPaymentResult = {
