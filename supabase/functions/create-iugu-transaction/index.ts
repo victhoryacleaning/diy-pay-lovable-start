@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -8,7 +7,7 @@ const corsHeaders = {
 }
 
 console.log('[DEBUG] *** INÍCIO DA FUNÇÃO create-iugu-transaction ***')
-// Forcing redeploy - 2025-06-25 - Fixed Iugu plan creation payload
+// Forcing redeploy - 2025-06-25 - Fixed plan search strategy with GET by identifier
 
 serve(async (req) => {
   console.log('[DEBUG] Método da requisição:', req.method)
@@ -101,8 +100,8 @@ serve(async (req) => {
         )
       }
 
-      // Step 1: Create/Verify Plan
-      console.log('[DEBUG IUGU] Step 1: Tentando criar/verificar plano...')
+      // Step 1: Search for existing plan or create new one
+      console.log('[DEBUG IUGU] Step 1: Tentando buscar plano existente...')
       const planIdentifier = `plan_${product.id}`
       
       // Map subscription frequency to Iugu interval_type
@@ -127,69 +126,72 @@ serve(async (req) => {
       const subscriptionFrequency = product.subscription_frequency || 'monthly'
       const intervalType = frequencyMapping[subscriptionFrequency] || 'months'
       const interval = intervalMapping[subscriptionFrequency] || 1
-      
-      const planPayload = {
-        name: product.name,
-        identifier: planIdentifier,
-        interval: interval,
-        interval_type: intervalType,
-        prices: [
-          {
-            currency: 'BRL',
-            value_cents: finalAmountCents
-          }
-        ]
-      }
-
-      console.log('[DEBUG IUGU] Plan payload:', planPayload)
 
       let planId;
       try {
-        const planResponse = await fetch('https://api.iugu.com/v1/plans', {
-          method: 'POST',
+        // First, try to find existing plan by identifier
+        console.log('[DEBUG IUGU] Buscando plano existente com identificador:', planIdentifier)
+        const existingPlanResponse = await fetch(`https://api.iugu.com/v1/plans/identifier/${planIdentifier}`, {
           headers: {
-            'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(planPayload)
+            'Authorization': `Basic ${btoa(iuguApiKey + ':')}`
+          }
         })
 
-        const planResult = await planResponse.json()
-        console.log('[DEBUG IUGU] Plan creation response status:', planResponse.status)
-        console.log('[DEBUG IUGU] Plan creation result:', planResult)
+        console.log('[DEBUG IUGU] Resposta da busca de plano existente - Status:', existingPlanResponse.status)
 
-        if (!planResponse.ok && planResult.errors?.identifier?.[0] === 'já está em uso') {
-          // Plan already exists, fetch it
-          console.log('[DEBUG IUGU] Plano já existe, buscando plano existente...')
-          try {
-            const existingPlanResponse = await fetch(`https://api.iugu.com/v1/plans?query=${planIdentifier}`, {
-              headers: {
-                'Authorization': `Basic ${btoa(iuguApiKey + ':')}`
+        if (existingPlanResponse.ok) {
+          // Plan exists, use it
+          const existingPlan = await existingPlanResponse.json()
+          planId = existingPlan.id
+          console.log('[DEBUG IUGU] Plano existente encontrado com ID:', planId)
+        } else if (existingPlanResponse.status === 404) {
+          // Plan doesn't exist, create new one
+          console.log('[DEBUG IUGU] Plano não encontrado, criando novo plano...')
+          
+          const planPayload = {
+            name: product.name,
+            identifier: planIdentifier,
+            interval: interval,
+            interval_type: intervalType,
+            prices: [
+              {
+                currency: 'BRL',
+                value_cents: finalAmountCents
               }
-            })
-            const existingPlanResult = await existingPlanResponse.json()
-            console.log('[DEBUG IUGU] Existing plan search result:', existingPlanResult)
-            
-            if (existingPlanResult.items && existingPlanResult.items.length > 0) {
-              planId = existingPlanResult.items[0].id
-              console.log('[DEBUG IUGU] Plano existente encontrado com ID:', planId)
-            } else {
-              throw new Error('Could not find existing plan')
-            }
-          } catch (searchError) {
-            console.error('[ERRO FATAL IUGU] Erro ao buscar plano existente:', searchError.message)
-            throw new Error(`Failed to find existing plan: ${searchError.message}`)
+            ]
           }
-        } else if (!planResponse.ok) {
-          console.error('[ERRO FATAL IUGU] Falha na criação do plano. Status:', planResponse.status)
-          console.error('[ERRO FATAL IUGU] Detalhes do erro da Iugu:', planResult)
-          throw new Error(`Plan creation failed: ${JSON.stringify(planResult)}`)
-        } else {
+
+          console.log('[DEBUG IUGU] Plan payload:', planPayload)
+
+          const planResponse = await fetch('https://api.iugu.com/v1/plans', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(planPayload)
+          })
+
+          const planResult = await planResponse.json()
+          console.log('[DEBUG IUGU] Plan creation response status:', planResponse.status)
+          console.log('[DEBUG IUGU] Plan creation result:', planResult)
+
+          if (!planResponse.ok) {
+            console.error('[ERRO FATAL IUGU] Falha na criação do plano. Status:', planResponse.status)
+            console.error('[ERRO FATAL IUGU] Detalhes do erro da Iugu:', planResult)
+            throw new Error(`Plan creation failed: ${JSON.stringify(planResult)}`)
+          }
+
           planId = planResult.id
           console.log('[DEBUG IUGU] Plano criado com sucesso. ID:', planId)
+        } else {
+          // Other error
+          const errorResponse = await existingPlanResponse.json()
+          console.error('[ERRO FATAL IUGU] Erro inesperado ao buscar plano:', errorResponse)
+          throw new Error(`Failed to search for existing plan: ${JSON.stringify(errorResponse)}`)
         }
       } catch (planError) {
-        console.error('[ERRO FATAL IUGU] Erro no Step 1 (Plan creation):', planError.message)
+        console.error('[ERRO FATAL IUGU] Erro no Step 1 (Plan search/creation):', planError.message)
         return new Response(
           JSON.stringify({ 
             success: false, 

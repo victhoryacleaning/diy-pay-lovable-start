@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatCurrency, translateStatus } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -29,10 +30,7 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
     if (productType === 'donation') {
       return 'Valor livre';
     }
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(priceCents / 100);
+    return formatCurrency(priceCents);
   };
 
   const getProductTypeLabel = (productType: string) => {
