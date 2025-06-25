@@ -1,11 +1,3 @@
-// >>> CÓDIGO FINAL E COMPLETO PARA: src/components/checkout/CheckoutForm.tsx <<<
-
-// Este código já está bem completo e correto. A única coisa a garantir
-// é que a chamada para `createPaymentToken` esteja funcionando e que
-// o token seja passado no payload. O código que você me enviou da
-// última vez para este arquivo já estava excelente e não precisa de
-// grandes mudanças, pois o erro principal estava no backend.
-// Vou colar aqui a versão mais recente e correta que montamos juntos.
 
 import { useState, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
