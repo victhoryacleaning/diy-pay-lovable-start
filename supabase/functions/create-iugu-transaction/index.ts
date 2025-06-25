@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -485,6 +486,7 @@ serve(async (req) => {
         sale_id: savedSale.id,
         status: finalStatus, // Include status in response
         invoice_url: result.secure_url,
+        // ** FIXED: Include PIX QR Code data in response **
         pix_qr_code: result.pix?.qr_code,
         pix_qr_code_text: result.pix?.qr_code_text,
         bank_slip_barcode: result.bank_slip?.barcode
