@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -342,6 +343,7 @@ serve(async (req) => {
           success: true,
           sale_id: saleData.id,
           subscription_id: subscriptionResult.id,
+          status: 'active', // Indica que a assinatura foi criada com sucesso
           message: 'Subscription created successfully'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -357,7 +359,6 @@ serve(async (req) => {
     const invoiceItems = [{
       description: product.name,
       quantity: product.product_type === 'event' ? (quantity || 1) : 1,
-      price_cents: product.product_type === 'event' ? (quantity || 1) : 1,
       price_cents: product.product_type === 'donation' ? donation_amount_cents : product.price_cents
     }]
 
@@ -419,6 +420,18 @@ serve(async (req) => {
     const platformFeeCents = Math.round(finalAmountCents * 0.05)
     const producerShareCents = finalAmountCents - platformFeeCents
 
+    // Determine final status based on payment method and result
+    let finalStatus = 'pending'; // Default for PIX and bank slip
+    
+    if (payment_method_selected === 'credit_card') {
+      // For credit card, check if the payment was immediately successful
+      if (result.status === 'paid' || result.charge_id) {
+        finalStatus = 'paid';
+      } else {
+        finalStatus = 'pending';
+      }
+    }
+
     // Save transaction to database
     const saleData = {
       product_id,
@@ -435,7 +448,7 @@ serve(async (req) => {
       iugu_pix_qr_code_text: result.pix?.qr_code_text || null,
       iugu_bank_slip_barcode: result.bank_slip?.barcode || null,
       installments_chosen: installments || 1,
-      status: payment_method_selected === 'credit_card' ? 'paid' : 'pending'
+      status: finalStatus
     }
 
     // Add event attendees if present
@@ -455,7 +468,7 @@ serve(async (req) => {
     }
 
     // If credit card payment is successful, update producer balance immediately
-    if (payment_method_selected === 'credit_card' && result.status === 'paid') {
+    if (payment_method_selected === 'credit_card' && finalStatus === 'paid') {
       await supabase.rpc('upsert_producer_balance', {
         p_producer_id: product.producer_id,
         amount_to_add: producerShareCents
@@ -468,6 +481,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         sale_id: savedSale.id,
+        status: finalStatus, // Include status in response
         invoice_url: result.secure_url,
         pix_qr_code: result.pix?.qr_code,
         pix_qr_code_text: result.pix?.qr_code_text,

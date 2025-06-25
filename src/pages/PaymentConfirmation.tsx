@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Copy, Download, ArrowLeft, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { translateStatus } from "@/lib/utils";
 
 interface SaleData {
   id: string;
@@ -105,7 +107,8 @@ const PaymentConfirmation = () => {
           console.log('[DEBUG] Atualização realtime recebida:', payload);
           const newSale = payload.new as any;
           
-          if (newSale.status === 'paid' && sale?.status !== 'paid') {
+          if ((newSale.status === 'paid' || newSale.status === 'active') && 
+              (sale?.status !== 'paid' && sale?.status !== 'active')) {
             toast({
               title: "Pagamento Confirmado! 🎉",
               description: "Seu pagamento foi processado com sucesso. Você receberá o acesso por email.",
@@ -200,25 +203,29 @@ const PaymentConfirmation = () => {
   };
 
   const getStatusDisplay = (status: string) => {
+    const translatedStatus = translateStatus(status);
+    
     switch (status) {
       case 'paid':
+      case 'active':
         return {
-          text: 'Pago',
+          text: translatedStatus,
           className: 'bg-green-100 text-green-800',
         };
       case 'pending':
         return {
-          text: 'Aguardando Pagamento',
+          text: translatedStatus,
           className: 'bg-yellow-100 text-yellow-800',
         };
       case 'cancelled':
+      case 'canceled':
         return {
-          text: 'Cancelado',
+          text: translatedStatus,
           className: 'bg-red-100 text-red-800',
         };
       default:
         return {
-          text: status,
+          text: translatedStatus,
           className: 'bg-gray-100 text-gray-800',
         };
     }
@@ -261,10 +268,14 @@ const PaymentConfirmation = () => {
     );
   }
 
+  if (!sale) {
+    return null;
+  }
+
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
   const isCreditCard = sale.payment_method_used === 'credit_card';
-  const isPaid = sale.status === 'paid';
+  const isPaid = sale.status === 'paid' || sale.status === 'active';
 
   const statusDisplay = getStatusDisplay(sale.status);
 
@@ -307,9 +318,9 @@ const PaymentConfirmation = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Status:</span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.className}`}>
+                <Badge className={statusDisplay.className}>
                   {statusDisplay.text}
-                </span>
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -467,7 +478,7 @@ const PaymentConfirmation = () => {
               </Card>
             )}
 
-            {/* Credit Card Payment */}
+            {/* Credit Card Payment - Melhorado */}
             {isCreditCard && (
               <Card className="mb-6">
                 <CardHeader>
@@ -480,7 +491,7 @@ const PaymentConfirmation = () => {
                       Pagamento em Processamento
                     </h3>
                     <p className="text-blue-700">
-                      Seu pagamento está sendo processado. Avisaremos por e-mail quando for aprovado.
+                      Seu pagamento está sendo processado. Esta página será atualizada automaticamente quando o status mudar.
                     </p>
                   </div>
                 </CardContent>
