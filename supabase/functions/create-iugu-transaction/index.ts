@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -100,7 +101,7 @@ serve(async (req) => {
       }
 
       // Step 1: Create/Verify Plan
-      console.log('[DEBUG] Step 1: Creating/Verifying Plan')
+      console.log('[DEBUG IUGU] Step 1: Tentando criar/verificar plano...')
       const planIdentifier = `plan_${product.id}`
       const planPayload = {
         name: product.name,
@@ -110,96 +111,164 @@ serve(async (req) => {
         price_cents: finalAmountCents
       }
 
-      console.log('[DEBUG] Plan payload:', planPayload)
+      console.log('[DEBUG IUGU] Plan payload:', planPayload)
 
-      const planResponse = await fetch('https://api.iugu.com/v1/plans', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(planPayload)
-      })
-
-      const planResult = await planResponse.json()
-      console.log('[DEBUG] Plan creation result:', planResult)
-
-      let planId = planResult.id
-      if (!planResponse.ok && planResult.errors?.identifier?.[0] === 'já está em uso') {
-        // Plan already exists, fetch it
-        console.log('[DEBUG] Plan already exists, fetching existing plan')
-        const existingPlanResponse = await fetch(`https://api.iugu.com/v1/plans?query=${planIdentifier}`, {
+      let planId;
+      try {
+        const planResponse = await fetch('https://api.iugu.com/v1/plans', {
+          method: 'POST',
           headers: {
-            'Authorization': `Basic ${btoa(iuguApiKey + ':')}`
-          }
+            'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(planPayload)
         })
-        const existingPlanResult = await existingPlanResponse.json()
-        console.log('[DEBUG] Existing plan result:', existingPlanResult)
-        
-        if (existingPlanResult.items && existingPlanResult.items.length > 0) {
-          planId = existingPlanResult.items[0].id
+
+        const planResult = await planResponse.json()
+        console.log('[DEBUG IUGU] Plan creation response status:', planResponse.status)
+        console.log('[DEBUG IUGU] Plan creation result:', planResult)
+
+        if (!planResponse.ok && planResult.errors?.identifier?.[0] === 'já está em uso') {
+          // Plan already exists, fetch it
+          console.log('[DEBUG IUGU] Plano já existe, buscando plano existente...')
+          try {
+            const existingPlanResponse = await fetch(`https://api.iugu.com/v1/plans?query=${planIdentifier}`, {
+              headers: {
+                'Authorization': `Basic ${btoa(iuguApiKey + ':')}`
+              }
+            })
+            const existingPlanResult = await existingPlanResponse.json()
+            console.log('[DEBUG IUGU] Existing plan search result:', existingPlanResult)
+            
+            if (existingPlanResult.items && existingPlanResult.items.length > 0) {
+              planId = existingPlanResult.items[0].id
+              console.log('[DEBUG IUGU] Plano existente encontrado com ID:', planId)
+            } else {
+              throw new Error('Could not find existing plan')
+            }
+          } catch (searchError) {
+            console.error('[ERRO FATAL IUGU] Erro ao buscar plano existente:', searchError.message)
+            throw new Error(`Failed to find existing plan: ${searchError.message}`)
+          }
+        } else if (!planResponse.ok) {
+          console.error('[ERRO FATAL IUGU] Falha na criação do plano. Status:', planResponse.status)
+          console.error('[ERRO FATAL IUGU] Detalhes do erro da Iugu:', planResult)
+          throw new Error(`Plan creation failed: ${JSON.stringify(planResult)}`)
         } else {
-          throw new Error('Could not create or find plan')
+          planId = planResult.id
+          console.log('[DEBUG IUGU] Plano criado com sucesso. ID:', planId)
         }
-      } else if (!planResponse.ok) {
-        throw new Error(`Plan creation failed: ${JSON.stringify(planResult)}`)
+      } catch (planError) {
+        console.error('[ERRO FATAL IUGU] Erro no Step 1 (Plan creation):', planError.message)
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Failed to create/verify plan',
+            details: planError.message 
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
       }
 
-      console.log('[DEBUG] Plan ID:', planId)
-
       // Step 2: Customer is already created (iugu_customer_id provided)
-      console.log('[DEBUG] Step 2: Using existing customer:', iugu_customer_id)
+      console.log('[DEBUG IUGU] Step 2: Using existing customer:', iugu_customer_id)
 
       // Step 3: Create Payment Method
-      console.log('[DEBUG] Step 3: Creating Payment Method')
+      console.log('[DEBUG IUGU] Step 3: Tentando criar método de pagamento...')
       const paymentMethodPayload = {
         description: 'Cartão de Crédito',
         token: card_token,
         set_as_default: true
       }
 
-      console.log('[DEBUG] Payment method payload:', paymentMethodPayload)
+      console.log('[DEBUG IUGU] Payment method payload:', paymentMethodPayload)
 
-      const paymentMethodResponse = await fetch(`https://api.iugu.com/v1/customers/${iugu_customer_id}/payment_methods`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(paymentMethodPayload)
-      })
+      let paymentMethodId;
+      try {
+        const paymentMethodResponse = await fetch(`https://api.iugu.com/v1/customers/${iugu_customer_id}/payment_methods`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(paymentMethodPayload)
+        })
 
-      const paymentMethodResult = await paymentMethodResponse.json()
-      console.log('[DEBUG] Payment method result:', paymentMethodResult)
+        const paymentMethodResult = await paymentMethodResponse.json()
+        console.log('[DEBUG IUGU] Payment method response status:', paymentMethodResponse.status)
+        console.log('[DEBUG IUGU] Payment method result:', paymentMethodResult)
 
-      if (!paymentMethodResponse.ok) {
-        throw new Error(`Payment method creation failed: ${JSON.stringify(paymentMethodResult)}`)
+        if (!paymentMethodResponse.ok) {
+          console.error('[ERRO FATAL IUGU] Falha na criação do método de pagamento. Status:', paymentMethodResponse.status)
+          console.error('[ERRO FATAL IUGU] Detalhes do erro da Iugu:', paymentMethodResult)
+          throw new Error(`Payment method creation failed: ${JSON.stringify(paymentMethodResult)}`)
+        }
+
+        paymentMethodId = paymentMethodResult.id
+        console.log('[DEBUG IUGU] Método de pagamento criado com sucesso. ID:', paymentMethodId)
+      } catch (paymentMethodError) {
+        console.error('[ERRO FATAL IUGU] Erro no Step 3 (Payment Method creation):', paymentMethodError.message)
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Failed to create payment method',
+            details: paymentMethodError.message 
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
       }
 
       // Step 4: Create Subscription
-      console.log('[DEBUG] Step 4: Creating Subscription')
+      console.log('[DEBUG IUGU] Step 4: Tentando criar assinatura...')
       const subscriptionPayload = {
         customer_id: iugu_customer_id,
         plan_identifier: planIdentifier,
         only_on_charge_success: true
       }
 
-      console.log('[DEBUG] Subscription payload:', subscriptionPayload)
+      console.log('[DEBUG IUGU] Subscription payload:', subscriptionPayload)
 
-      const subscriptionResponse = await fetch('https://api.iugu.com/v1/subscriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(subscriptionPayload)
-      })
+      let subscriptionResult;
+      try {
+        const subscriptionResponse = await fetch('https://api.iugu.com/v1/subscriptions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(subscriptionPayload)
+        })
 
-      const subscriptionResult = await subscriptionResponse.json()
-      console.log('[DEBUG] Subscription result:', subscriptionResult)
+        subscriptionResult = await subscriptionResponse.json()
+        console.log('[DEBUG IUGU] Subscription response status:', subscriptionResponse.status)
+        console.log('[DEBUG IUGU] Subscription result:', subscriptionResult)
 
-      if (!subscriptionResponse.ok) {
-        throw new Error(`Subscription creation failed: ${JSON.stringify(subscriptionResult)}`)
+        if (!subscriptionResponse.ok) {
+          console.error('[ERRO FATAL IUGU] Falha na criação da assinatura. Status:', subscriptionResponse.status)
+          console.error('[ERRO FATAL IUGU] Detalhes do erro da Iugu:', subscriptionResult)
+          throw new Error(`Subscription creation failed: ${JSON.stringify(subscriptionResult)}`)
+        }
+
+        console.log('[DEBUG IUGU] Assinatura criada com sucesso. ID:', subscriptionResult.id)
+      } catch (subscriptionError) {
+        console.error('[ERRO FATAL IUGU] Erro no Step 4 (Subscription creation):', subscriptionError.message)
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Failed to create subscription',
+            details: subscriptionError.message 
+          }),
+          { 
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
       }
 
       // Calculate platform fee (5% of total)
