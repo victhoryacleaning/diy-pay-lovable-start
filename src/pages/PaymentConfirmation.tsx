@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,8 @@ const PaymentConfirmation = () => {
   const [error, setError] = useState<string | null>(null);
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedBarcode, setCopiedBarcode] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>('DISCONNECTED');
+  const [realtimeRetries, setRealtimeRetries] = useState(0);
 
   // Função para buscar dados da venda
   const fetchSaleDetails = async () => {
@@ -81,15 +84,15 @@ const PaymentConfirmation = () => {
     fetchSaleDetails();
   }, [saleId]);
 
-  // Realtime para atualizações de status
+  // Realtime para atualizações de status com tratamento de erros robusto
   useEffect(() => {
-    if (!saleId) return;
+    if (!saleId || realtimeRetries >= 3) return;
 
-    console.log('[DEBUG] Configurando listener realtime para venda:', saleId);
+    console.log('[DEBUG] Configurando listener realtime para venda:', saleId, 'tentativa:', realtimeRetries + 1);
 
-    // Criar o canal com configurações específicas
+    // Criar o canal com configurações específicas e tratamento de erro
     const channel = supabase
-      .channel(`sale-updates-${saleId}`, {
+      .channel(`sale-updates-${saleId}-${realtimeRetries}`, {
         config: {
           broadcast: { self: false },
           presence: { key: saleId }
@@ -132,12 +135,26 @@ const PaymentConfirmation = () => {
       )
       .subscribe((status) => {
         console.log('[DEBUG] Status da inscrição realtime:', status);
+        setRealtimeStatus(status);
+        
         if (status === 'SUBSCRIBED') {
           console.log('[DEBUG] Realtime conectado com sucesso');
+          setRealtimeRetries(0); // Reset retries on successful connection
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('[ERRO] Erro no canal realtime');
+          console.error('[ERRO] Erro no canal realtime - tentativa:', realtimeRetries + 1);
+          if (realtimeRetries < 2) {
+            // Retry with exponential backoff
+            setTimeout(() => {
+              setRealtimeRetries(prev => prev + 1);
+            }, Math.pow(2, realtimeRetries) * 1000);
+          }
         } else if (status === 'TIMED_OUT') {
           console.error('[ERRO] Timeout na conexão realtime');
+          if (realtimeRetries < 2) {
+            setTimeout(() => {
+              setRealtimeRetries(prev => prev + 1);
+            }, 2000);
+          }
         } else if (status === 'CLOSED') {
           console.log('[DEBUG] Canal realtime fechado');
         }
@@ -147,7 +164,7 @@ const PaymentConfirmation = () => {
       console.log('[DEBUG] Removendo listener realtime');
       channel.unsubscribe();
     };
-  }, [saleId, sale?.status]);
+  }, [saleId, realtimeRetries, sale?.status]);
 
   const handleCopyPixCode = async () => {
     if (sale?.iugu_pix_qr_code_text) {
@@ -294,6 +311,13 @@ const PaymentConfirmation = () => {
             {isPaid ? 'Obrigado pela sua compra! Você receberá o acesso por email.' : 'Finalize seu pagamento para acessar o produto'}
           </p>
         </div>
+
+        {/* Debug info for realtime status (only in development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+            Realtime Status: {realtimeStatus} | Retries: {realtimeRetries}
+          </div>
+        )}
 
         {/* Detalhes do Pedido */}
         <Card className="mb-6">
