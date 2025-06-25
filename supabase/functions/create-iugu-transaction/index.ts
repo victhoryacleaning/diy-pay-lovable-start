@@ -359,11 +359,21 @@ serve(async (req) => {
     const today = new Date()
     const dueDate = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000)) // 3 days from now
 
+    // FIXED: Use the finalAmountCents that was already calculated correctly
+    // 1. Determina a quantidade final
+    const finalQuantity = product.product_type === 'event' ? (quantity || 1) : 1;
+
+    // 2. Calcula o preço UNITÁRIO para enviar à Iugu
+    //    Usa a variável 'finalAmountCents' que já contém o valor TOTAL correto.
+    //    A Iugu espera o preço por item, então dividimos o total pela quantidade.
+    const unitPriceCents = Math.round(finalAmountCents / finalQuantity);
+
+    // 3. Monta os itens da fatura com os valores corretos
     const invoiceItems = [{
       description: product.name,
-      quantity: product.product_type === 'event' ? (quantity || 1) : 1,
-      price_cents: product.product_type === 'donation' ? donation_amount_cents : product.price_cents
-    }]
+      quantity: finalQuantity,
+      price_cents: unitPriceCents 
+    }];
 
     const invoicePayload = {
       email: buyer_email,
