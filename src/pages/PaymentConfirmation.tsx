@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -421,8 +420,26 @@ const PaymentConfirmation = () => {
                     </div>
                   )}
 
+                  {/* Ambiente de teste - botão para acessar página da Iugu */}
+                  {!sale.iugu_pix_qr_code_text && sale.iugu_invoice_secure_url && (
+                    <div className="text-center">
+                      <a
+                        href={sale.iugu_invoice_secure_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5 mr-2" />
+                        Visualizar QR Code PIX (Teste)
+                      </a>
+                      <p className="text-xs text-gray-500 mt-2">
+                        * Ambiente de teste - Clique para ver o QR Code na página da Iugu
+                      </p>
+                    </div>
+                  )}
+
                   {/* Mensagem quando não há código PIX disponível */}
-                  {!sale.iugu_pix_qr_code_text && (
+                  {!sale.iugu_pix_qr_code_text && !sale.iugu_invoice_secure_url && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-500">
                         Código Copia e Cola indisponível no ambiente de teste.

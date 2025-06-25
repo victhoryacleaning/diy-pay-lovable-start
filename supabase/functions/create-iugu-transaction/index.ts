@@ -490,17 +490,35 @@ serve(async (req) => {
 
     console.log('[DEBUG] *** REGULAR PAYMENT PROCESSING COMPLETE ***')
 
+    // Environment-specific response logic
+    const appEnv = Deno.env.get('APP_ENV')
+    const isTestEnvironment = appEnv !== 'production'
+
+    // Base response object
+    const responseData = {
+      success: true,
+      sale_id: savedSale.id,
+      status: finalStatus,
+      invoice_url: result.secure_url,
+      bank_slip_barcode: result.bank_slip?.barcode
+    }
+
+    // Handle PIX data based on environment
+    if (payment_method_selected === 'pix') {
+      if (isTestEnvironment) {
+        // In test environment, provide the secure URL for PIX testing
+        responseData.pix_test_environment_url = result.secure_url
+        console.log('[DEBUG] Test environment - PIX URL:', result.secure_url)
+      } else {
+        // In production, provide actual QR code data
+        responseData.pix_qr_code = result.pix?.qr_code
+        responseData.pix_qr_code_text = result.pix?.qr_code_text
+        console.log('[DEBUG] Production environment - PIX QR code data included')
+      }
+    }
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        sale_id: savedSale.id,
-        status: finalStatus, // Include status in response
-        invoice_url: result.secure_url,
-        // ** FIXED: Include PIX QR Code data in response **
-        pix_qr_code: result.pix?.qr_code,
-        pix_qr_code_text: result.pix?.qr_code_text,
-        bank_slip_barcode: result.bank_slip?.barcode
-      }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
