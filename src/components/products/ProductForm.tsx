@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -49,6 +48,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   // Read product type from URL parameter
   const productTypeFromUrl = searchParams.get('type') || 'single_payment';
   
+  // ... keep existing code (formData state initialization)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -242,9 +242,19 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   // Check if this is an event product
   const isEventProduct = formData.product_type === 'event';
   
-  // Determine which tabs to show based on product type
-  const shouldShowTicketsTab = isEventProduct && mode === 'edit';
-  const tabCount = shouldShowTicketsTab ? 5 : 4;
+  // Determine which tabs to show based on product type - show tickets tab for events in create AND edit mode
+  const shouldShowTicketsTab = isEventProduct;
+  
+  // Get product type label for display
+  const getProductTypeLabel = (type: string) => {
+    switch (type) {
+      case 'single_payment': return 'Pagamento Único';
+      case 'subscription': return 'Assinatura Recorrente';
+      case 'event': return 'Evento Presencial';
+      case 'donation': return 'Doação';
+      default: return 'Produto';
+    }
+  };
 
   if (mode === 'edit' && isLoading) {
     return (
@@ -258,7 +268,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-6 px-4 py-6">
       {/* Header with back button */}
       <div className="flex items-center gap-4">
         <Button
@@ -271,7 +281,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </Button>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            {mode === 'create' ? 'Criar Novo Produto' : 'Editar Produto'}
+            {mode === 'create' ? `Criando um Novo ${getProductTypeLabel(formData.product_type)}` : 'Editar Produto'}
           </h2>
           <p className="text-gray-600">
             {mode === 'create' 
@@ -288,16 +298,16 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full grid-cols-${tabCount}`}>
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-5 mb-6">
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
               <TabsTrigger value="checkout">Checkout</TabsTrigger>
               <TabsTrigger value="links" disabled={mode === 'create'}>
                 Links
               </TabsTrigger>
-              {/* Tickets tab - only for events in edit mode */}
+              {/* Tickets tab - show for events in both create and edit mode */}
               {shouldShowTicketsTab && (
-                <TabsTrigger value="ingressos">
+                <TabsTrigger value="ingressos" disabled={mode === 'create'}>
                   Ingressos
                 </TabsTrigger>
               )}
@@ -347,7 +357,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                 />
               </TabsContent>
 
-              {/* Tickets tab - only for events in edit mode */}
+              {/* Tickets tab - show for events in both create and edit mode */}
               {shouldShowTicketsTab && (
                 <TabsContent value="ingressos" className="space-y-6">
                   <TicketsTab 

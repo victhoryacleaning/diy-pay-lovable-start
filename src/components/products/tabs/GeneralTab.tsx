@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import ProductTypeSection from '../ProductTypeSection';
 
 interface GeneralTabProps {
   formData: any;
@@ -18,13 +17,28 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
 
   return (
     <div className="space-y-6">
-      <ProductTypeSection
-        productType={formData.product_type}
-        subscriptionFrequency={formData.subscription_frequency}
-        onProductTypeChange={(value) => onInputChange('product_type', value)}
-        onSubscriptionFrequencyChange={(value) => onInputChange('subscription_frequency', value)}
-        showSubscriptionFrequency={isSubscription}
-      />
+      {/* Show subscription frequency field only for subscriptions */}
+      {isSubscription && (
+        <div className="space-y-2">
+          <Label htmlFor="subscription_frequency">Frequência de Cobrança *</Label>
+          <Select 
+            value={formData.subscription_frequency} 
+            onValueChange={(value) => onInputChange('subscription_frequency', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione a frequência" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="weekly">Semanal</SelectItem>
+              <SelectItem value="monthly">Mensal</SelectItem>
+              <SelectItem value="bimonthly">Bimestral</SelectItem>
+              <SelectItem value="quarterly">Trimestral</SelectItem>
+              <SelectItem value="semiannually">Semestral</SelectItem>
+              <SelectItem value="annually">Anual</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="name">Nome do Produto *</Label>
