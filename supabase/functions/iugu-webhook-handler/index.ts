@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -129,9 +130,14 @@ Deno.serve(async (req) => {
 
     const { event, data } = payload;
 
-    // Extract identifiers
+    // Handle subscription-specific events
+    if (event.startsWith('subscription.')) {
+      return await handleSubscriptionEvent(supabase, event, data);
+    }
+
+    // Handle invoice events (existing logic)
     const iuguInvoiceId = data.id;
-    const iuguChargeId = data.id; // Could be charge ID if event is about charges
+    const iuguChargeId = data.id;
 
     // Find the sale in our database - prioritize sale_id from URL
     let saleQuery = supabase.from('sales').select(`
@@ -237,6 +243,127 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+async function handleSubscriptionEvent(supabase: any, event: string, data: any) {
+  console.log('*** DEBUG WEBHOOK: Processing subscription event:', event, 'with data:', data);
+
+  const subscriptionId = data.id;
+  if (!subscriptionId) {
+    console.error('*** ERRO WEBHOOK: Missing subscription ID in subscription event');
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        message: 'Missing subscription ID',
+        functionName: 'iugu-webhook-handler'
+      }),
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+
+  // Find the sale with this subscription ID
+  const { data: sale, error: saleError } = await supabase
+    .from('sales')
+    .select('*')
+    .eq('iugu_subscription_id', subscriptionId)
+    .single();
+
+  if (saleError || !sale) {
+    console.error('*** ERRO WEBHOOK: Sale not found for subscription:', subscriptionId, saleError);
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Subscription webhook received but sale not found',
+        functionName: 'iugu-webhook-handler'
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+
+  let newStatus: string;
+  
+  switch (event) {
+    case 'subscription.created':
+      newStatus = 'pending';
+      break;
+    case 'subscription.activated':
+      newStatus = 'active';
+      break;
+    case 'subscription.suspended':
+    case 'subscription.expired':
+      newStatus = 'expired';
+      break;
+    case 'subscription.canceled':
+      newStatus = 'canceled';
+      break;
+    default:
+      console.log('*** DEBUG WEBHOOK: Unhandled subscription event:', event);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Unhandled subscription event',
+          functionName: 'iugu-webhook-handler'
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+  }
+
+  console.log('*** DEBUG WEBHOOK: Updating subscription status:', {
+    sale_id: sale.id,
+    subscription_id: subscriptionId,
+    old_status: sale.status,
+    new_status: newStatus
+  });
+
+  // Update the subscription status
+  const { error: updateError } = await supabase
+    .from('sales')
+    .update({ 
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', sale.id);
+
+  if (updateError) {
+    console.error('*** ERRO WEBHOOK: Error updating subscription status:', updateError);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        message: 'Error updating subscription status',
+        functionName: 'iugu-webhook-handler'
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+
+  console.log('*** DEBUG WEBHOOK: Subscription status updated successfully');
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      message: 'Subscription webhook processed successfully',
+      sale_id: sale.id,
+      event: event,
+      new_status: newStatus,
+      functionName: 'iugu-webhook-handler'
+    }),
+    { 
+      status: 200, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
 
 async function processInvoiceStatusChange(
   supabase: any, 

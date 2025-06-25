@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Download, Filter } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Search, Download, Filter, MoreHorizontal, Ban } from "lucide-react";
+import { toast } from "sonner";
 
 interface SubscriptionsTabProps {
   productId?: string;
@@ -23,6 +30,7 @@ interface SubscriptionsTabProps {
 
 const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'canceled'>('all');
 
@@ -41,13 +49,32 @@ const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
     enabled: !!productId && !!user,
   });
 
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async ({ subscriptionId, saleId }: { subscriptionId: string, saleId: string }) => {
+      const { data, error } = await supabase.functions.invoke('cancel-iugu-subscription', {
+        body: { subscriptionId, saleId }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Assinatura cancelada com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['product-subscriptions', productId] });
+    },
+    onError: (error) => {
+      console.error('Erro ao cancelar assinatura:', error);
+      toast.error('Erro ao cancelar assinatura');
+    },
+  });
+
   const filteredSubscriptions = subscriptionsData?.subscriptions?.filter((sub: any) => {
     const matchesSearch = sub.buyer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          sub.products.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (statusFilter === 'all') return matchesSearch;
     if (statusFilter === 'active') return matchesSearch && (sub.status === 'paid' || sub.status === 'active');
-    if (statusFilter === 'canceled') return matchesSearch && sub.status === 'canceled';
+    if (statusFilter === 'canceled') return matchesSearch && (sub.status === 'canceled' || sub.status === 'expired');
     
     return matchesSearch;
   }) || [];
@@ -69,9 +96,22 @@ const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
       case 'active':
         return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
       case 'canceled':
-        return <Badge variant="secondary">Cancelada</Badge>;
+        return <Badge variant="destructive">Cancelada</Badge>;
+      case 'expired':
+        return <Badge variant="secondary">Expirada</Badge>;
+      case 'pending':
+        return <Badge variant="outline">Pendente</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const handleCancelSubscription = (subscription: any) => {
+    if (window.confirm('Tem certeza que deseja cancelar esta assinatura?')) {
+      cancelSubscriptionMutation.mutate({
+        subscriptionId: subscription.iugu_subscription_id,
+        saleId: subscription.id
+      });
     }
   };
 
@@ -187,12 +227,13 @@ const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
               <TableHead>Status</TableHead>
               <TableHead>Próxima Cobrança</TableHead>
               <TableHead className="text-right">Valor Líquido</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSubscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   Nenhuma assinatura encontrada
                 </TableCell>
               </TableRow>
@@ -214,6 +255,26 @@ const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(subscription.producer_share_cents)}
+                  </TableCell>
+                  <TableCell>
+                    {subscription.status === 'active' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleCancelSubscription(subscription)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Ban className="mr-2 h-4 w-4" />
+                            Cancelar Assinatura
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
