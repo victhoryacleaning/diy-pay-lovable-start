@@ -15,8 +15,48 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
   const isDonation = formData.product_type === 'donation';
   const isSubscription = formData.product_type === 'subscription';
 
+  // Format currency for display
+  const formatCurrency = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Converte para número e formata
+    const amount = parseFloat(numbers) / 100;
+    
+    return amount.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const handlePriceChange = (value: string) => {
+    const formattedValue = formatCurrency(value);
+    onInputChange('price', formattedValue);
+  };
+
+  // Get product type label for display
+  const getProductTypeLabel = (type: string) => {
+    switch (type) {
+      case 'single_payment': return 'Pagamento Único';
+      case 'subscription': return 'Assinatura Recorrente';
+      case 'event': return 'Evento Presencial';
+      case 'donation': return 'Doação';
+      default: return 'Produto';
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Product type header */}
+      <div className="text-center p-4 bg-diypay-50 rounded-lg border border-diypay-200">
+        <h3 className="text-xl font-bold text-diypay-800">
+          Criando um Novo {getProductTypeLabel(formData.product_type)}
+        </h3>
+        <p className="text-sm text-diypay-600 mt-1">
+          Configure as informações básicas do seu produto
+        </p>
+      </div>
+
       {/* Show subscription frequency field only for subscriptions */}
       {isSubscription && (
         <div className="space-y-2">
@@ -67,17 +107,27 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
           <Label htmlFor="price">
             {isPriceDisabled ? 'Valor (Definido pelo Cliente)' : 'Valor do Produto (R$) *'}
           </Label>
-          <Input
-            id="price"
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={formData.price}
-            onChange={(e) => onInputChange('price', e.target.value)}
-            placeholder={isPriceDisabled ? "Valor livre" : "0.00"}
-            disabled={isPriceDisabled}
-            required={!isPriceDisabled}
-          />
+          {isPriceDisabled ? (
+            <Input
+              id="price"
+              type="text"
+              value="Valor livre"
+              disabled={true}
+              className="bg-gray-100"
+            />
+          ) : (
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
+              <Input
+                id="price"
+                placeholder="0,00"
+                value={formData.price}
+                onChange={(e) => handlePriceChange(e.target.value)}
+                className="pl-10 text-lg font-semibold"
+                required
+              />
+            </div>
+          )}
           {isPriceDisabled && (
             <p className="text-sm text-gray-500">
               Para doações, o valor será definido pelo cliente no momento da compra
@@ -94,7 +144,17 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
             max="12"
             value={formData.max_installments_allowed}
             onChange={(e) => onInputChange('max_installments_allowed', parseInt(e.target.value))}
+            disabled={
+              isSubscription && 
+              (formData.subscription_frequency === 'weekly' || formData.subscription_frequency === 'monthly')
+            }
           />
+          {isSubscription && 
+           (formData.subscription_frequency === 'weekly' || formData.subscription_frequency === 'monthly') && (
+            <p className="text-sm text-gray-500">
+              Para assinaturas semanais e mensais, o pagamento deve ser à vista
+            </p>
+          )}
         </div>
       </div>
 

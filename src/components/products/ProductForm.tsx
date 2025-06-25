@@ -48,7 +48,14 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   // Read product type from URL parameter
   const productTypeFromUrl = searchParams.get('type') || 'single_payment';
   
-  // ... keep existing code (formData state initialization)
+  // Set default payment methods based on product type
+  const getDefaultPaymentMethods = (productType: string) => {
+    if (productType === 'subscription') {
+      return ['credit_card']; // Only credit card for subscriptions by default
+    }
+    return ['credit_card', 'pix', 'bank_slip']; // All methods for other types
+  };
+  
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -59,7 +66,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     is_active: true,
     product_type: productTypeFromUrl,
     subscription_frequency: '',
-    allowed_payment_methods: ['credit_card', 'pix', 'bank_slip'],
+    allowed_payment_methods: getDefaultPaymentMethods(productTypeFromUrl),
     show_order_summary: true,
     donation_title: '',
     donation_description: '',
@@ -98,7 +105,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       setFormData({
         name: product.name,
         description: product.description || '',
-        price: (product.price_cents / 100).toString(),
+        price: (product.price_cents / 100).toLocaleString('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
         type: product.type || 'digital_file',
         file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
@@ -134,7 +144,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
   const saveProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const priceCents = data.product_type === 'donation' ? 0 : Math.round(parseFloat(data.price) * 100);
+      // Convert formatted price back to cents
+      const priceValue = data.product_type === 'donation' ? 0 : 
+        parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100;
+      const priceCents = Math.round(priceValue);
       
       const productData = {
         name: data.name,
@@ -213,10 +226,21 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   });
 
   const handleInputChange = (field: keyof ProductFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+
+      // Auto-adjust installments for subscriptions
+      if (field === 'subscription_frequency' && prev.product_type === 'subscription') {
+        if (value === 'weekly' || value === 'monthly') {
+          newData.max_installments_allowed = 1;
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleSubmit = () => {
@@ -225,7 +249,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       return;
     }
 
-    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price) <= 0)) {
+    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price.replace(/\./g, '').replace(',', '.')) <= 0)) {
       toast.error('Valor do produto deve ser maior que zero');
       return;
     }
