@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import ProducerSalesPage from "./pages/ProducerSalesPage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import NotFound from "./pages/NotFound";
+import ProducerSubscriptionsPage from "./pages/ProducerSubscriptionsPage";
 import { useState } from "react";
 
 const App = () => {
@@ -88,6 +88,14 @@ const App = () => {
                 element={
                   <ProtectedRoute requiredRole="producer">
                     <ProducerSalesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/producer/subscriptions" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <ProducerSubscriptionsPage />
                   </ProtectedRoute>
                 } 
               />

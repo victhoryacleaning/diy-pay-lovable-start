@@ -23,6 +23,7 @@ import {
   CreditCard,
   Settings,
   LogOut,
+  RefreshCw,
 } from 'lucide-react';
 
 const menuItems = [
@@ -40,6 +41,11 @@ const menuItems = [
     title: "Vendas",
     url: "/sales", // Future implementation
     icon: ShoppingCart,
+  },
+  {
+    title: "Assinaturas",
+    url: "/producer/subscriptions",
+    icon: RefreshCw,
   },
   {
     title: "Financeiro",
