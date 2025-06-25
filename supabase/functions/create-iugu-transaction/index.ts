@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -103,12 +102,41 @@ serve(async (req) => {
       // Step 1: Create/Verify Plan
       console.log('[DEBUG IUGU] Step 1: Tentando criar/verificar plano...')
       const planIdentifier = `plan_${product.id}`
+      
+      // Map subscription frequency to Iugu interval_type
+      const frequencyMapping = {
+        'weekly': 'weeks',
+        'monthly': 'months',
+        'bimonthly': 'months',
+        'quarterly': 'months',
+        'semiannually': 'months',
+        'annually': 'months'
+      }
+      
+      const intervalMapping = {
+        'weekly': 1,
+        'monthly': 1,
+        'bimonthly': 2,
+        'quarterly': 3,
+        'semiannually': 6,
+        'annually': 12
+      }
+      
+      const subscriptionFrequency = product.subscription_frequency || 'monthly'
+      const intervalType = frequencyMapping[subscriptionFrequency] || 'months'
+      const interval = intervalMapping[subscriptionFrequency] || 1
+      
       const planPayload = {
         name: product.name,
         identifier: planIdentifier,
-        interval: 1,
-        interval_type: product.subscription_frequency || 'monthly',
-        price_cents: finalAmountCents
+        interval: interval,
+        interval_type: intervalType,
+        prices: [
+          {
+            currency: 'BRL',
+            value_cents: finalAmountCents
+          }
+        ]
       }
 
       console.log('[DEBUG IUGU] Plan payload:', planPayload)
