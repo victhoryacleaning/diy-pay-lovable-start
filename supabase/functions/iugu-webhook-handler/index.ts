@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -182,7 +181,8 @@ Deno.serve(async (req) => {
       current_status: sale.status,
       new_status: data.status,
       product_id: sale.product_id,
-      producer_id: sale.product?.producer_id
+      producer_id: sale.product?.producer_id,
+      is_subscription: !!sale.iugu_subscription_id
     });
 
     // Process different webhook events
@@ -246,8 +246,14 @@ async function processInvoiceStatusChange(
 ) {
   const newStatus = invoiceData.status;
   const currentStatus = sale.status;
+  const isSubscription = !!sale.iugu_subscription_id;
 
-  console.log('*** DEBUG WEBHOOK: Processing status change:', { currentStatus, newStatus });
+  console.log('*** DEBUG WEBHOOK: Processing status change:', { 
+    currentStatus, 
+    newStatus, 
+    isSubscription,
+    subscriptionId: sale.iugu_subscription_id 
+  });
 
   // Idempotency check - if status hasn't changed, do nothing
   if (currentStatus === newStatus) {
@@ -257,7 +263,6 @@ async function processInvoiceStatusChange(
 
   // Update the sale status
   const updateData: any = {
-    status: newStatus,
     updated_at: new Date().toISOString()
   };
 
@@ -267,7 +272,21 @@ async function processInvoiceStatusChange(
     console.log('*** DEBUG WEBHOOK: Updating iugu_invoice_id:', invoiceData.id);
   }
 
-  // If payment is confirmed
+  // Determine the correct status to set
+  if (newStatus === 'paid') {
+    // For subscriptions, set status to 'active' when paid
+    // For regular payments, keep as 'paid'
+    updateData.status = isSubscription ? 'active' : 'paid';
+    console.log('*** DEBUG WEBHOOK: Setting status for paid invoice:', {
+      isSubscription,
+      finalStatus: updateData.status
+    });
+  } else {
+    // For other statuses, use the status as-is
+    updateData.status = newStatus;
+  }
+
+  // If payment is confirmed (paid status)
   if (newStatus === 'paid' && currentStatus !== 'paid') {
     console.log('*** DEBUG WEBHOOK: Processing payment confirmation');
     
@@ -391,7 +410,7 @@ async function processRefund(
     return;
   }
 
-  const wasAlreadyPaid = sale.status === 'paid';
+  const wasAlreadyPaid = sale.status === 'paid' || sale.status === 'active';
   
   // Update sale status to refunded
   const { error: updateError } = await supabase

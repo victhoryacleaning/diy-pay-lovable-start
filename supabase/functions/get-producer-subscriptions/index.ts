@@ -121,21 +121,66 @@ serve(async (req) => {
 
     console.log('[DEBUG] Assinaturas encontradas:', subscriptions?.length || 0)
 
+    // Get Iugu API credentials
+    const iuguApiKey = Deno.env.get('APP_ENV') === 'production' 
+      ? Deno.env.get('IUGU_API_KEY_LIVE') 
+      : Deno.env.get('IUGU_API_KEY_TEST')
+
+    // Enrich subscriptions with next due date from Iugu API
+    const enrichedSubscriptions = await Promise.all(
+      (subscriptions || []).map(async (subscription: any) => {
+        let nextDueDate = null;
+        
+        if (subscription.iugu_subscription_id && iuguApiKey) {
+          try {
+            console.log('[DEBUG] Buscando dados da assinatura na Iugu:', subscription.iugu_subscription_id)
+            
+            const iuguResponse = await fetch(
+              `https://api.iugu.com/v1/subscriptions/${subscription.iugu_subscription_id}`,
+              {
+                headers: {
+                  'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            )
+
+            if (iuguResponse.ok) {
+              const iuguData = await iuguResponse.json()
+              if (iuguData.expires_at) {
+                nextDueDate = iuguData.expires_at
+                console.log('[DEBUG] Data de próxima cobrança encontrada:', nextDueDate)
+              }
+            } else {
+              console.log('[WARNING] Erro ao buscar dados da assinatura na Iugu:', iuguResponse.status)
+            }
+          } catch (error) {
+            console.log('[WARNING] Erro ao conectar com a API da Iugu:', error.message)
+          }
+        }
+
+        return {
+          ...subscription,
+          next_due_date: nextDueDate
+        }
+      })
+    )
+
     // Calculate statistics
-    const activeSubscriptions = subscriptions?.filter(sub => sub.status === 'paid' || sub.status === 'active') || []
+    const activeSubscriptions = enrichedSubscriptions?.filter(sub => sub.status === 'paid' || sub.status === 'active') || []
     const totalActiveCount = activeSubscriptions.length
     const monthlyRecurring = activeSubscriptions.reduce((sum, sub) => sum + (sub.producer_share_cents || 0), 0)
 
     const stats = {
       totalActive: totalActiveCount,
       monthlyRecurring: monthlyRecurring,
-      totalSubscriptions: subscriptions?.length || 0
+      totalSubscriptions: enrichedSubscriptions?.length || 0
     }
 
     console.log('[DEBUG] Estatísticas calculadas:', stats)
 
     const response = {
-      subscriptions: subscriptions || [],
+      subscriptions: enrichedSubscriptions || [],
       stats
     }
 

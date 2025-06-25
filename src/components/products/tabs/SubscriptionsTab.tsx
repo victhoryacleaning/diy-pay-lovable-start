@@ -185,13 +185,14 @@ const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
               <TableHead>Data de Início</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Próxima Cobrança</TableHead>
               <TableHead className="text-right">Valor Líquido</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSubscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                   Nenhuma assinatura encontrada
                 </TableCell>
               </TableRow>
@@ -206,6 +207,11 @@ const SubscriptionsTab = ({ productId }: SubscriptionsTabProps) => {
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(subscription.status)}</TableCell>
+                  <TableCell>
+                    <span className="text-sm text-gray-500">
+                      {subscription.next_due_date ? formatDate(subscription.next_due_date) : 'N/A'}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(subscription.producer_share_cents)}
                   </TableCell>

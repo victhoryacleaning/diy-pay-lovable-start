@@ -44,7 +44,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState('geral');
+  
+  // Read the tab parameter from URL and set as initial active tab
+  const initialTab = searchParams.get('tab') || 'geral';
+  const [activeTab, setActiveTab] = useState(initialTab);
   
   // Read product type from URL parameter
   const productTypeFromUrl = searchParams.get('type') || 'single_payment';
@@ -76,6 +79,14 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     is_email_optional: false,
     require_email_confirmation: true
   });
+
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   // Fetch product data for edit mode
   const { data: product, isLoading } = useQuery({
