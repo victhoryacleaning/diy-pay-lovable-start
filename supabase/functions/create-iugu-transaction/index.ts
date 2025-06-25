@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -490,11 +489,7 @@ serve(async (req) => {
 
     console.log('[DEBUG] *** REGULAR PAYMENT PROCESSING COMPLETE ***')
 
-    // Environment-specific response logic
-    const appEnv = Deno.env.get('APP_ENV')
-    const isTestEnvironment = appEnv !== 'production'
-
-    // Base response object
+    // Build response object
     const responseData = {
       success: true,
       sale_id: savedSale.id,
@@ -503,17 +498,17 @@ serve(async (req) => {
       bank_slip_barcode: result.bank_slip?.barcode
     }
 
-    // Handle PIX data based on environment
+    // Handle PIX data - prioritize actual QR code data if available
     if (payment_method_selected === 'pix') {
-      if (isTestEnvironment) {
-        // In test environment, provide the secure URL for PIX testing
-        responseData.pix_test_environment_url = result.secure_url
-        console.log('[DEBUG] Test environment - PIX URL:', result.secure_url)
+      if (result.pix?.qr_code && result.pix?.qr_code_text) {
+        // Primary: Return actual QR code data if available
+        responseData.pix_qr_code = result.pix.qr_code
+        responseData.pix_qr_code_text = result.pix.qr_code_text
+        console.log('[DEBUG] PIX QR code data available - returning QR code')
       } else {
-        // In production, provide actual QR code data
-        responseData.pix_qr_code = result.pix?.qr_code
-        responseData.pix_qr_code_text = result.pix?.qr_code_text
-        console.log('[DEBUG] Production environment - PIX QR code data included')
+        // Fallback: Return secure URL for test environment or when QR code data is not available
+        responseData.pix_test_environment_url = result.secure_url
+        console.log('[DEBUG] PIX QR code data not available - returning secure URL as fallback')
       }
     }
 
