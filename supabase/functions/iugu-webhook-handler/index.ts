@@ -399,18 +399,21 @@ async function processInvoiceStatusChange(
     console.log('*** DEBUG WEBHOOK: Updating iugu_invoice_id:', invoiceData.id);
   }
 
-  // Determine the correct status to set
+  // CORREÇÃO CRÍTICA: Determinar o status correto baseado no tipo de transação
   if (newStatus === 'paid') {
-    // For subscriptions, set status to 'active' when paid
-    // For regular payments, keep as 'paid'
-    updateData.status = isSubscription ? 'active' : 'paid';
-    console.log('*** DEBUG WEBHOOK: Setting status for paid invoice:', {
-      isSubscription,
-      finalStatus: updateData.status
-    });
+    if (isSubscription) {
+      // Para assinaturas, quando a fatura é paga, a assinatura fica ATIVA
+      updateData.status = 'active';
+      console.log('*** DEBUG WEBHOOK: Subscription invoice paid - setting status to ACTIVE');
+    } else {
+      // Para vendas normais, quando a fatura é paga, a venda fica PAGA
+      updateData.status = 'paid';
+      console.log('*** DEBUG WEBHOOK: Regular sale invoice paid - setting status to PAID');
+    }
   } else {
-    // For other statuses, use the status as-is
+    // Para outros status, usar o status como está
     updateData.status = newStatus;
+    console.log('*** DEBUG WEBHOOK: Setting status to:', newStatus);
   }
 
   // If payment is confirmed (paid status)
