@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ... (interface IuguWebhookPayload pode permanecer a mesma) ...
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,7 +18,41 @@ Deno.serve(async (req) => {
     );
     const platformFeePercentage = parseFloat(Deno.env.get('PLATFORM_FEE_PERCENTAGE') || '0.05');
 
-    const payload = await req.json();
+    // ** FIXED: Handle both JSON and form-urlencoded data **
+    const contentType = req.headers.get('content-type') || '';
+    let payload;
+
+    if (contentType.includes('application/json')) {
+      payload = await req.json();
+      console.log('*** DEBUG WEBHOOK: Received JSON payload ***', payload);
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formDataText = await req.text();
+      const params = new URLSearchParams(formDataText);
+      
+      console.log('*** DEBUG WEBHOOK: Received form-urlencoded data ***', formDataText);
+      
+      const data = {};
+      for (const [key, value] of params.entries()) {
+        if (key.startsWith('data[')) {
+          const dataKey = key.slice(5, -1);
+          data[dataKey] = value;
+        }
+      }
+      
+      payload = {
+        event: params.get('event'),
+        data: data
+      };
+      
+      console.log('*** DEBUG WEBHOOK: Parsed form-urlencoded payload ***', payload);
+    } else {
+      console.error('*** ERRO WEBHOOK: Content-Type não suportado ***', contentType);
+      return new Response(JSON.stringify({ success: false, message: 'Unsupported Content-Type' }), { 
+        status: 400, 
+        headers: corsHeaders 
+      });
+    }
+
     const { event, data } = payload;
     const iuguInvoiceId = data.id;
 
