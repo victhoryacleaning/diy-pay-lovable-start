@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 console.log('[DEBUG] *** INÍCIO DA FUNÇÃO create-iugu-transaction ***')
+// Forcing redeploy - 2025-06-25 - Fixed Iugu plan creation payload
 
 serve(async (req) => {
   console.log('[DEBUG] Método da requisição:', req.method)
