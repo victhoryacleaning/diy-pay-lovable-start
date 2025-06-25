@@ -5,10 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Copy, Download, ArrowLeft, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { translateStatus } from "@/lib/utils";
 
 interface SaleData {
   id: string;
@@ -38,8 +36,6 @@ const PaymentConfirmation = () => {
   const [error, setError] = useState<string | null>(null);
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedBarcode, setCopiedBarcode] = useState(false);
-  const [realtimeStatus, setRealtimeStatus] = useState<string>('DISCONNECTED');
-  const [realtimeRetries, setRealtimeRetries] = useState(0);
 
   // Função para buscar dados da venda
   const fetchSaleDetails = async () => {
@@ -83,15 +79,15 @@ const PaymentConfirmation = () => {
     fetchSaleDetails();
   }, [saleId]);
 
-  // Realtime para atualizações de status com tratamento de erros robusto
+  // Realtime para atualizações de status
   useEffect(() => {
-    if (!saleId || realtimeRetries >= 3) return;
+    if (!saleId) return;
 
-    console.log('[DEBUG] Configurando listener realtime para venda:', saleId, 'tentativa:', realtimeRetries + 1);
+    console.log('[DEBUG] Configurando listener realtime para venda:', saleId);
 
-    // Criar o canal com configurações específicas e tratamento de erro
+    // Criar o canal com configurações específicas
     const channel = supabase
-      .channel(`sale-updates-${saleId}-${realtimeRetries}`, {
+      .channel(`sale-updates-${saleId}`, {
         config: {
           broadcast: { self: false },
           presence: { key: saleId }
@@ -109,8 +105,7 @@ const PaymentConfirmation = () => {
           console.log('[DEBUG] Atualização realtime recebida:', payload);
           const newSale = payload.new as any;
           
-          if ((newSale.status === 'paid' || newSale.status === 'active') && 
-              (sale?.status !== 'paid' && sale?.status !== 'active')) {
+          if (newSale.status === 'paid' && sale?.status !== 'paid') {
             toast({
               title: "Pagamento Confirmado! 🎉",
               description: "Seu pagamento foi processado com sucesso. Você receberá o acesso por email.",
@@ -134,26 +129,12 @@ const PaymentConfirmation = () => {
       )
       .subscribe((status) => {
         console.log('[DEBUG] Status da inscrição realtime:', status);
-        setRealtimeStatus(status);
-        
         if (status === 'SUBSCRIBED') {
           console.log('[DEBUG] Realtime conectado com sucesso');
-          setRealtimeRetries(0); // Reset retries on successful connection
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('[ERRO] Erro no canal realtime - tentativa:', realtimeRetries + 1);
-          if (realtimeRetries < 2) {
-            // Retry with exponential backoff
-            setTimeout(() => {
-              setRealtimeRetries(prev => prev + 1);
-            }, Math.pow(2, realtimeRetries) * 1000);
-          }
+          console.error('[ERRO] Erro no canal realtime');
         } else if (status === 'TIMED_OUT') {
           console.error('[ERRO] Timeout na conexão realtime');
-          if (realtimeRetries < 2) {
-            setTimeout(() => {
-              setRealtimeRetries(prev => prev + 1);
-            }, 2000);
-          }
         } else if (status === 'CLOSED') {
           console.log('[DEBUG] Canal realtime fechado');
         }
@@ -163,7 +144,7 @@ const PaymentConfirmation = () => {
       console.log('[DEBUG] Removendo listener realtime');
       channel.unsubscribe();
     };
-  }, [saleId, realtimeRetries, sale?.status]);
+  }, [saleId, sale?.status]);
 
   const handleCopyPixCode = async () => {
     if (sale?.iugu_pix_qr_code_text) {
@@ -219,29 +200,25 @@ const PaymentConfirmation = () => {
   };
 
   const getStatusDisplay = (status: string) => {
-    const translatedStatus = translateStatus(status);
-    
     switch (status) {
       case 'paid':
-      case 'active':
         return {
-          text: translatedStatus,
+          text: 'Pago',
           className: 'bg-green-100 text-green-800',
         };
       case 'pending':
         return {
-          text: translatedStatus,
+          text: 'Aguardando Pagamento',
           className: 'bg-yellow-100 text-yellow-800',
         };
       case 'cancelled':
-      case 'canceled':
         return {
-          text: translatedStatus,
+          text: 'Cancelado',
           className: 'bg-red-100 text-red-800',
         };
       default:
         return {
-          text: translatedStatus,
+          text: status,
           className: 'bg-gray-100 text-gray-800',
         };
     }
@@ -284,14 +261,10 @@ const PaymentConfirmation = () => {
     );
   }
 
-  if (!sale) {
-    return null;
-  }
-
   const isPix = sale.payment_method_used === 'pix';
   const isBankSlip = sale.payment_method_used === 'bank_slip';
   const isCreditCard = sale.payment_method_used === 'credit_card';
-  const isPaid = sale.status === 'paid' || sale.status === 'active';
+  const isPaid = sale.status === 'paid';
 
   const statusDisplay = getStatusDisplay(sale.status);
 
@@ -310,13 +283,6 @@ const PaymentConfirmation = () => {
             {isPaid ? 'Obrigado pela sua compra! Você receberá o acesso por email.' : 'Finalize seu pagamento para acessar o produto'}
           </p>
         </div>
-
-        {/* Debug info for realtime status (only in development) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-            Realtime Status: {realtimeStatus} | Retries: {realtimeRetries}
-          </div>
-        )}
 
         {/* Detalhes do Pedido */}
         <Card className="mb-6">
@@ -341,9 +307,9 @@ const PaymentConfirmation = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Status:</span>
-                <Badge className={statusDisplay.className}>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.className}`}>
                   {statusDisplay.text}
-                </Badge>
+                </span>
               </div>
             </div>
           </CardContent>
@@ -420,26 +386,8 @@ const PaymentConfirmation = () => {
                     </div>
                   )}
 
-                  {/* Ambiente de teste - botão para acessar página da Iugu */}
-                  {!sale.iugu_pix_qr_code_text && sale.iugu_invoice_secure_url && (
-                    <div className="text-center">
-                      <a
-                        href={sale.iugu_invoice_secure_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        <ExternalLink className="w-5 h-5 mr-2" />
-                        Visualizar QR Code PIX (Teste)
-                      </a>
-                      <p className="text-xs text-gray-500 mt-2">
-                        * Ambiente de teste - Clique para ver o QR Code na página da Iugu
-                      </p>
-                    </div>
-                  )}
-
                   {/* Mensagem quando não há código PIX disponível */}
-                  {!sale.iugu_pix_qr_code_text && !sale.iugu_invoice_secure_url && (
+                  {!sale.iugu_pix_qr_code_text && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-500">
                         Código Copia e Cola indisponível no ambiente de teste.
@@ -519,7 +467,7 @@ const PaymentConfirmation = () => {
               </Card>
             )}
 
-            {/* Credit Card Payment - Melhorado */}
+            {/* Credit Card Payment */}
             {isCreditCard && (
               <Card className="mb-6">
                 <CardHeader>
@@ -532,7 +480,7 @@ const PaymentConfirmation = () => {
                       Pagamento em Processamento
                     </h3>
                     <p className="text-blue-700">
-                      Seu pagamento está sendo processado. Esta página será atualizada automaticamente quando o status mudar.
+                      Seu pagamento está sendo processado. Avisaremos por e-mail quando for aprovado.
                     </p>
                   </div>
                 </CardContent>

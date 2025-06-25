@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -265,39 +264,18 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const lastName = lastNameParts.join(' ');
     const [month, year] = data.cardExpiry.split('/');
 
-    try {
-      const { data: result, error } = await supabase.functions.invoke('create-iugu-payment-token', {
-        body: {
-          card_number: data.cardNumber?.replace(/\s/g, ''),
-          verification_value: data.cardCvv,
-          first_name: firstName,
-          last_name: lastName,
-          month,
-          year: `20${year}`,
-        },
-      });
-      
-      if (error) {
-        console.error('[ERRO] Erro na tokenização do cartão:', error);
-        // Verifica se o erro contém informações específicas da Iugu
-        const errorMessage = error.message || 'Erro ao processar dados do cartão.';
-        
-        if (errorMessage.includes('card_number') || errorMessage.includes('invalid')) {
-          throw new Error('Cartão inválido ou recusado. Por favor, verifique os dados ou tente outro cartão.');
-        } else if (errorMessage.includes('verification_value')) {
-          throw new Error('Código de segurança (CVV) inválido. Por favor, verifique e tente novamente.');
-        } else if (errorMessage.includes('expired')) {
-          throw new Error('Cartão expirado. Por favor, utilize um cartão válido.');
-        } else {
-          throw new Error('Cartão inválido ou recusado. Por favor, verifique os dados ou tente outro cartão.');
-        }
-      }
-      
-      return result.id;
-    } catch (error: any) {
-      console.error('[ERRO] Erro na tokenização:', error);
-      throw error; // Re-throw para ser capturado pelo onSubmit
-    }
+    const { data: result, error } = await supabase.functions.invoke('create-iugu-payment-token', {
+      body: {
+        card_number: data.cardNumber?.replace(/\s/g, ''),
+        verification_value: data.cardCvv,
+        first_name: firstName,
+        last_name: lastName,
+        month,
+        year: `20${year}`,
+      },
+    });
+    if (error) throw new Error('Erro ao tokenizar cartão.');
+    return result.id;
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
@@ -343,7 +321,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
 
       if (transactionError) throw transactionError;
       if (!result.success) {
-        const errorMessage = result.iugu_errors ? JSON.stringify(result.iugu_errors) : "Falha ao processar pagamento.";
+        const errorMessage = result.lugu_errors ? JSON.stringify(result.lugu_errors) : "Falha ao processar pagamento.";
         throw new Error(errorMessage);
       }
       

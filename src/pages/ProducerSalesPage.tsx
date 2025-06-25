@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
@@ -25,7 +26,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Calendar, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCurrency, translateStatus } from '@/lib/utils';
 
 interface Sale {
   id: string;
@@ -167,6 +167,17 @@ const ProducerSalesPage = () => {
   }, [session]);
 
   // Funções utilitárias
+  const formatCurrency = (cents: number) => {
+    try {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(cents / 100);
+    } catch {
+      return `R$ ${(cents / 100).toFixed(2)}`;
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -184,23 +195,19 @@ const ProducerSalesPage = () => {
   const getStatusBadge = (status: string) => {
     if (!status) return <Badge variant="secondary">Desconhecido</Badge>;
     
-    const translatedStatus = translateStatus(status);
-    
     switch (status.toLowerCase()) {
       case 'paid':
-      case 'active':
-        return <Badge className="bg-green-100 text-green-800">{translatedStatus}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">{translatedStatus}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800">{translatedStatus}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Falhado</Badge>;
       case 'authorized':
-        return <Badge className="bg-blue-100 text-blue-800">{translatedStatus}</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">Autorizado</Badge>;
       case 'cancelled':
-      case 'canceled':
-        return <Badge className="bg-gray-100 text-gray-800">{translatedStatus}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Cancelado</Badge>;
       default:
-        return <Badge variant="secondary">{translatedStatus}</Badge>;
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 

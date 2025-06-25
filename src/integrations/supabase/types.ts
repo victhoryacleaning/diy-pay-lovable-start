@@ -273,10 +273,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      upsert_producer_balance: {
-        Args: { p_producer_id: string; amount_to_add: number }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
