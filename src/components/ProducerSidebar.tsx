@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,11 +40,6 @@ const menuItems = [
     title: "Vendas",
     url: "/sales", // Future implementation
     icon: ShoppingCart,
-  },
-  {
-    title: "Assinaturas",
-    url: "/producer/subscriptions",
-    icon: RefreshCw,
   },
   {
     title: "Financeiro",

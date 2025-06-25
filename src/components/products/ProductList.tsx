@@ -1,7 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Eye, MoreHorizontal, Ticket } from "lucide-react";
+import { Pencil, Eye, MoreHorizontal, Ticket, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -132,6 +131,16 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
                   <Button variant="outline" size="sm">
                     <Ticket className="h-4 w-4 mr-2" />
                     Ingressos
+                  </Button>
+                </Link>
+              )}
+
+              {/* Botão Assinaturas - apenas para assinaturas */}
+              {product.product_type === 'subscription' && (
+                <Link to={`/products/edit/${product.id}?tab=assinaturas`}>
+                  <Button variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Assinaturas
                   </Button>
                 </Link>
               )}

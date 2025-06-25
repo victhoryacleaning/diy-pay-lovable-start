@@ -1,4 +1,3 @@
-
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,9 +51,6 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         <h3 className="text-xl font-bold text-diypay-800">
           Criando um Novo {getProductTypeLabel(formData.product_type)}
         </h3>
-        <p className="text-sm text-diypay-600 mt-1">
-          Configure as informações básicas do seu produto
-        </p>
       </div>
 
       {/* Show subscription frequency field only for subscriptions */}

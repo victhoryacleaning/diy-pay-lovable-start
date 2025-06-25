@@ -71,10 +71,14 @@ serve(async (req) => {
       )
     }
 
-    console.log('[DEBUG] Buscando assinaturas do produtor:', profile.id)
+    // Get productId from request body if provided
+    const body = await req.json().catch(() => ({}))
+    const productId = body.productId
 
-    // Get all subscriptions for this producer
-    const { data: subscriptions, error: subscriptionsError } = await supabaseClient
+    console.log('[DEBUG] Buscando assinaturas do produtor:', profile.id, productId ? `para produto: ${productId}` : 'para todos os produtos')
+
+    // Build query with optional product filter
+    let query = supabaseClient
       .from('sales')
       .select(`
         id,
@@ -96,6 +100,13 @@ serve(async (req) => {
       .eq('products.producer_id', profile.id)
       .not('iugu_subscription_id', 'is', null)
       .order('created_at', { ascending: false })
+
+    // Add product filter if provided
+    if (productId) {
+      query = query.eq('product_id', productId)
+    }
+
+    const { data: subscriptions, error: subscriptionsError } = await query
 
     if (subscriptionsError) {
       console.log('[ERROR] Erro ao buscar assinaturas:', subscriptionsError)

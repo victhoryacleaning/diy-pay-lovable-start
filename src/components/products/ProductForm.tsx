@@ -13,6 +13,7 @@ import ConfigurationTab from './tabs/ConfigurationTab';
 import CheckoutTab from './tabs/CheckoutTab';
 import LinksTab from './tabs/LinksTab';
 import TicketsTab from './tabs/TicketsTab';
+import SubscriptionsTab from './tabs/SubscriptionsTab';
 
 interface ProductFormData {
   name: string;
@@ -266,9 +267,15 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   // Check if this is an event product
   const isEventProduct = formData.product_type === 'event';
   
+  // Check if this is a subscription product
+  const isSubscriptionProduct = formData.product_type === 'subscription';
+  
   // Determine which tabs to show based on product type - show tickets tab for events in create AND edit mode
   const shouldShowTicketsTab = isEventProduct;
   
+  // Show subscriptions tab for subscription products, but only in edit mode (since we need productId)
+  const shouldShowSubscriptionsTab = isSubscriptionProduct && mode === 'edit';
+
   // Get product type label for display
   const getProductTypeLabel = (type: string) => {
     switch (type) {
@@ -322,7 +329,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 mb-6">
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
               <TabsTrigger value="checkout">Checkout</TabsTrigger>
@@ -333,6 +340,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
               {shouldShowTicketsTab && (
                 <TabsTrigger value="ingressos" disabled={mode === 'create'}>
                   Ingressos
+                </TabsTrigger>
+              )}
+              {/* Subscriptions tab - show for subscriptions in edit mode only */}
+              {shouldShowSubscriptionsTab && (
+                <TabsTrigger value="assinaturas">
+                  Assinaturas
                 </TabsTrigger>
               )}
             </TabsList>
@@ -385,6 +398,15 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
               {shouldShowTicketsTab && (
                 <TabsContent value="ingressos" className="space-y-6">
                   <TicketsTab 
+                    productId={productId}
+                  />
+                </TabsContent>
+              )}
+
+              {/* Subscriptions tab - show for subscriptions in edit mode only */}
+              {shouldShowSubscriptionsTab && (
+                <TabsContent value="assinaturas" className="space-y-6">
+                  <SubscriptionsTab 
                     productId={productId}
                   />
                 </TabsContent>
