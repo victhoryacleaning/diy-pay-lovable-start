@@ -26,6 +26,61 @@ function generateUUID(): string {
   return crypto.randomUUID();
 }
 
+// Função para buscar dados PIX adicionais da Iugu
+async function fetchPixDataFromIugu(invoiceId: string, authHeader: string) {
+  console.log('[DEBUG] *** BUSCANDO DADOS PIX ADICIONAIS DA IUGU ***:', invoiceId);
+  
+  try {
+    const response = await fetch(`https://api.iugu.com/v1/invoices/${invoiceId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+      },
+    });
+
+    if (response.ok) {
+      const invoiceData = await response.json();
+      console.log('[DEBUG] Dados PIX obtidos da busca adicional:', invoiceData.pix);
+      
+      let pixQrCodeBase64 = null;
+      let pixQrCodeText = null;
+
+      // Extrair QR Code Base64
+      if (invoiceData.pix?.qrcode && invoiceData.pix.qrcode.startsWith('http')) {
+        try {
+          const qrResponse = await fetch(invoiceData.pix.qrcode);
+          if (qrResponse.ok) {
+            const qrBuffer = await qrResponse.arrayBuffer();
+            const qrBase64 = btoa(String.fromCharCode(...new Uint8Array(qrBuffer)));
+            pixQrCodeBase64 = qrBase64;
+            console.log('[DEBUG] QR Code Base64 obtido via busca adicional');
+          }
+        } catch (error) {
+          console.error('[ERRO] Erro ao buscar QR Code via URL na busca adicional:', error);
+        }
+      }
+
+      // Extrair código PIX copia e cola
+      if (invoiceData.pix?.qrcode_text && invoiceData.pix.qrcode_text.startsWith('0002')) {
+        pixQrCodeText = invoiceData.pix.qrcode_text;
+      } else if (invoiceData.pix?.emv && invoiceData.pix.emv.startsWith('0002')) {
+        pixQrCodeText = invoiceData.pix.emv;
+      }
+
+      return {
+        base64: pixQrCodeBase64,
+        text: pixQrCodeText
+      };
+    } else {
+      console.error('[ERRO] Falha na busca adicional de dados PIX:', response.status);
+      return { base64: null, text: null };
+    }
+  } catch (error) {
+    console.error('[ERRO] Erro na busca adicional de dados PIX:', error);
+    return { base64: null, text: null };
+  }
+}
+
 // Função para atualizar o saldo do produtor
 async function updateProducerFinancials(supabase: any, producerId: string, producerShareCents: number) {
   console.log('[DEBUG] *** ATUALIZANDO SALDO DO PRODUTOR ***:', { producerId, producerShareCents });
