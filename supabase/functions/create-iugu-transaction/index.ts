@@ -166,23 +166,31 @@ async function createOrGetIuguPlan(productId: string, productName: string, price
   const planIdentifier = `plan_prod_${productId}`;
   
   try {
-    // Verificar se o plano já existe
-    console.log('[DEBUG] Verificando se plano já existe:', planIdentifier);
-    const checkResponse = await fetch(`https://api.iugu.com/v1/plans/${planIdentifier}`, {
+    // 1. PRIMEIRO: Tentar buscar o plano existente pelo identificador
+    console.log('[DEBUG] Buscando plano existente pelo identificador:', planIdentifier);
+    const searchResponse = await fetch(`https://api.iugu.com/v1/plans?identifier=${planIdentifier}`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
       },
     });
 
-    if (checkResponse.ok) {
-      const existingPlan = await checkResponse.json();
-      console.log('[DEBUG] *** PLANO JÁ EXISTE ***:', existingPlan.id);
-      return existingPlan;
+    if (searchResponse.ok) {
+      const searchData = await searchResponse.json();
+      console.log('[DEBUG] Resposta da busca de planos:', searchData);
+      
+      // Verificar se encontrou algum plano com o identificador
+      if (searchData.items && searchData.items.length > 0) {
+        const existingPlan = searchData.items.find((plan: any) => plan.identifier === planIdentifier);
+        if (existingPlan) {
+          console.log('[DEBUG] *** PLANO EXISTENTE ENCONTRADO ***:', existingPlan.id);
+          return existingPlan;
+        }
+      }
     }
 
-    // Criar novo plano
-    console.log('[DEBUG] Criando novo plano na Iugu');
+    // 2. SE NÃO ENCONTROU: Criar novo plano
+    console.log('[DEBUG] Plano não encontrado, criando novo plano na Iugu');
     const planPayload = {
       name: productName,
       identifier: planIdentifier,
