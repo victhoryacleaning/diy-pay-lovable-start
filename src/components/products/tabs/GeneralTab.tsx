@@ -1,3 +1,4 @@
+
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -101,7 +102,7 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="price">
-            {isPriceDisabled ? 'Valor (Definido pelo Cliente)' : 'Valor do Produto (R$) *'}
+            {isPriceDisabled ? 'Valor (Definido pelo Cliente)' : isSubscription ? 'Valor da Assinatura (R$) *' : 'Valor do Produto (R$) *'}
           </Label>
           {isPriceDisabled ? (
             <Input
@@ -129,6 +130,11 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
               Para doações, o valor será definido pelo cliente no momento da compra
             </p>
           )}
+          {isSubscription && (
+            <p className="text-sm text-blue-600">
+              Este valor será cobrado de acordo com a frequência selecionada
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -141,14 +147,14 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
             value={formData.max_installments_allowed}
             onChange={(e) => onInputChange('max_installments_allowed', parseInt(e.target.value))}
             disabled={
-              isSubscription && 
-              (formData.subscription_frequency === 'weekly' || formData.subscription_frequency === 'monthly')
+              isSubscription || 
+              (isSubscription && 
+              (formData.subscription_frequency === 'weekly' || formData.subscription_frequency === 'monthly'))
             }
           />
-          {isSubscription && 
-           (formData.subscription_frequency === 'weekly' || formData.subscription_frequency === 'monthly') && (
+          {isSubscription && (
             <p className="text-sm text-gray-500">
-              Para assinaturas semanais e mensais, o pagamento deve ser à vista
+              Para assinaturas, o pagamento deve ser à vista
             </p>
           )}
         </div>

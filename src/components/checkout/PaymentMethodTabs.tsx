@@ -28,8 +28,11 @@ export const PaymentMethodTabs = ({
   productPriceCents,
   product,
 }: PaymentMethodTabsProps) => {
-  // Usar os métodos permitidos diretamente, sem restrição para assinaturas
-  const allowedMethods = product.allowed_payment_methods || ["credit_card", "pix", "bank_slip"];
+  // Para assinaturas, forçar apenas cartão de crédito
+  const isSubscription = product.product_type === 'subscription';
+  const allowedMethods = isSubscription 
+    ? ["credit_card"] 
+    : (product.allowed_payment_methods || ["credit_card", "pix", "bank_slip"]);
   
   // Set default payment method to the first allowed method
   useEffect(() => {
@@ -93,7 +96,7 @@ export const PaymentMethodTabs = ({
         <TabsContent key="credit_card" value="credit_card" className="mt-6">
           <CreditCardForm
             form={form}
-            maxInstallments={maxInstallments}
+            maxInstallments={isSubscription ? 1 : maxInstallments}
             productPriceCents={productPriceCents}
           />
         </TabsContent>
@@ -123,7 +126,11 @@ export const PaymentMethodTabs = ({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Método de Pagamento</h3>
-        {product.product_type === 'subscription' && (
+        {isSubscription ? (
+          <p className="text-sm text-gray-600 mb-4">
+            Para assinaturas recorrentes, apenas cartão de crédito é aceito para garantir a cobrança automática.
+          </p>
+        ) : product.product_type === 'subscription' && (
           <p className="text-sm text-gray-600 mb-4">
             Para assinaturas, a primeira cobrança pode ser paga via PIX, Boleto ou Cartão. As cobranças recorrentes seguintes serão processadas automaticamente.
           </p>
