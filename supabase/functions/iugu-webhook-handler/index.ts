@@ -19,6 +19,39 @@ interface IuguWebhookPayload {
   webhook_id?: string;
 }
 
+interface PlatformSettings {
+  default_pix_fee_percent: number;
+  default_boleto_fee_percent: number;
+  default_card_installments_fees: any;
+  default_pix_release_days: number;
+  default_boleto_release_days: number;
+  default_card_release_days: number;
+  default_security_reserve_percent: number;
+  default_anticipation_fee_percent: number;
+}
+
+interface ProducerSettings {
+  custom_pix_fee_percent?: number;
+  custom_boleto_fee_percent?: number;
+  custom_card_installments_fees?: any;
+  custom_pix_release_days?: number;
+  custom_boleto_release_days?: number;
+  custom_card_release_days?: number;
+  custom_security_reserve_percent?: number;
+  custom_anticipation_fee_percent?: number;
+}
+
+interface FinalSettings {
+  pix_fee_percent: number;
+  boleto_fee_percent: number;
+  card_installments_fees: any;
+  pix_release_days: number;
+  boleto_release_days: number;
+  card_release_days: number;
+  security_reserve_percent: number;
+  anticipation_fee_percent: number;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -193,7 +226,7 @@ Deno.serve(async (req) => {
 
     // Process different webhook events
     if (event === 'invoice.status_changed' || event === 'invoice.created') {
-      await processInvoiceStatusChange(supabase, sale, data, platformFeePercentage);
+      await processInvoiceStatusChange(supabase, sale, data);
     } else if (event === 'invoice.refund') {
       await processRefund(supabase, sale, data, platformFeePercentage);
     } else {
@@ -368,8 +401,7 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
 async function processInvoiceStatusChange(
   supabase: any, 
   sale: any, 
-  invoiceData: any, 
-  platformFeePercentage: number
+  invoiceData: any
 ) {
   const newStatus = invoiceData.status;
   const currentStatus = sale.status;
@@ -399,55 +431,107 @@ async function processInvoiceStatusChange(
     console.log('*** DEBUG WEBHOOK: Updating iugu_invoice_id:', invoiceData.id);
   }
 
-  // CORREÇÃO CRÍTICA: Determinar o status correto baseado no tipo de transação
-  if (newStatus === 'paid') {
-    if (isSubscription) {
-      // Para assinaturas, quando a fatura é paga, a assinatura fica ATIVA
-      updateData.status = 'active';
-      console.log('*** DEBUG WEBHOOK: Subscription invoice paid - setting status to ACTIVE');
-    } else {
-      // Para vendas normais, quando a fatura é paga, a venda fica PAGA
-      updateData.status = 'paid';
-      console.log('*** DEBUG WEBHOOK: Regular sale invoice paid - setting status to PAID');
+  // Update the iugu_status
+  updateData.iugu_status = newStatus;
+
+  // ENHANCED LOGIC: If payment is confirmed (paid status), calculate fees and financial data
+  if (newStatus === 'paid' && currentStatus !== 'paid') {
+    console.log('*** DEBUG WEBHOOK: Processing payment confirmation with financial calculations');
+    
+    try {
+      // Get producer_id from the sale
+      const producerId = sale.product?.producer_id;
+      if (!producerId) {
+        console.error('*** ERRO WEBHOOK: Producer ID not found in sale');
+        throw new Error('Producer ID not found in sale');
+      }
+
+      console.log('*** DEBUG WEBHOOK: Producer ID found:', producerId);
+
+      // Get financial settings (producer custom settings or platform defaults)
+      const finalSettings = await getFinancialSettings(supabase, producerId);
+      console.log('*** DEBUG WEBHOOK: Final settings obtained:', finalSettings);
+
+      // Calculate financial values
+      const paymentMethod = sale.payment_method_used;
+      const installments = sale.installments_chosen || 1;
+      const amountTotalCents = sale.amount_total_cents;
+
+      console.log('*** DEBUG WEBHOOK: Calculating fees with:', {
+        paymentMethod,
+        installments,
+        amountTotalCents
+      });
+
+      const platformFeeCents = calculatePlatformFee(finalSettings, paymentMethod, installments, amountTotalCents);
+      const producerShareCents = amountTotalCents - platformFeeCents;
+      const securityReserveCents = Math.round(amountTotalCents * (finalSettings.security_reserve_percent / 100));
+      
+      // Calculate release date
+      const releaseDate = calculateReleaseDate(finalSettings, paymentMethod);
+
+      console.log('*** DEBUG WEBHOOK: Calculated financial values:', {
+        platformFeeCents,
+        producerShareCents,
+        securityReserveCents,
+        releaseDate
+      });
+
+      // Set status based on transaction type
+      if (isSubscription) {
+        updateData.status = 'active'; // Subscription becomes active when paid
+      } else {
+        updateData.status = 'paid'; // Regular sale becomes paid
+      }
+
+      // Update financial fields
+      updateData.paid_at = new Date().toISOString();
+      updateData.payout_status = 'pending';
+      updateData.release_date = releaseDate;
+      updateData.platform_fee_cents = platformFeeCents;
+      updateData.producer_share_cents = producerShareCents;
+      updateData.security_reserve_cents = securityReserveCents;
+
+    } catch (error) {
+      console.error('*** ERRO WEBHOOK: Error calculating financial data:', error);
+      // Fall back to simple status update
+      if (isSubscription) {
+        updateData.status = 'active';
+      } else {
+        updateData.status = 'paid';
+      }
     }
   } else {
-    // Para outros status, usar o status como está
-    updateData.status = newStatus;
-    console.log('*** DEBUG WEBHOOK: Setting status to:', newStatus);
+    // For other status changes, determine appropriate status
+    if (isSubscription) {
+      if (newStatus === 'paid') {
+        updateData.status = 'active';
+      } else {
+        updateData.status = newStatus;
+      }
+    } else {
+      updateData.status = newStatus;
+    }
   }
 
-  // If payment is confirmed (paid status)
-  if (newStatus === 'paid' && currentStatus !== 'paid') {
-    console.log('*** DEBUG WEBHOOK: Processing payment confirmation');
-    
-    updateData.paid_at = new Date().toISOString();
+  // Update sale record
+  const { error: updateError } = await supabase
+    .from('sales')
+    .update(updateData)
+    .eq('id', sale.id);
 
-    // Calculate fees (reconfirm calculation)
-    const amountTotalCents = sale.amount_total_cents;
-    const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
-    const producerShareCents = amountTotalCents - platformFeeCents;
+  if (updateError) {
+    console.error('*** ERRO WEBHOOK: Error updating sale:', updateError);
+    throw updateError;
+  }
 
-    // Update sale with payment info
-    updateData.platform_fee_cents = platformFeeCents;
-    updateData.producer_share_cents = producerShareCents;
-
-    // Update sale record
-    const { error: updateError } = await supabase
-      .from('sales')
-      .update(updateData)
-      .eq('id', sale.id);
-
-    if (updateError) {
-      console.error('*** ERRO WEBHOOK: Error updating sale:', updateError);
-      throw updateError;
-    }
-
-    // Update producer balance using UPSERT logic
+  // Update producer balance if payment was confirmed
+  if (newStatus === 'paid' && currentStatus !== 'paid' && updateData.producer_share_cents) {
     const producerId = sale.product?.producer_id;
     if (producerId) {
       console.log('*** DEBUG WEBHOOK: Updating producer balance:', {
         producer_id: producerId,
-        amount_to_add: producerShareCents
+        amount_to_add: updateData.producer_share_cents
       });
 
       // Try to get current balance first
@@ -465,7 +549,7 @@ async function processInvoiceStatusChange(
           .from('producer_financials')
           .insert({
             producer_id: producerId,
-            available_balance_cents: producerShareCents,
+            available_balance_cents: updateData.producer_share_cents,
             pending_balance_cents: 0,
             updated_at: new Date().toISOString()
           });
@@ -475,7 +559,7 @@ async function processInvoiceStatusChange(
         } else {
           console.log('*** DEBUG WEBHOOK: Producer financials record created successfully:', {
             producer_id: producerId,
-            initial_balance: producerShareCents
+            initial_balance: updateData.producer_share_cents
           });
         }
       } else if (getBalanceError) {
@@ -483,11 +567,11 @@ async function processInvoiceStatusChange(
       } else {
         // Record exists, update it
         const currentBalance = producerData.available_balance_cents;
-        const newBalance = currentBalance + producerShareCents;
+        const newBalance = currentBalance + updateData.producer_share_cents;
 
         console.log('*** DEBUG WEBHOOK: Balance calculation:', {
           current_balance: currentBalance,
-          amount_to_add: producerShareCents,
+          amount_to_add: updateData.producer_share_cents,
           new_balance: newBalance
         });
 
@@ -510,20 +594,114 @@ async function processInvoiceStatusChange(
         }
       }
     }
-  } else {
-    // For other status changes (canceled, expired, failed, etc.) or invoice.created
-    const { error: updateError } = await supabase
-      .from('sales')
-      .update(updateData)
-      .eq('id', sale.id);
-
-    if (updateError) {
-      console.error('*** ERRO WEBHOOK: Error updating sale status:', updateError);
-      throw updateError;
-    }
   }
 
   console.log('*** DEBUG WEBHOOK: Status change processed successfully');
+}
+
+async function getFinancialSettings(supabase: any, producerId: string): Promise<FinalSettings> {
+  console.log('*** DEBUG WEBHOOK: Getting financial settings for producer:', producerId);
+
+  // First, try to get producer custom settings
+  const { data: producerSettings, error: producerError } = await supabase
+    .from('producer_settings')
+    .select('*')
+    .eq('producer_id', producerId)
+    .single();
+
+  if (producerError && producerError.code !== 'PGRST116') {
+    console.error('*** ERROR WEBHOOK: Error fetching producer settings:', producerError);
+  }
+
+  console.log('*** DEBUG WEBHOOK: Producer settings:', producerSettings);
+
+  // Get platform default settings
+  const { data: platformSettings, error: platformError } = await supabase
+    .from('platform_settings')
+    .select('*')
+    .single();
+
+  if (platformError) {
+    console.error('*** ERROR WEBHOOK: Error fetching platform settings:', platformError);
+    throw new Error('Could not fetch platform settings');
+  }
+
+  console.log('*** DEBUG WEBHOOK: Platform settings:', platformSettings);
+
+  // Create final settings object (producer custom overrides platform defaults)
+  const finalSettings: FinalSettings = {
+    pix_fee_percent: producerSettings?.custom_pix_fee_percent ?? platformSettings.default_pix_fee_percent ?? 5.0,
+    boleto_fee_percent: producerSettings?.custom_boleto_fee_percent ?? platformSettings.default_boleto_fee_percent ?? 5.0,
+    card_installments_fees: producerSettings?.custom_card_installments_fees ?? platformSettings.default_card_installments_fees ?? {"1": 5.0},
+    pix_release_days: producerSettings?.custom_pix_release_days ?? platformSettings.default_pix_release_days ?? 2,
+    boleto_release_days: producerSettings?.custom_boleto_release_days ?? platformSettings.default_boleto_release_days ?? 2,
+    card_release_days: producerSettings?.custom_card_release_days ?? platformSettings.default_card_release_days ?? 15,
+    security_reserve_percent: producerSettings?.custom_security_reserve_percent ?? platformSettings.default_security_reserve_percent ?? 10.0,
+    anticipation_fee_percent: producerSettings?.custom_anticipation_fee_percent ?? platformSettings.default_anticipation_fee_percent ?? 5.0
+  };
+
+  console.log('*** DEBUG WEBHOOK: Final merged settings:', finalSettings);
+  return finalSettings;
+}
+
+function calculatePlatformFee(settings: FinalSettings, paymentMethod: string, installments: number, amountCents: number): number {
+  console.log('*** DEBUG WEBHOOK: Calculating platform fee:', { paymentMethod, installments, amountCents });
+
+  let feePercent = 5.0; // Default fallback
+
+  switch (paymentMethod.toLowerCase()) {
+    case 'pix':
+      feePercent = settings.pix_fee_percent;
+      break;
+    case 'bank_slip':
+    case 'boleto':
+      feePercent = settings.boleto_fee_percent;
+      break;
+    case 'credit_card':
+    case 'card':
+      const installmentKey = installments.toString();
+      feePercent = settings.card_installments_fees[installmentKey] ?? settings.card_installments_fees["1"] ?? 5.0;
+      break;
+    default:
+      console.warn('*** WARNING WEBHOOK: Unknown payment method, using default fee:', paymentMethod);
+      feePercent = 5.0;
+  }
+
+  const feeCents = Math.round(amountCents * (feePercent / 100));
+  console.log('*** DEBUG WEBHOOK: Calculated fee:', { feePercent, feeCents });
+  
+  return feeCents;
+}
+
+function calculateReleaseDate(settings: FinalSettings, paymentMethod: string): string {
+  console.log('*** DEBUG WEBHOOK: Calculating release date for payment method:', paymentMethod);
+
+  let releaseDays = 15; // Default fallback
+
+  switch (paymentMethod.toLowerCase()) {
+    case 'pix':
+      releaseDays = settings.pix_release_days;
+      break;
+    case 'bank_slip':
+    case 'boleto':
+      releaseDays = settings.boleto_release_days;
+      break;
+    case 'credit_card':
+    case 'card':
+      releaseDays = settings.card_release_days;
+      break;
+    default:
+      console.warn('*** WARNING WEBHOOK: Unknown payment method, using default release days:', paymentMethod);
+      releaseDays = 15;
+  }
+
+  const releaseDate = new Date();
+  releaseDate.setDate(releaseDate.getDate() + releaseDays);
+  
+  const releaseDateString = releaseDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+  console.log('*** DEBUG WEBHOOK: Calculated release date:', { releaseDays, releaseDateString });
+  
+  return releaseDateString;
 }
 
 async function processRefund(
