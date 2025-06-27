@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      financial_transactions: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          description: string
+          id: string
+          producer_id: string
+          sale_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          description: string
+          id?: string
+          producer_id: string
+          sale_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          description?: string
+          id?: string
+          producer_id?: string
+          sale_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
