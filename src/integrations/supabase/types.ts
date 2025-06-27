@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      platform_settings: {
+        Row: {
+          created_at: string
+          default_fees_json: Json
+          default_release_rules_json: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_fees_json?: Json
+          default_release_rules_json?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_fees_json?: Json
+          default_release_rules_json?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       producer_financials: {
         Row: {
           available_balance_cents: number
@@ -46,6 +70,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "producer_financials_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      producer_settings: {
+        Row: {
+          created_at: string
+          custom_fees_json: Json | null
+          custom_release_rules_json: Json | null
+          id: string
+          producer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_fees_json?: Json | null
+          custom_release_rules_json?: Json | null
+          id?: string
+          producer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_fees_json?: Json | null
+          custom_release_rules_json?: Json | null
+          id?: string
+          producer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "producer_settings_producer_id_fkey"
             columns: ["producer_id"]
             isOneToOne: true
             referencedRelation: "profiles"

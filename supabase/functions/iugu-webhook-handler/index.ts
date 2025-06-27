@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -17,6 +16,23 @@ interface IuguWebhookPayload {
     [key: string]: any;
   };
   webhook_id?: string;
+}
+
+interface FeesConfig {
+  pix_fee_percent: number;
+  bank_slip_fee_percent: number;
+  credit_card_fees: {
+    [installments: string]: number;
+  };
+}
+
+interface ReleaseRulesConfig {
+  release_days: {
+    credit_card: number;
+    pix: number;
+    bank_slip: number;
+  };
+  security_reserve_days: number;
 }
 
 Deno.serve(async (req) => {
@@ -39,9 +55,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get platform fee percentage
-    const platformFeePercentage = parseFloat(Deno.env.get('PLATFORM_FEE_PERCENTAGE') || '0.05');
 
     // Detect Content-Type and parse payload accordingly
     const contentType = req.headers.get('content-type') || '';
@@ -194,9 +207,9 @@ Deno.serve(async (req) => {
 
     // Process different webhook events
     if (event === 'invoice.status_changed' || event === 'invoice.created') {
-      await processInvoiceStatusChange(supabase, sale, data, platformFeePercentage);
+      await processInvoiceStatusChange(supabase, sale, data);
     } else if (event === 'invoice.refund') {
-      await processRefund(supabase, sale, data, platformFeePercentage);
+      await processRefund(supabase, sale, data);
     } else {
       console.log('*** DEBUG WEBHOOK: Unhandled webhook event:', event);
       // Still update the iugu_status if it's different
@@ -244,6 +257,139 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+async function getProducerSettings(supabase: any, producerId: string): Promise<{ feesConfig: FeesConfig; releaseRulesConfig: ReleaseRulesConfig }> {
+  console.log('*** DEBUG WEBHOOK: Getting producer settings for producer:', producerId);
+
+  // First, try to get producer-specific settings
+  const { data: producerSettings, error: producerError } = await supabase
+    .from('producer_settings')
+    .select('custom_fees_json, custom_release_rules_json')
+    .eq('producer_id', producerId)
+    .single();
+
+  if (producerError && producerError.code !== 'PGRST116') {
+    console.error('*** ERRO WEBHOOK: Error getting producer settings:', producerError);
+  }
+
+  // Get platform default settings
+  const { data: platformSettings, error: platformError } = await supabase
+    .from('platform_settings')
+    .select('default_fees_json, default_release_rules_json')
+    .single();
+
+  if (platformError) {
+    console.error('*** ERRO WEBHOOK: Error getting platform settings:', platformError);
+    // Fallback to hardcoded defaults if platform settings are not available
+    return {
+      feesConfig: {
+        pix_fee_percent: 5.0,
+        bank_slip_fee_percent: 5.0,
+        credit_card_fees: {
+          '1': 5.0,
+          '2': 6.85,
+          '3': 8.70,
+          '4': 10.55,
+          '5': 12.40,
+          '6': 14.25
+        }
+      },
+      releaseRulesConfig: {
+        release_days: {
+          credit_card: 15,
+          pix: 2,
+          bank_slip: 2
+        },
+        security_reserve_days: 30
+      }
+    };
+  }
+
+  // Use producer-specific settings if available, otherwise use platform defaults
+  const feesConfig = (producerSettings?.custom_fees_json || platformSettings.default_fees_json) as FeesConfig;
+  const releaseRulesConfig = (producerSettings?.custom_release_rules_json || platformSettings.default_release_rules_json) as ReleaseRulesConfig;
+
+  console.log('*** DEBUG WEBHOOK: Using settings:', {
+    isCustom: !!producerSettings?.custom_fees_json,
+    feesConfig,
+    releaseRulesConfig
+  });
+
+  return { feesConfig, releaseRulesConfig };
+}
+
+function calculatePlatformFee(
+  amountTotalCents: number,
+  paymentMethod: string,
+  installments: number,
+  feesConfig: FeesConfig
+): number {
+  let feePercent = 0;
+
+  switch (paymentMethod) {
+    case 'pix':
+      feePercent = feesConfig.pix_fee_percent;
+      break;
+    case 'bank_slip':
+      feePercent = feesConfig.bank_slip_fee_percent;
+      break;
+    case 'credit_card':
+      const installmentKey = installments.toString();
+      feePercent = feesConfig.credit_card_fees[installmentKey] || feesConfig.credit_card_fees['1'];
+      break;
+    default:
+      console.warn('*** WARNING WEBHOOK: Unknown payment method:', paymentMethod);
+      feePercent = 5.0; // Default fallback
+  }
+
+  const platformFeeCents = Math.round(amountTotalCents * (feePercent / 100));
+  
+  console.log('*** DEBUG WEBHOOK: Platform fee calculation:', {
+    amountTotalCents,
+    paymentMethod,
+    installments,
+    feePercent,
+    platformFeeCents
+  });
+
+  return platformFeeCents;
+}
+
+function calculateReleaseDate(
+  paidAt: string,
+  paymentMethod: string,
+  releaseRulesConfig: ReleaseRulesConfig
+): string {
+  const paidDate = new Date(paidAt);
+  let releaseDays = 0;
+
+  switch (paymentMethod) {
+    case 'credit_card':
+      releaseDays = releaseRulesConfig.release_days.credit_card;
+      break;
+    case 'pix':
+      releaseDays = releaseRulesConfig.release_days.pix;
+      break;
+    case 'bank_slip':
+      releaseDays = releaseRulesConfig.release_days.bank_slip;
+      break;
+    default:
+      console.warn('*** WARNING WEBHOOK: Unknown payment method for release date:', paymentMethod);
+      releaseDays = 15; // Default fallback
+  }
+
+  const releaseDate = new Date(paidDate);
+  releaseDate.setDate(releaseDate.getDate() + releaseDays);
+
+  console.log('*** DEBUG WEBHOOK: Release date calculation:', {
+    paidAt,
+    paymentMethod,
+    releaseDays,
+    releaseDate: releaseDate.toISOString().split('T')[0]
+  });
+
+  return releaseDate.toISOString().split('T')[0];
+}
 
 async function handleSubscriptionEvent(supabase: any, event: string, data: any) {
   console.log('*** DEBUG WEBHOOK: Processing subscription event:', event, 'with data:', data);
@@ -378,8 +524,7 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
 async function processInvoiceStatusChange(
   supabase: any, 
   sale: any, 
-  invoiceData: any, 
-  platformFeePercentage: number
+  invoiceData: any
 ) {
   const newIuguStatus = invoiceData.status;
   const currentStatus = sale.status;
@@ -442,28 +587,55 @@ async function processInvoiceStatusChange(
     
     updateData.paid_at = new Date().toISOString();
 
-    // Calculate fees and release date
+    // Get producer settings for dynamic fee calculation
+    const producerId = sale.product?.producer_id;
+    if (!producerId) {
+      console.error('*** ERRO WEBHOOK: Producer ID not found in sale');
+      throw new Error('Producer ID not found in sale');
+    }
+
+    const { feesConfig, releaseRulesConfig } = await getProducerSettings(supabase, producerId);
+
+    // Calculate fees and amounts using dynamic configuration
     const amountTotalCents = sale.amount_total_cents;
-    const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
-    const securityReserveCents = Math.round(amountTotalCents * 0.1); // 10% security reserve
-    const producerShareCents = amountTotalCents - platformFeeCents - securityReserveCents;
-    
-    // Calculate release date (30 days from payment)
-    const releaseDate = new Date();
-    releaseDate.setDate(releaseDate.getDate() + 30);
+    const paymentMethod = sale.payment_method_used;
+    const installments = sale.installments_chosen || 1;
+
+    // Calculate platform fee using dynamic configuration
+    const platformFeeCents = calculatePlatformFee(
+      amountTotalCents,
+      paymentMethod,
+      installments,
+      feesConfig
+    );
+
+    // Calculate producer share (total - platform fee)
+    const producerShareCents = amountTotalCents - platformFeeCents;
+
+    // Calculate security reserve (10% of total amount)
+    const securityReserveCents = Math.round(amountTotalCents * 0.1);
+
+    // Calculate release date using dynamic configuration
+    const releaseDate = calculateReleaseDate(
+      updateData.paid_at,
+      paymentMethod,
+      releaseRulesConfig
+    );
 
     // Update sale with payment info
     updateData.platform_fee_cents = platformFeeCents;
     updateData.producer_share_cents = producerShareCents;
     updateData.security_reserve_cents = securityReserveCents;
-    updateData.release_date = releaseDate.toISOString().split('T')[0]; // Format as DATE
+    updateData.release_date = releaseDate;
 
     console.log('*** DEBUG WEBHOOK: Calculated payment values:', {
       amountTotalCents,
       platformFeeCents,
       securityReserveCents,
       producerShareCents,
-      releaseDate: updateData.release_date
+      releaseDate,
+      paymentMethod,
+      installments
     });
 
     // Update sale record
@@ -478,7 +650,6 @@ async function processInvoiceStatusChange(
     }
 
     // Update producer balance - only add the producer share (not the security reserve)
-    const producerId = sale.product?.producer_id;
     if (producerId) {
       console.log('*** DEBUG WEBHOOK: Updating producer balance:', {
         producer_id: producerId,
@@ -564,8 +735,7 @@ async function processInvoiceStatusChange(
 async function processRefund(
   supabase: any, 
   sale: any, 
-  refundData: any, 
-  platformFeePercentage: number
+  refundData: any
 ) {
   console.log('*** DEBUG WEBHOOK: Processing refund');
 
