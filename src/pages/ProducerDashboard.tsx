@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import ProducerSidebar from "@/components/ProducerSidebar";
+import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { useProducerDashboardData } from "@/hooks/useProducerDashboardData";
 import { Skeleton } from "@/components/ui/skeleton";
 

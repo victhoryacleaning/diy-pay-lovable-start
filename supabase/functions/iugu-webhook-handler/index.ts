@@ -1,11 +1,9 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
 }
 
 interface IuguWebhookPayload {
@@ -21,87 +19,6 @@ interface IuguWebhookPayload {
   webhook_id?: string;
 }
 
-interface FeesConfig {
-  pix_fee_percent: number;
-  bank_slip_fee_percent: number;
-  credit_card_fees: {
-    [installments: string]: number;
-  };
-}
-
-interface ReleaseRulesConfig {
-  release_days: {
-    credit_card: number;
-    pix: number;
-    bank_slip: number;
-  };
-  security_reserve_days: number;
-}
-
-// Rate limiting for webhook endpoints
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(ip: string, maxRequests: number = 100, windowMs: number = 60000): boolean {
-  const now = Date.now();
-  const limit = rateLimitMap.get(ip);
-  
-  if (!limit || now > limit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  
-  if (limit.count >= maxRequests) {
-    return false;
-  }
-  
-  limit.count++;
-  return true;
-}
-
-function validateWebhookSignature(payload: string, signature: string, secret: string): boolean {
-  if (!signature || !secret) {
-    console.log('*** SECURITY WARNING: Missing signature or secret for webhook validation ***');
-    return false;
-  }
-  
-  try {
-    // Iugu typically uses HMAC-SHA256 for webhook signatures
-    const crypto = globalThis.crypto;
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    
-    // For now, we'll log the signature validation attempt
-    // In production, implement proper HMAC validation when Iugu provides the secret
-    console.log('*** DEBUG WEBHOOK: Signature validation attempted ***');
-    
-    // Temporary: return true if signature exists (until proper implementation)
-    return signature.length > 0;
-  } catch (error) {
-    console.error('*** SECURITY ERROR: Webhook signature validation failed:', error);
-    return false;
-  }
-}
-
-function sanitizeWebhookData(data: any): any {
-  if (typeof data === 'string') {
-    return data.replace(/[<>]/g, '');
-  }
-  
-  if (Array.isArray(data)) {
-    return data.map(sanitizeWebhookData);
-  }
-  
-  if (typeof data === 'object' && data !== null) {
-    const sanitized: any = {};
-    for (const [key, value] of Object.entries(data)) {
-      sanitized[key] = sanitizeWebhookData(value);
-    }
-    return sanitized;
-  }
-  
-  return data;
-}
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -109,34 +26,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Rate limiting by IP
-    const clientIP = req.headers.get('cf-connecting-ip') || 
-                    req.headers.get('x-forwarded-for') || 
-                    req.headers.get('x-real-ip') || 
-                    'unknown';
-    
-    if (!checkRateLimit(clientIP, 50, 60000)) {
-      console.log('*** SECURITY WARNING: Rate limit exceeded for IP:', clientIP);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Rate limit exceeded',
-          functionName: 'iugu-webhook-handler'
-        }),
-        { 
-          status: 429, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
     console.log('*** DEBUG WEBHOOK: Webhook received from Iugu ***');
     console.log('*** DEBUG WEBHOOK: Method:', req.method);
-    console.log('*** DEBUG WEBHOOK: Client IP:', clientIP);
-    
-    // Security: Validate webhook signature if available
-    const signature = req.headers.get('x-iugu-signature') || req.headers.get('x-signature');
-    const webhookSecret = Deno.env.get('IUGU_WEBHOOK_SECRET');
+    console.log('*** DEBUG WEBHOOK: Headers:', Object.fromEntries(req.headers.entries()));
     
     // Extract sale_id from URL query string
     const url = new URL(req.url);
@@ -148,19 +40,20 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get platform fee percentage
+    const platformFeePercentage = parseFloat(Deno.env.get('PLATFORM_FEE_PERCENTAGE') || '0.05');
+
     // Detect Content-Type and parse payload accordingly
     const contentType = req.headers.get('content-type') || '';
     console.log('*** DEBUG WEBHOOK: Content-Type detected:', contentType);
     
     let payload: IuguWebhookPayload;
-    let rawPayload = '';
 
     if (contentType.includes('application/x-www-form-urlencoded')) {
       console.log('*** DEBUG WEBHOOK: Processing form-urlencoded payload ***');
       
       // Read as form data
       const formDataText = await req.text();
-      rawPayload = formDataText;
       console.log('*** DEBUG WEBHOOK: Raw form data:', formDataText);
       
       const params = new URLSearchParams(formDataText);
@@ -199,7 +92,7 @@ Deno.serve(async (req) => {
       // Create payload object
       payload = {
         event: event,
-        data: sanitizeWebhookData(data),
+        data: data,
         webhook_id: params.get('webhook_id') || undefined
       };
 
@@ -208,9 +101,7 @@ Deno.serve(async (req) => {
     } else if (contentType.includes('application/json')) {
       console.log('*** DEBUG WEBHOOK: Processing JSON payload ***');
       
-      rawPayload = await req.text();
-      payload = JSON.parse(rawPayload);
-      payload.data = sanitizeWebhookData(payload.data);
+      payload = await req.json();
       console.log('*** DEBUG WEBHOOK: Parsed JSON payload:', JSON.stringify(payload, null, 2));
 
     } else {
@@ -227,28 +118,6 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
-    }
-
-    // Enhanced signature validation
-    if (webhookSecret && signature) {
-      const isValidSignature = validateWebhookSignature(rawPayload, signature, webhookSecret);
-      if (!isValidSignature) {
-        console.error('*** SECURITY ERROR: Invalid webhook signature ***');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Invalid webhook signature',
-            functionName: 'iugu-webhook-handler'
-          }),
-          { 
-            status: 401, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      console.log('*** SECURITY: Webhook signature validated successfully ***');
-    } else {
-      console.log('*** SECURITY WARNING: Webhook signature validation skipped (no secret or signature) ***');
     }
 
     console.log('*** DEBUG WEBHOOK: Final payload for processing:', {
@@ -316,8 +185,7 @@ Deno.serve(async (req) => {
     console.log('*** DEBUG WEBHOOK: Found sale:', {
       sale_id: sale.id,
       current_status: sale.status,
-      current_iugu_status: sale.iugu_status,
-      new_iugu_status: data.status,
+      new_status: data.status,
       product_id: sale.product_id,
       producer_id: sale.product?.producer_id,
       is_subscription: !!sale.iugu_subscription_id
@@ -325,30 +193,19 @@ Deno.serve(async (req) => {
 
     // Process different webhook events
     if (event === 'invoice.status_changed' || event === 'invoice.created') {
-      await processInvoiceStatusChange(supabase, sale, data);
+      await processInvoiceStatusChange(supabase, sale, data, platformFeePercentage);
     } else if (event === 'invoice.refund') {
-      await processRefund(supabase, sale, data);
+      await processRefund(supabase, sale, data, platformFeePercentage);
     } else {
       console.log('*** DEBUG WEBHOOK: Unhandled webhook event:', event);
-      // Still update the iugu_status if it's different
-      if (sale.iugu_status !== data.status) {
+      // Still update the status if it's different
+      if (sale.status !== data.status) {
         await supabase
           .from('sales')
-          .update({ iugu_status: data.status })
+          .update({ status: data.status })
           .eq('id', sale.id);
       }
     }
-
-    // Log security event
-    await logSecurityEvent(supabase, {
-      event_type: 'webhook_processed',
-      client_ip: clientIP,
-      details: {
-        webhook_event: event,
-        sale_id: sale.id,
-        status: data.status
-      }
-    });
 
     return new Response(
       JSON.stringify({ 
@@ -356,7 +213,7 @@ Deno.serve(async (req) => {
         message: 'Webhook processed successfully',
         sale_id: sale.id,
         event: event,
-        iugu_status: data.status,
+        status: data.status,
         functionName: 'iugu-webhook-handler'
       }),
       { 
@@ -386,158 +243,6 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-async function logSecurityEvent(supabase: any, event: {
-  event_type: string;
-  client_ip: string;
-  details: any;
-}) {
-  try {
-    await supabase
-      .from('security_logs')
-      .insert({
-        event_type: event.event_type,
-        client_ip: event.client_ip,
-        details: event.details,
-        created_at: new Date().toISOString()
-      });
-  } catch (error) {
-    console.error('*** ERROR: Failed to log security event:', error);
-  }
-}
-
-async function getProducerSettings(supabase: any, producerId: string): Promise<{ feesConfig: FeesConfig; releaseRulesConfig: ReleaseRulesConfig }> {
-  console.log('*** DEBUG WEBHOOK: Getting producer settings for producer:', producerId);
-
-  // First, try to get producer-specific settings
-  const { data: producerSettings, error: producerError } = await supabase
-    .from('producer_settings')
-    .select('custom_fees_json, custom_release_rules_json')
-    .eq('producer_id', producerId)
-    .single();
-
-  if (producerError && producerError.code !== 'PGRST116') {
-    console.error('*** ERRO WEBHOOK: Error getting producer settings:', producerError);
-  }
-
-  // Get platform default settings
-  const { data: platformSettings, error: platformError } = await supabase
-    .from('platform_settings')
-    .select('default_fees_json, default_release_rules_json')
-    .single();
-
-  if (platformError) {
-    console.error('*** ERRO WEBHOOK: Error getting platform settings:', platformError);
-    // Fallback to hardcoded defaults if platform settings are not available
-    return {
-      feesConfig: {
-        pix_fee_percent: 5.0,
-        bank_slip_fee_percent: 5.0,
-        credit_card_fees: {
-          '1': 5.0,
-          '2': 6.85,
-          '3': 8.70,
-          '4': 10.55,
-          '5': 12.40,
-          '6': 14.25
-        }
-      },
-      releaseRulesConfig: {
-        release_days: {
-          credit_card: 15,
-          pix: 2,
-          bank_slip: 2
-        },
-        security_reserve_days: 30
-      }
-    };
-  }
-
-  // Use producer-specific settings if available, otherwise use platform defaults
-  const feesConfig = (producerSettings?.custom_fees_json || platformSettings.default_fees_json) as FeesConfig;
-  const releaseRulesConfig = (producerSettings?.custom_release_rules_json || platformSettings.default_release_rules_json) as ReleaseRulesConfig;
-
-  console.log('*** DEBUG WEBHOOK: Using settings:', {
-    isCustom: !!producerSettings?.custom_fees_json,
-    feesConfig,
-    releaseRulesConfig
-  });
-
-  return { feesConfig, releaseRulesConfig };
-}
-
-function calculatePlatformFee(
-  amountTotalCents: number,
-  paymentMethod: string,
-  installments: number,
-  feesConfig: FeesConfig
-): number {
-  let feePercent = 0;
-
-  switch (paymentMethod) {
-    case 'pix':
-      feePercent = feesConfig.pix_fee_percent;
-      break;
-    case 'bank_slip':
-      feePercent = feesConfig.bank_slip_fee_percent;
-      break;
-    case 'credit_card':
-      const installmentKey = installments.toString();
-      feePercent = feesConfig.credit_card_fees[installmentKey] || feesConfig.credit_card_fees['1'];
-      break;
-    default:
-      console.warn('*** WARNING WEBHOOK: Unknown payment method:', paymentMethod);
-      feePercent = 5.0; // Default fallback
-  }
-
-  const platformFeeCents = Math.round(amountTotalCents * (feePercent / 100));
-  
-  console.log('*** DEBUG WEBHOOK: Platform fee calculation:', {
-    amountTotalCents,
-    paymentMethod,
-    installments,
-    feePercent,
-    platformFeeCents
-  });
-
-  return platformFeeCents;
-}
-
-function calculateReleaseDate(
-  paidAt: string,
-  paymentMethod: string,
-  releaseRulesConfig: ReleaseRulesConfig
-): string {
-  const paidDate = new Date(paidAt);
-  let releaseDays = 0;
-
-  switch (paymentMethod) {
-    case 'credit_card':
-      releaseDays = releaseRulesConfig.release_days.credit_card;
-      break;
-    case 'pix':
-      releaseDays = releaseRulesConfig.release_days.pix;
-      break;
-    case 'bank_slip':
-      releaseDays = releaseRulesConfig.release_days.bank_slip;
-      break;
-    default:
-      console.warn('*** WARNING WEBHOOK: Unknown payment method for release date:', paymentMethod);
-      releaseDays = 15; // Default fallback
-  }
-
-  const releaseDate = new Date(paidDate);
-  releaseDate.setDate(releaseDate.getDate() + releaseDays);
-
-  console.log('*** DEBUG WEBHOOK: Release date calculation:', {
-    paidAt,
-    paymentMethod,
-    releaseDays,
-    releaseDate: releaseDate.toISOString().split('T')[0]
-  });
-
-  return releaseDate.toISOString().split('T')[0];
-}
 
 async function handleSubscriptionEvent(supabase: any, event: string, data: any) {
   console.log('*** DEBUG WEBHOOK: Processing subscription event:', event, 'with data:', data);
@@ -581,25 +286,20 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
   }
 
   let newStatus: string;
-  let newIuguStatus: string;
   
   switch (event) {
     case 'subscription.created':
-      newStatus = 'pending_payment';
-      newIuguStatus = 'pending';
+      newStatus = 'pending';
       break;
     case 'subscription.activated':
-      newStatus = 'paid';
-      newIuguStatus = 'active';
+      newStatus = 'active';
       break;
     case 'subscription.suspended':
     case 'subscription.expired':
       newStatus = 'expired';
-      newIuguStatus = 'expired';
       break;
     case 'subscription.canceled':
-      newStatus = 'cancelled';
-      newIuguStatus = 'cancelled';
+      newStatus = 'canceled';
       break;
     default:
       console.log('*** DEBUG WEBHOOK: Unhandled subscription event:', event);
@@ -620,9 +320,7 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
     sale_id: sale.id,
     subscription_id: subscriptionId,
     old_status: sale.status,
-    old_iugu_status: sale.iugu_status,
-    new_status: newStatus,
-    new_iugu_status: newIuguStatus
+    new_status: newStatus
   });
 
   // Update the subscription status
@@ -630,7 +328,6 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
     .from('sales')
     .update({ 
       status: newStatus,
-      iugu_status: newIuguStatus,
       updated_at: new Date().toISOString()
     })
     .eq('id', sale.id);
@@ -659,7 +356,6 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
       sale_id: sale.id,
       event: event,
       new_status: newStatus,
-      new_iugu_status: newIuguStatus,
       functionName: 'iugu-webhook-handler'
     }),
     { 
@@ -672,30 +368,28 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
 async function processInvoiceStatusChange(
   supabase: any, 
   sale: any, 
-  invoiceData: any
+  invoiceData: any, 
+  platformFeePercentage: number
 ) {
-  const newIuguStatus = invoiceData.status;
+  const newStatus = invoiceData.status;
   const currentStatus = sale.status;
-  const currentIuguStatus = sale.iugu_status;
   const isSubscription = !!sale.iugu_subscription_id;
 
   console.log('*** DEBUG WEBHOOK: Processing status change:', { 
     currentStatus, 
-    currentIuguStatus,
-    newIuguStatus, 
+    newStatus, 
     isSubscription,
     subscriptionId: sale.iugu_subscription_id 
   });
 
-  // Idempotency check - if iugu_status hasn't changed, do nothing
-  if (currentIuguStatus === newIuguStatus) {
-    console.log('*** DEBUG WEBHOOK: Iugu status unchanged, skipping processing');
+  // Idempotency check - if status hasn't changed, do nothing
+  if (currentStatus === newStatus) {
+    console.log('*** DEBUG WEBHOOK: Status unchanged, skipping processing');
     return;
   }
 
-  // Update the sale iugu_status
+  // Update the sale status
   const updateData: any = {
-    iugu_status: newIuguStatus,
     updated_at: new Date().toISOString()
   };
 
@@ -705,86 +399,37 @@ async function processInvoiceStatusChange(
     console.log('*** DEBUG WEBHOOK: Updating iugu_invoice_id:', invoiceData.id);
   }
 
-  // Determinar o novo status interno com base no status da Iugu
-  if (newIuguStatus === 'paid') {
+  // CORREÇÃO CRÍTICA: Determinar o status correto baseado no tipo de transação
+  if (newStatus === 'paid') {
     if (isSubscription) {
-      // Para assinaturas, quando a fatura é paga, a assinatura fica PAGA
-      updateData.status = 'paid';
-      console.log('*** DEBUG WEBHOOK: Subscription invoice paid - setting status to PAID');
+      // Para assinaturas, quando a fatura é paga, a assinatura fica ATIVA
+      updateData.status = 'active';
+      console.log('*** DEBUG WEBHOOK: Subscription invoice paid - setting status to ACTIVE');
     } else {
       // Para vendas normais, quando a fatura é paga, a venda fica PAGA
       updateData.status = 'paid';
       console.log('*** DEBUG WEBHOOK: Regular sale invoice paid - setting status to PAID');
     }
-  } else if (newIuguStatus === 'pending') {
-    updateData.status = 'pending_payment';
-  } else if (newIuguStatus === 'cancelled' || newIuguStatus === 'canceled') {
-    updateData.status = 'cancelled';
-  } else if (newIuguStatus === 'expired') {
-    updateData.status = 'expired';
-  } else if (newIuguStatus === 'failed') {
-    updateData.status = 'failed';
   } else {
-    // Para outros status, manter o status atual
-    console.log('*** DEBUG WEBHOOK: Unknown iugu_status, keeping current status:', newIuguStatus);
+    // Para outros status, usar o status como está
+    updateData.status = newStatus;
+    console.log('*** DEBUG WEBHOOK: Setting status to:', newStatus);
   }
 
-  // If payment is confirmed (paid status) and wasn't paid before
-  if (newIuguStatus === 'paid' && currentIuguStatus !== 'paid') {
+  // If payment is confirmed (paid status)
+  if (newStatus === 'paid' && currentStatus !== 'paid') {
     console.log('*** DEBUG WEBHOOK: Processing payment confirmation');
     
     updateData.paid_at = new Date().toISOString();
 
-    // Get producer settings for dynamic fee calculation
-    const producerId = sale.product?.producer_id;
-    if (!producerId) {
-      console.error('*** ERRO WEBHOOK: Producer ID not found in sale');
-      throw new Error('Producer ID not found in sale');
-    }
-
-    const { feesConfig, releaseRulesConfig } = await getProducerSettings(supabase, producerId);
-
-    // Calculate fees and amounts using dynamic configuration
+    // Calculate fees (reconfirm calculation)
     const amountTotalCents = sale.amount_total_cents;
-    const paymentMethod = sale.payment_method_used;
-    const installments = sale.installments_chosen || 1;
-
-    // Calculate platform fee using dynamic configuration
-    const platformFeeCents = calculatePlatformFee(
-      amountTotalCents,
-      paymentMethod,
-      installments,
-      feesConfig
-    );
-
-    // Calculate producer share (total - platform fee)
+    const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
     const producerShareCents = amountTotalCents - platformFeeCents;
-
-    // Calculate security reserve (10% of total amount)
-    const securityReserveCents = Math.round(amountTotalCents * 0.1);
-
-    // Calculate release date using dynamic configuration
-    const releaseDate = calculateReleaseDate(
-      updateData.paid_at,
-      paymentMethod,
-      releaseRulesConfig
-    );
 
     // Update sale with payment info
     updateData.platform_fee_cents = platformFeeCents;
     updateData.producer_share_cents = producerShareCents;
-    updateData.security_reserve_cents = securityReserveCents;
-    updateData.release_date = releaseDate;
-
-    console.log('*** DEBUG WEBHOOK: Calculated payment values:', {
-      amountTotalCents,
-      platformFeeCents,
-      securityReserveCents,
-      producerShareCents,
-      releaseDate,
-      paymentMethod,
-      installments
-    });
 
     // Update sale record
     const { error: updateError } = await supabase
@@ -797,7 +442,8 @@ async function processInvoiceStatusChange(
       throw updateError;
     }
 
-    // Update producer balance - only add the producer share (not the security reserve)
+    // Update producer balance using UPSERT logic
+    const producerId = sale.product?.producer_id;
     if (producerId) {
       console.log('*** DEBUG WEBHOOK: Updating producer balance:', {
         producer_id: producerId,
@@ -865,7 +511,7 @@ async function processInvoiceStatusChange(
       }
     }
   } else {
-    // For other status changes just update the status
+    // For other status changes (canceled, expired, failed, etc.) or invoice.created
     const { error: updateError } = await supabase
       .from('sales')
       .update(updateData)
@@ -883,7 +529,8 @@ async function processInvoiceStatusChange(
 async function processRefund(
   supabase: any, 
   sale: any, 
-  refundData: any
+  refundData: any, 
+  platformFeePercentage: number
 ) {
   console.log('*** DEBUG WEBHOOK: Processing refund');
 
@@ -893,14 +540,13 @@ async function processRefund(
     return;
   }
 
-  const wasAlreadyPaid = sale.status === 'paid';
+  const wasAlreadyPaid = sale.status === 'paid' || sale.status === 'active';
   
   // Update sale status to refunded
   const { error: updateError } = await supabase
     .from('sales')
     .update({
       status: 'refunded',
-      iugu_status: 'refunded',
       updated_at: new Date().toISOString()
     })
     .eq('id', sale.id);

@@ -37,22 +37,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          try {
+          // Fetch user profile
+          setTimeout(async () => {
             await fetchUserProfile(session.user.id);
-          } catch (error) {
-            console.error('Error fetching profile:', error);
-          }
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -63,22 +58,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserProfile(session.user.id).catch(console.error);
+        setTimeout(async () => {
+          await fetchUserProfile(session.user.id);
+        }, 0);
       }
       
       setLoading(false);
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const fetchUserProfile = async (userId: string) => {

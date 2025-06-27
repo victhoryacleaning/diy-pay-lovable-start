@@ -1,73 +1,168 @@
 
-import React from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  CreditCard,
-  LogOut 
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { 
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  CreditCard,
+  Settings,
+  LogOut,
+  RefreshCw,
+} from 'lucide-react';
 
-const ProducerSidebar = () => {
+const menuItems = [
+  {
+    title: "Dashboard",
+    url: "/producer-dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Produtos",
+    url: "/products",
+    icon: Package,
+  },
+  {
+    title: "Vendas",
+    url: "/sales", // Future implementation
+    icon: ShoppingCart,
+  },
+  {
+    title: "Assinaturas",
+    url: "/producer/subscriptions",
+    icon: RefreshCw,
+  },
+  {
+    title: "Financeiro",
+    url: "/financials", // Future implementation
+    icon: CreditCard,
+    subItems: [
+      {
+        title: "Dados Bancários",
+        url: "/complete-producer-profile",
+        icon: CreditCard,
+      }
+    ]
+  },
+  {
+    title: "Configurações",
+    url: "/settings", // Future implementation
+    icon: Settings,
+  },
+];
+
+export function ProducerSidebar() {
+  const { profile, signOut } = useAuth();
   const location = useLocation();
-  const { signOut } = useAuth();
 
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/producer' },
-    { icon: Package, label: 'Produtos', path: '/producer/products' },
-    { icon: ShoppingCart, label: 'Vendas', path: '/producer/sales' },
-    { icon: Users, label: 'Assinaturas', path: '/producer/subscriptions' },
-    { icon: CreditCard, label: 'Financeiro', path: '/producer/financials' },
-  ];
+  const isActive = (url: string) => {
+    if (url === "/producer-dashboard") {
+      return location.pathname === url;
+    }
+    return location.pathname.startsWith(url);
+  };
 
-  const handleSignOut = async () => {
-    await signOut();
+  const getInitials = (name: string | null) => {
+    if (!name) return "P";
+    return name.split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
-      <div className="p-6 border-b">
-        <h2 className="text-xl font-bold text-gray-800">Painel do Produtor</h2>
-      </div>
+    <Sidebar>
+      <SidebarHeader className="border-b">
+        <div className="flex items-center gap-3 px-2 py-4">
+          <Avatar>
+            <AvatarFallback className="bg-diypay-500 text-white">
+              {getInitials(profile?.full_name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate">
+              {profile?.full_name || "Produtor"}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {profile?.email}
+            </p>
+          </div>
+        </div>
+      </SidebarHeader>
       
-      <nav className="flex-1 p-4 space-y-2">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                isActive 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive(item.url)}
+                    className="w-full"
+                  >
+                    <Link to={item.url} className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  
+                  {item.subItems && (
+                    <SidebarMenu className="ml-6 mt-1">
+                      {item.subItems.map((subItem) => (
+                        <SidebarMenuItem key={subItem.title}>
+                          <SidebarMenuButton 
+                            asChild 
+                            size="sm"
+                            isActive={isActive(subItem.url)}
+                          >
+                            <Link to={subItem.url} className="flex items-center gap-2">
+                              <subItem.icon className="h-3 w-3" />
+                              <span className="text-xs">{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  )}
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      
+      <SidebarFooter className="border-t">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2" 
+              onClick={signOut}
             >
-              <Icon className="h-5 w-5" />
-              <span className="font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-      
-      <div className="p-4 border-t">
-        <Button 
-          onClick={handleSignOut}
-          variant="ghost" 
-          className="w-full justify-start text-gray-600 hover:text-red-600"
-        >
-          <LogOut className="h-5 w-5 mr-3" />
-          Sair
-        </Button>
-      </div>
-    </div>
+              <LogOut className="h-4 w-4" />
+              Sair
+            </Button>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
-};
-
-export default ProducerSidebar;
+}

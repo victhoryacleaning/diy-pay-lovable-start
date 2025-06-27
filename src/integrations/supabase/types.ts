@@ -9,75 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      financial_transactions: {
-        Row: {
-          amount_cents: number
-          created_at: string
-          description: string
-          id: string
-          producer_id: string
-          sale_id: string | null
-          transaction_type: string
-        }
-        Insert: {
-          amount_cents: number
-          created_at?: string
-          description: string
-          id?: string
-          producer_id: string
-          sale_id?: string | null
-          transaction_type: string
-        }
-        Update: {
-          amount_cents?: number
-          created_at?: string
-          description?: string
-          id?: string
-          producer_id?: string
-          sale_id?: string | null
-          transaction_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_transactions_producer_id_fkey"
-            columns: ["producer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "financial_transactions_sale_id_fkey"
-            columns: ["sale_id"]
-            isOneToOne: false
-            referencedRelation: "sales"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_settings: {
-        Row: {
-          created_at: string
-          default_fees_json: Json
-          default_release_rules_json: Json
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          default_fees_json?: Json
-          default_release_rules_json?: Json
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          default_fees_json?: Json
-          default_release_rules_json?: Json
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       producer_financials: {
         Row: {
           available_balance_cents: number
@@ -115,41 +46,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "producer_financials_producer_id_fkey"
-            columns: ["producer_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      producer_settings: {
-        Row: {
-          created_at: string
-          custom_fees_json: Json | null
-          custom_release_rules_json: Json | null
-          id: string
-          producer_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          custom_fees_json?: Json | null
-          custom_release_rules_json?: Json | null
-          id?: string
-          producer_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          custom_fees_json?: Json | null
-          custom_release_rules_json?: Json | null
-          id?: string
-          producer_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "producer_settings_producer_id_fkey"
             columns: ["producer_id"]
             isOneToOne: true
             referencedRelation: "profiles"
@@ -296,16 +192,13 @@ export type Database = {
           iugu_invoice_secure_url: string | null
           iugu_pix_qr_code_base64: string | null
           iugu_pix_qr_code_text: string | null
-          iugu_status: string | null
           iugu_subscription_id: string | null
           paid_at: string | null
           payment_method_used: string
           platform_fee_cents: number
           producer_share_cents: number
           product_id: string
-          release_date: string | null
-          security_reserve_cents: number | null
-          status: string
+          status: string | null
           updated_at: string
         }
         Insert: {
@@ -324,16 +217,13 @@ export type Database = {
           iugu_invoice_secure_url?: string | null
           iugu_pix_qr_code_base64?: string | null
           iugu_pix_qr_code_text?: string | null
-          iugu_status?: string | null
           iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used: string
           platform_fee_cents?: number
           producer_share_cents?: number
           product_id: string
-          release_date?: string | null
-          security_reserve_cents?: number | null
-          status?: string
+          status?: string | null
           updated_at?: string
         }
         Update: {
@@ -352,16 +242,13 @@ export type Database = {
           iugu_invoice_secure_url?: string | null
           iugu_pix_qr_code_base64?: string | null
           iugu_pix_qr_code_text?: string | null
-          iugu_status?: string | null
           iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used?: string
           platform_fee_cents?: number
           producer_share_cents?: number
           product_id?: string
-          release_date?: string | null
-          security_reserve_cents?: number | null
-          status?: string
+          status?: string | null
           updated_at?: string
         }
         Relationships: [
