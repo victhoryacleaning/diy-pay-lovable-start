@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
@@ -24,7 +23,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Calendar, DollarSign } from 'lucide-react';
+import { Search, Calendar, DollarSign, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Sale {
@@ -33,11 +32,14 @@ interface Sale {
   amount_total_cents: number;
   platform_fee_cents: number;
   producer_share_cents: number;
+  security_reserve_cents: number | null;
   payment_method_used: string;
   installments_chosen: number;
   status: string;
+  iugu_status: string;
   created_at: string;
   paid_at: string | null;
+  release_date: string | null;
   updated_at: string;
   products: {
     name: string;
@@ -192,13 +194,25 @@ const ProducerSalesPage = () => {
     }
   };
 
+  const formatDateOnly = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     if (!status) return <Badge variant="secondary">Desconhecido</Badge>;
     
     switch (status.toLowerCase()) {
       case 'paid':
         return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
-      case 'pending':
+      case 'pending_payment':
         return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
       case 'failed':
         return <Badge className="bg-red-100 text-red-800">Falhado</Badge>;
@@ -206,6 +220,10 @@ const ProducerSalesPage = () => {
         return <Badge className="bg-blue-100 text-blue-800">Autorizado</Badge>;
       case 'cancelled':
         return <Badge className="bg-gray-100 text-gray-800">Cancelado</Badge>;
+      case 'refunded':
+        return <Badge className="bg-purple-100 text-purple-800">Reembolsado</Badge>;
+      case 'expired':
+        return <Badge className="bg-orange-100 text-orange-800">Expirado</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -273,9 +291,11 @@ const ProducerSalesPage = () => {
 
   const filteredSales = getFilteredSales();
 
-  // Estatísticas simplificadas
+  // Estatísticas atualizadas
   const totalSales = sales.length;
-  const totalEarnings = sales.reduce((sum, sale) => sum + (sale?.producer_share_cents || 0), 0);
+  const paidSales = sales.filter(sale => sale.status === 'paid');
+  const totalEarnings = paidSales.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0);
+  const totalReserve = paidSales.reduce((sum, sale) => sum + (sale.security_reserve_cents || 0), 0);
 
   return (
     <SidebarProvider>
@@ -289,8 +309,8 @@ const ProducerSalesPage = () => {
             </div>
             
             <div className="container mx-auto px-4 py-8">
-              {/* Estatísticas simplificadas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Estatísticas atualizadas */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
@@ -299,14 +319,14 @@ const ProducerSalesPage = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{totalSales}</div>
                     <p className="text-xs text-muted-foreground">
-                      Todas as transações
+                      {paidSales.length} pagas
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Valor Líquido Total</CardTitle>
+                    <CardTitle className="text-sm font-medium">Saldo Disponível</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -315,6 +335,21 @@ const ProducerSalesPage = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Após taxas da plataforma
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Reserva de Segurança</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {formatCurrency(totalReserve)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Bloqueado por 30 dias
                     </p>
                   </CardContent>
                 </Card>
@@ -397,9 +432,11 @@ const ProducerSalesPage = () => {
                         <SelectContent>
                           <SelectItem value="all">Todos os Status</SelectItem>
                           <SelectItem value="paid">Pago</SelectItem>
-                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="pending_payment">Pendente</SelectItem>
                           <SelectItem value="failed">Falhado</SelectItem>
                           <SelectItem value="cancelled">Cancelado</SelectItem>
+                          <SelectItem value="refunded">Reembolsado</SelectItem>
+                          <SelectItem value="expired">Expirado</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -407,7 +444,7 @@ const ProducerSalesPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Tabela de vendas */}
+              {/* Tabela de vendas atualizada */}
               <Card>
                 <CardHeader>
                   <CardTitle>Histórico de Vendas</CardTitle>
@@ -455,6 +492,7 @@ const ProducerSalesPage = () => {
                               <TableHead>Cliente</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Pagamento</TableHead>
+                              <TableHead>Liberação</TableHead>
                               <TableHead className="text-right">Valor Líquido</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -485,6 +523,20 @@ const ProducerSalesPage = () => {
                                       </div>
                                     )}
                                   </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {sale.release_date ? (
+                                    <div>
+                                      <div>{formatDateOnly(sale.release_date)}</div>
+                                      {sale.security_reserve_cents && (
+                                        <div className="text-xs text-orange-600">
+                                          Reserva: {formatCurrency(sale.security_reserve_cents)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
                                   {formatCurrency(sale.producer_share_cents || 0)}

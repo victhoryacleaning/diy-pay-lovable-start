@@ -185,7 +185,8 @@ Deno.serve(async (req) => {
     console.log('*** DEBUG WEBHOOK: Found sale:', {
       sale_id: sale.id,
       current_status: sale.status,
-      new_status: data.status,
+      current_iugu_status: sale.iugu_status,
+      new_iugu_status: data.status,
       product_id: sale.product_id,
       producer_id: sale.product?.producer_id,
       is_subscription: !!sale.iugu_subscription_id
@@ -198,11 +199,11 @@ Deno.serve(async (req) => {
       await processRefund(supabase, sale, data, platformFeePercentage);
     } else {
       console.log('*** DEBUG WEBHOOK: Unhandled webhook event:', event);
-      // Still update the status if it's different
-      if (sale.status !== data.status) {
+      // Still update the iugu_status if it's different
+      if (sale.iugu_status !== data.status) {
         await supabase
           .from('sales')
-          .update({ status: data.status })
+          .update({ iugu_status: data.status })
           .eq('id', sale.id);
       }
     }
@@ -213,7 +214,7 @@ Deno.serve(async (req) => {
         message: 'Webhook processed successfully',
         sale_id: sale.id,
         event: event,
-        status: data.status,
+        iugu_status: data.status,
         functionName: 'iugu-webhook-handler'
       }),
       { 
@@ -286,20 +287,25 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
   }
 
   let newStatus: string;
+  let newIuguStatus: string;
   
   switch (event) {
     case 'subscription.created':
-      newStatus = 'pending';
+      newStatus = 'pending_payment';
+      newIuguStatus = 'pending';
       break;
     case 'subscription.activated':
-      newStatus = 'active';
+      newStatus = 'paid';
+      newIuguStatus = 'active';
       break;
     case 'subscription.suspended':
     case 'subscription.expired':
       newStatus = 'expired';
+      newIuguStatus = 'expired';
       break;
     case 'subscription.canceled':
-      newStatus = 'canceled';
+      newStatus = 'cancelled';
+      newIuguStatus = 'cancelled';
       break;
     default:
       console.log('*** DEBUG WEBHOOK: Unhandled subscription event:', event);
@@ -320,7 +326,9 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
     sale_id: sale.id,
     subscription_id: subscriptionId,
     old_status: sale.status,
-    new_status: newStatus
+    old_iugu_status: sale.iugu_status,
+    new_status: newStatus,
+    new_iugu_status: newIuguStatus
   });
 
   // Update the subscription status
@@ -328,6 +336,7 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
     .from('sales')
     .update({ 
       status: newStatus,
+      iugu_status: newIuguStatus,
       updated_at: new Date().toISOString()
     })
     .eq('id', sale.id);
@@ -356,6 +365,7 @@ async function handleSubscriptionEvent(supabase: any, event: string, data: any) 
       sale_id: sale.id,
       event: event,
       new_status: newStatus,
+      new_iugu_status: newIuguStatus,
       functionName: 'iugu-webhook-handler'
     }),
     { 
@@ -371,25 +381,28 @@ async function processInvoiceStatusChange(
   invoiceData: any, 
   platformFeePercentage: number
 ) {
-  const newStatus = invoiceData.status;
+  const newIuguStatus = invoiceData.status;
   const currentStatus = sale.status;
+  const currentIuguStatus = sale.iugu_status;
   const isSubscription = !!sale.iugu_subscription_id;
 
   console.log('*** DEBUG WEBHOOK: Processing status change:', { 
     currentStatus, 
-    newStatus, 
+    currentIuguStatus,
+    newIuguStatus, 
     isSubscription,
     subscriptionId: sale.iugu_subscription_id 
   });
 
-  // Idempotency check - if status hasn't changed, do nothing
-  if (currentStatus === newStatus) {
-    console.log('*** DEBUG WEBHOOK: Status unchanged, skipping processing');
+  // Idempotency check - if iugu_status hasn't changed, do nothing
+  if (currentIuguStatus === newIuguStatus) {
+    console.log('*** DEBUG WEBHOOK: Iugu status unchanged, skipping processing');
     return;
   }
 
-  // Update the sale status
+  // Update the sale iugu_status
   const updateData: any = {
+    iugu_status: newIuguStatus,
     updated_at: new Date().toISOString()
   };
 
@@ -399,37 +412,59 @@ async function processInvoiceStatusChange(
     console.log('*** DEBUG WEBHOOK: Updating iugu_invoice_id:', invoiceData.id);
   }
 
-  // CORREÇÃO CRÍTICA: Determinar o status correto baseado no tipo de transação
-  if (newStatus === 'paid') {
+  // Determinar o novo status interno com base no status da Iugu
+  if (newIuguStatus === 'paid') {
     if (isSubscription) {
-      // Para assinaturas, quando a fatura é paga, a assinatura fica ATIVA
-      updateData.status = 'active';
-      console.log('*** DEBUG WEBHOOK: Subscription invoice paid - setting status to ACTIVE');
+      // Para assinaturas, quando a fatura é paga, a assinatura fica PAGA
+      updateData.status = 'paid';
+      console.log('*** DEBUG WEBHOOK: Subscription invoice paid - setting status to PAID');
     } else {
       // Para vendas normais, quando a fatura é paga, a venda fica PAGA
       updateData.status = 'paid';
       console.log('*** DEBUG WEBHOOK: Regular sale invoice paid - setting status to PAID');
     }
+  } else if (newIuguStatus === 'pending') {
+    updateData.status = 'pending_payment';
+  } else if (newIuguStatus === 'cancelled' || newIuguStatus === 'canceled') {
+    updateData.status = 'cancelled';
+  } else if (newIuguStatus === 'expired') {
+    updateData.status = 'expired';
+  } else if (newIuguStatus === 'failed') {
+    updateData.status = 'failed';
   } else {
-    // Para outros status, usar o status como está
-    updateData.status = newStatus;
-    console.log('*** DEBUG WEBHOOK: Setting status to:', newStatus);
+    // Para outros status, manter o status atual
+    console.log('*** DEBUG WEBHOOK: Unknown iugu_status, keeping current status:', newIuguStatus);
   }
 
-  // If payment is confirmed (paid status)
-  if (newStatus === 'paid' && currentStatus !== 'paid') {
+  // If payment is confirmed (paid status) and wasn't paid before
+  if (newIuguStatus === 'paid' && currentIuguStatus !== 'paid') {
     console.log('*** DEBUG WEBHOOK: Processing payment confirmation');
     
     updateData.paid_at = new Date().toISOString();
 
-    // Calculate fees (reconfirm calculation)
+    // Calculate fees and release date
     const amountTotalCents = sale.amount_total_cents;
     const platformFeeCents = Math.round(amountTotalCents * platformFeePercentage);
-    const producerShareCents = amountTotalCents - platformFeeCents;
+    const securityReserveCents = Math.round(amountTotalCents * 0.1); // 10% security reserve
+    const producerShareCents = amountTotalCents - platformFeeCents - securityReserveCents;
+    
+    // Calculate release date (30 days from payment)
+    const releaseDate = new Date();
+    releaseDate.setDate(releaseDate.getDate() + 30);
 
     // Update sale with payment info
     updateData.platform_fee_cents = platformFeeCents;
     updateData.producer_share_cents = producerShareCents;
+    updateData.security_reserve_cents = securityReserveCents;
+    updateData.release_date = releaseDate.toISOString().split('T')[0]; // Format as DATE
+
+    console.log('*** DEBUG WEBHOOK: Calculated payment values:', {
+      amountTotalCents,
+      platformFeeCents,
+      securityReserveCents,
+      producerShareCents,
+      releaseDate: updateData.release_date
+    });
 
     // Update sale record
     const { error: updateError } = await supabase
@@ -442,7 +477,7 @@ async function processInvoiceStatusChange(
       throw updateError;
     }
 
-    // Update producer balance using UPSERT logic
+    // Update producer balance - only add the producer share (not the security reserve)
     const producerId = sale.product?.producer_id;
     if (producerId) {
       console.log('*** DEBUG WEBHOOK: Updating producer balance:', {
@@ -511,7 +546,7 @@ async function processInvoiceStatusChange(
       }
     }
   } else {
-    // For other status changes (canceled, expired, failed, etc.) or invoice.created
+    // For other status changes just update the status
     const { error: updateError } = await supabase
       .from('sales')
       .update(updateData)
@@ -540,13 +575,14 @@ async function processRefund(
     return;
   }
 
-  const wasAlreadyPaid = sale.status === 'paid' || sale.status === 'active';
+  const wasAlreadyPaid = sale.status === 'paid';
   
   // Update sale status to refunded
   const { error: updateError } = await supabase
     .from('sales')
     .update({
       status: 'refunded',
+      iugu_status: 'refunded',
       updated_at: new Date().toISOString()
     })
     .eq('id', sale.id);

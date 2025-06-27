@@ -192,13 +192,16 @@ export type Database = {
           iugu_invoice_secure_url: string | null
           iugu_pix_qr_code_base64: string | null
           iugu_pix_qr_code_text: string | null
+          iugu_status: string | null
           iugu_subscription_id: string | null
           paid_at: string | null
           payment_method_used: string
           platform_fee_cents: number
           producer_share_cents: number
           product_id: string
-          status: string | null
+          release_date: string | null
+          security_reserve_cents: number | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -217,13 +220,16 @@ export type Database = {
           iugu_invoice_secure_url?: string | null
           iugu_pix_qr_code_base64?: string | null
           iugu_pix_qr_code_text?: string | null
+          iugu_status?: string | null
           iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used: string
           platform_fee_cents?: number
           producer_share_cents?: number
           product_id: string
-          status?: string | null
+          release_date?: string | null
+          security_reserve_cents?: number | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -242,13 +248,16 @@ export type Database = {
           iugu_invoice_secure_url?: string | null
           iugu_pix_qr_code_base64?: string | null
           iugu_pix_qr_code_text?: string | null
+          iugu_status?: string | null
           iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used?: string
           platform_fee_cents?: number
           producer_share_cents?: number
           product_id?: string
-          status?: string | null
+          release_date?: string | null
+          security_reserve_cents?: number | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
