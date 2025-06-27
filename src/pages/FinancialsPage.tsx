@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ProducerSidebar from '@/components/ProducerSidebar';
@@ -8,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { FinancialSummaryCards } from '@/components/financials/FinancialSummaryCards';
 import { TransactionsTable } from '@/components/financials/TransactionsTable';
 import { WithdrawalModal } from '@/components/financials/WithdrawalModal';
-import { useSecurityMonitoring } from '@/hooks/useSecurityMonitoring';
 import { Download } from 'lucide-react';
 
 interface FinancialData {
@@ -26,28 +26,14 @@ interface FinancialData {
 
 const FinancialsPage: React.FC = () => {
   const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
-  const { logSecurityEvent } = useSecurityMonitoring();
 
   const { data: financialData, isLoading, error } = useQuery({
     queryKey: ['producer-financials'],
     queryFn: async (): Promise<FinancialData> => {
-      // Log financial data access
-      logSecurityEvent('financial_data_access', {
-        page: 'financials',
-        timestamp: new Date().toISOString()
-      });
-
       const { data, error } = await supabase.functions.invoke('get-producer-financials');
       
       if (error) {
         console.error('Error fetching financial data:', error);
-        
-        // Log security event for failed data access
-        logSecurityEvent('financial_data_access_failed', {
-          error: error.message,
-          timestamp: new Date().toISOString()
-        });
-        
         throw new Error('Erro ao carregar dados financeiros');
       }
       
@@ -56,12 +42,6 @@ const FinancialsPage: React.FC = () => {
   });
 
   const handleWithdrawalRequest = () => {
-    // Log withdrawal attempt
-    logSecurityEvent('withdrawal_modal_opened', {
-      available_balance: financialData?.availableBalance || 0,
-      timestamp: new Date().toISOString()
-    });
-    
     setIsWithdrawalModalOpen(true);
   };
 
@@ -109,12 +89,6 @@ const FinancialsPage: React.FC = () => {
   }
 
   if (error) {
-    // Log error access
-    logSecurityEvent('financial_page_error', {
-      error: error.toString(),
-      timestamp: new Date().toISOString()
-    });
-
     return (
       <div className="flex min-h-screen bg-gray-50">
         <ProducerSidebar />

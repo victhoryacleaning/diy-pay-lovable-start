@@ -1,41 +1,9 @@
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, value, onChange, ...props }, ref) => {
-    // Enhanced sanitization for input values
-    const sanitizeValue = (val: string | number | readonly string[] | undefined): string => {
-      if (typeof val !== 'string') return val?.toString() || '';
-      
-      // Basic XSS prevention
-      return val
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (onChange) {
-        // Create a new event with sanitized value for text inputs
-        if (type === 'text' || type === 'email' || !type) {
-          const sanitizedValue = sanitizeValue(e.target.value);
-          const newEvent = {
-            ...e,
-            target: {
-              ...e.target,
-              value: sanitizedValue
-            }
-          } as React.ChangeEvent<HTMLInputElement>;
-          onChange(newEvent);
-        } else {
-          // For other input types (number, password, etc.), pass through unchanged
-          onChange(e);
-        }
-      }
-    };
-
+  ({ className, type, ...props }, ref) => {
     return (
       <input
         type={type}
@@ -44,8 +12,6 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
-        value={value}
-        onChange={handleChange}
         {...props}
       />
     )
