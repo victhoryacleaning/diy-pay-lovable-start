@@ -1,7 +1,7 @@
 
 import { useParams } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
+import ProducerSidebar from "@/components/ProducerSidebar";
 import ProductForm from "@/components/products/ProductForm";
 
 const EditProductPage = () => {

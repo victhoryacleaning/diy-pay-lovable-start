@@ -1,6 +1,6 @@
 
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
+import ProducerSidebar from "@/components/ProducerSidebar";
 import ProductList from "@/components/products/ProductList";
 import ProductTypeSelectionModal from "@/components/products/ProductTypeSelectionModal";
 import { useQuery } from "@tanstack/react-query";

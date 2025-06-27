@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
+import ProducerSidebar from "@/components/ProducerSidebar";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

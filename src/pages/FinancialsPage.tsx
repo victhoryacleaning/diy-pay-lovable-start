@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ProducerSidebar } from '@/components/ProducerSidebar';
+import ProducerSidebar from '@/components/ProducerSidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
