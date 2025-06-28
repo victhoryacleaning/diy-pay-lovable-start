@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Iugu from 'npm:iugu@2.0.2';
 
@@ -116,9 +117,9 @@ Deno.serve(async (req) => {
       iugu_status: invoiceResult.status, // Status inicial da fatura (geralmente 'pending')
       status: 'pending_payment', // Nosso status interno inicial
       iugu_invoice_secure_url: invoiceResult.secure_url,
-      iugu_pix_qr_code_text: invoiceResult.pix?.qrcode_text,
-      iugu_pix_qr_code_base64: invoiceResult.pix?.qrcode,
-      iugu_bank_slip_barcode: invoiceResult.bank_slip?.barcode,
+      iugu_pix_qr_code_text: invoiceResult.pix?.qrcode_text || invoiceResult.pix?.emv || null,
+      iugu_pix_qr_code_base64: invoiceResult.pix?.qrcode_base64 || invoiceResult.pix?.qrcode || null,
+      iugu_bank_slip_barcode: invoiceResult.bank_slip?.barcode || invoiceResult.bank_slip?.digitable_line || invoiceResult.digitable_line || null,
       event_attendees: attendees,
     };
     

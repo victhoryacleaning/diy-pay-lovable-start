@@ -1,4 +1,5 @@
 
+
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // --- Interfaces (Tipos de Dados) ---
@@ -106,56 +107,55 @@ Deno.serve(async (req) => {
  * Processa a mudança de status de uma fatura.
  * Contém a lógica principal de cálculo financeiro.
  */
-async function processInvoiceStatusChange(supabase: SupabaseClient, sale: SaleRecord, webhookData: IuguWebhookPayload['data']) {
-  const newIuguStatus = webhookData.status;
-  console.log(`[PROCESS_STATUS_CHANGE] Sale ID: ${sale.id}, New Iugu Status: ${newIuguStatus}`);
+async function processInvoiceStatusChange(
+  supabase: SupabaseClient, 
+  sale: SaleRecord, 
+  invoiceData: IuguWebhookPayload['data']
+) {
+  const newIuguStatus = invoiceData.status;
+  const currentInternalStatus = sale.status;
+  console.log(`[PROCESS_STATUS_CHANGE] Sale ID: ${sale.id}, New Iugu Status: ${newIuguStatus}, Current Internal Status: ${currentInternalStatus}`);
 
-  // 1. Sempre registra o último status da Iugu para fins de auditoria.
+  // 1. Sempre registra o último status da Iugu para auditoria.
   await supabase.from('sales').update({ iugu_status: newIuguStatus }).eq('id', sale.id);
 
-  // 2. Lógica principal executada SOMENTE quando o pagamento é confirmado E ainda não foi processado por nós.
-  if (newIuguStatus === 'paid' && sale.status !== 'paid') {
+  // 2. A lógica principal é executada SOMENTE quando a Iugu confirma o pagamento ('paid')
+  //    E nós ainda não processamos este pagamento (nosso status interno não é 'paid').
+  if (newIuguStatus === 'paid' && currentInternalStatus !== 'paid') {
     console.log(`[PAYMENT_CONFIRMED] Processando dados financeiros para a venda ${sale.id}`);
-
+    
     const producerId = sale.product?.producer_id;
     if (!producerId) {
       throw new Error(`Producer ID não encontrado para a venda ${sale.id}`);
     }
 
-    // Buscar configurações financeiras
-    const settings = await getFinancialSettings(supabase, producerId);
-
-    // Calcular valores financeiros
-    const fee = calculatePlatformFee(settings, sale.payment_method_used, sale.installments_chosen, sale.amount_total_cents);
-    const releaseDate = calculateReleaseDate(settings, sale.payment_method_used);
-    const producerShare = sale.amount_total_cents - fee;
-    const securityReserve = Math.round(sale.amount_total_cents * (settings.security_reserve_percent / 100));
+    // A sua lógica de buscar configurações e calcular taxas/prazos já está correta.
+    const finalSettings = await getFinancialSettings(supabase, producerId);
+    const platformFeeCents = calculatePlatformFee(finalSettings, sale.payment_method_used, sale.installments_chosen, sale.amount_total_cents);
+    const producerShareCents = sale.amount_total_cents - platformFeeCents;
+    const securityReserveCents = Math.round(sale.amount_total_cents * (finalSettings.security_reserve_percent / 100));
+    const releaseDate = calculateReleaseDate(finalSettings, sale.payment_method_used);
 
     const updatePayload = {
-      status: 'paid', // Nosso status interno agora é 'paid'
+      status: 'paid', // Atualiza nosso status interno
       paid_at: new Date().toISOString(),
       release_date: releaseDate,
-      platform_fee_cents: fee,
-      producer_share_cents: producerShare,
-      security_reserve_cents: securityReserve,
-      payout_status: 'pending', // O dinheiro está pendente de liberação
+      platform_fee_cents: platformFeeCents,
+      producer_share_cents: producerShareCents,
+      security_reserve_cents: securityReserveCents,
+      payout_status: 'pending'
     };
 
-    // Atualizar o registro da venda com todos os dados financeiros
     const { error: updateError } = await supabase.from('sales').update(updatePayload).eq('id', sale.id);
 
     if (updateError) {
       console.error(`[DB_UPDATE_ERROR] Falha ao atualizar dados financeiros para a venda ${sale.id}:`, updateError);
       throw updateError;
     }
-    console.log(`[FINANCIALS_CALCULATED] Dados financeiros para a venda ${sale.id} foram calculados e salvos.`);
+    console.log(`[FINANCIALS_CALCULATED] Dados financeiros para a venda ${sale.id} foram salvos.`);
 
-  } else if (['canceled', 'expired'].includes(newIuguStatus) && sale.status !== newIuguStatus) {
-    // Lida com status finais que não são 'paid'
-    console.log(`[INVOICE_ENDED] Fatura ${sale.id} atualizada para o status final: ${newIuguStatus}`);
-    await supabase.from('sales').update({ status: newIuguStatus }).eq('id', sale.id);
   } else {
-    console.log(`[STATUS_IGNORED] Status "${newIuguStatus}" para a venda ${sale.id} ignorado (ou já processado).`);
+    console.log(`[STATUS_IGNORED] Status "${newIuguStatus}" para a venda ${sale.id} ignorado (ou já foi processado).`);
   }
 }
 
