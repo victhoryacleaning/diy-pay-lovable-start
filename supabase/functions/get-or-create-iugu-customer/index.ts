@@ -114,6 +114,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Limpar o CPF/CNPJ removendo caracteres não numéricos
+    const cleanCpfCnpj = payload.cpf_cnpj ? payload.cpf_cnpj.replace(/\D/g, '') : null;
+    console.log('[DEBUG] CPF/CNPJ original:', payload.cpf_cnpj, 'CPF/CNPJ limpo:', cleanCpfCnpj);
+
     console.log('[DEBUG] *** PROCESSANDO CLIENTE PARA EMAIL ***:', payload.email);
 
     // Check if buyer profile already exists
@@ -161,25 +165,49 @@ Deno.serve(async (req) => {
     console.log('[DEBUG] *** CRIANDO/BUSCANDO CLIENTE NA IUGU ***');
 
     try {
-      // First, try to find existing customer in Iugu
-      console.log('[DEBUG] Buscando cliente existente na Iugu...');
-      const searchResponse = await fetch(`https://api.iugu.com/v1/customers?query=${encodeURIComponent(payload.email)}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': authHeader,
-        },
-      });
-
       let iuguCustomerId;
 
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        console.log('[DEBUG] Resultado da busca de cliente:', searchData);
+      // Melhorar a busca: primeiro tenta pelo CPF/CNPJ se disponível, depois pelo email
+      if (cleanCpfCnpj && cleanCpfCnpj.length >= 11) {
+        console.log('[DEBUG] Buscando cliente existente na Iugu pelo CPF/CNPJ:', cleanCpfCnpj);
+        const searchByCpfResponse = await fetch(`https://api.iugu.com/v1/customers?query=${encodeURIComponent(cleanCpfCnpj)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': authHeader,
+          },
+        });
 
-        if (searchData.items && searchData.items.length > 0) {
-          // Customer found
-          iuguCustomerId = searchData.items[0].id;
-          console.log('[DEBUG] *** CLIENTE EXISTENTE ENCONTRADO NA IUGU ***:', iuguCustomerId);
+        if (searchByCpfResponse.ok) {
+          const searchByCpfData = await searchByCpfResponse.json();
+          console.log('[DEBUG] Resultado da busca por CPF/CNPJ:', searchByCpfData);
+
+          if (searchByCpfData.items && searchByCpfData.items.length > 0) {
+            // Customer found by CPF/CNPJ
+            iuguCustomerId = searchByCpfData.items[0].id;
+            console.log('[DEBUG] *** CLIENTE EXISTENTE ENCONTRADO NA IUGU PELO CPF/CNPJ ***:', iuguCustomerId);
+          }
+        }
+      }
+
+      // Se não encontrou pelo CPF/CNPJ, tenta buscar pelo email
+      if (!iuguCustomerId) {
+        console.log('[DEBUG] Buscando cliente existente na Iugu pelo email:', payload.email);
+        const searchByEmailResponse = await fetch(`https://api.iugu.com/v1/customers?query=${encodeURIComponent(payload.email)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': authHeader,
+          },
+        });
+
+        if (searchByEmailResponse.ok) {
+          const searchByEmailData = await searchByEmailResponse.json();
+          console.log('[DEBUG] Resultado da busca por email:', searchByEmailData);
+
+          if (searchByEmailData.items && searchByEmailData.items.length > 0) {
+            // Customer found by email
+            iuguCustomerId = searchByEmailData.items[0].id;
+            console.log('[DEBUG] *** CLIENTE EXISTENTE ENCONTRADO NA IUGU PELO EMAIL ***:', iuguCustomerId);
+          }
         }
       }
 
@@ -187,16 +215,10 @@ Deno.serve(async (req) => {
       if (!iuguCustomerId) {
         console.log('[DEBUG] *** CRIANDO NOVO CLIENTE NA IUGU ***');
         const customerPayload: any = {
-          email: payload.email
+          email: payload.email,
+          name: payload.name,
+          cpf_cnpj: cleanCpfCnpj // Usar o CPF/CNPJ limpo
         };
-
-        if (payload.name) {
-          customerPayload.name = payload.name;
-        }
-
-        if (payload.cpf_cnpj) {
-          customerPayload.cpf_cnpj = payload.cpf_cnpj;
-        }
 
         console.log('[DEBUG] Payload para criar cliente:', JSON.stringify(customerPayload, null, 2));
 
@@ -215,7 +237,7 @@ Deno.serve(async (req) => {
           console.log('[DEBUG] *** NOVO CLIENTE CRIADO NA IUGU ***:', iuguCustomerId);
         } else {
           const errorText = await createResponse.text();
-          console.error('[ERRO] Falha ao criar cliente na Iugu:', errorText);
+          console.error(`[ERRO] Falha ao criar cliente na Iugu. Status: ${createResponse.status}. Payload enviado:`, JSON.stringify(customerPayload, null, 2), 'Resposta da Iugu:', errorText);
           return new Response(
             JSON.stringify({ 
               success: false, 
@@ -247,8 +269,8 @@ Deno.serve(async (req) => {
           updateData.full_name = payload.name;
         }
 
-        if (payload.cpf_cnpj && !buyerProfile.cpf_cnpj) {
-          updateData.cpf_cnpj = payload.cpf_cnpj;
+        if (cleanCpfCnpj && !buyerProfile.cpf_cnpj) {
+          updateData.cpf_cnpj = cleanCpfCnpj;
         }
 
         if (payload.phone && !buyerProfile.phone) {
@@ -278,7 +300,7 @@ Deno.serve(async (req) => {
           id: profileId,
           email: payload.email,
           full_name: payload.name || null,
-          cpf_cnpj: payload.cpf_cnpj || null,
+          cpf_cnpj: cleanCpfCnpj || null,
           phone: payload.phone || null,
           role: 'buyer',
           iugu_customer_id: iuguCustomerId,
