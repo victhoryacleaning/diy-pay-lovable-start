@@ -1,15 +1,10 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Iugu from 'npm:iugu@1.0.8';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
-// Inicializa o cliente da Iugu uma vez.
-const iugu = new Iugu(Deno.env.get('IUGU_API_KEY')!, {
-  api_version: 'v1'
-});
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -95,13 +90,23 @@ Deno.serve(async (req) => {
     }
 
     // --- Chamar a API da Iugu para Criar a Fatura ---
-    const { data: invoiceResult, error: invoiceError } = await iugu.invoiceCreate(invoicePayload);
-    
-    if (invoiceError) {
-      console.error('[IUGU_INVOICE_ERROR]', invoiceError);
+    const iuguApiKey = Deno.env.get('IUGU_API_KEY');
+    const invoiceResponse = await fetch('https://api.iugu.com/v1/invoices', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(iuguApiKey + ':')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoicePayload),
+    });
+
+    if (!invoiceResponse.ok) {
+      const errorData = await invoiceResponse.text();
+      console.error('[IUGU_INVOICE_ERROR]', errorData);
       throw new Error('Falha ao criar fatura na Iugu.');
     }
-    
+
+    const invoiceResult = await invoiceResponse.json();
     console.log(`[IUGU_INVOICE_SUCCESS] Fatura criada com sucesso. ID: ${invoiceResult.id}`);
 
     // --- Inserir a Venda no Nosso Banco de Dados ---
