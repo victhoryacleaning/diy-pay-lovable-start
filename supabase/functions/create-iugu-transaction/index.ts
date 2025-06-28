@@ -1,6 +1,5 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Iugu from 'npm:iugu@2.0.2';
+import Iugu from 'npm:iugu@1.0.8';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
