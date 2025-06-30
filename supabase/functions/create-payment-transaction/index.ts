@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -260,14 +259,19 @@ Deno.serve(async (req) => {
       const paymentResult = await paymentResponse.json();
       console.log(`[ASAAS_PAYMENT_SUCCESS] Cobrança criada com sucesso. ID: ${paymentResult.id}`);
 
+      // **CORREÇÃO CRÍTICA**: Mapeamento correto dos dados PIX do Asaas
+      console.log('[ASAAS_PIX_DEBUG] Dados PIX na resposta:', JSON.stringify(paymentResult.pixQrCode, null, 2));
+
       // Padronizar resposta do Asaas
       gatewayResponse = {
         id: paymentResult.id,
         status: paymentResult.status,
         secure_url: paymentResult.invoiceUrl,
-        pix_qr_code_text: paymentResult.pixQrCodeId || null,
-        pix_qr_code_base64: paymentResult.encodedImage || null,
-        bank_slip_barcode: paymentResult.identificationField || null,
+        // Mapeamento CORRETO dos campos PIX do Asaas
+        pix_qr_code_text: paymentResult.pixQrCode?.payload || null, // 'payload' é o Copia e Cola
+        pix_qr_code_base64: paymentResult.pixQrCode?.encodedImage || null, // 'encodedImage' é o Base64 do QR Code
+        // Mapeamento CORRETO dos campos de Boleto do Asaas
+        bank_slip_barcode: paymentResult.identificationField || paymentResult.nossoNumero || null,
         gateway_name: 'Asaas'
       };
 
