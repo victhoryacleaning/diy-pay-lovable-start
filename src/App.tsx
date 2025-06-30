@@ -18,6 +18,9 @@ import ProducerSalesPage from "./pages/ProducerSalesPage";
 import ProducerSubscriptionsPage from "./pages/ProducerSubscriptionsPage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
+import AdminLayout from "./pages/Admin/AdminLayout";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import GatewaysPage from "./pages/Admin/GatewaysPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -44,6 +47,8 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/checkout/:slug" element={<Checkout />} />
               <Route path="/payment-confirmation/:saleId" element={<PaymentConfirmation />} />
+              
+              {/* Producer Routes */}
               <Route 
                 path="/complete-producer-profile" 
                 element={
@@ -100,6 +105,20 @@ const App = () => {
                   </ProtectedRoute>
                 } 
               />
+
+              {/* Admin Routes */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="gateways" element={<GatewaysPage />} />
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
