@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -118,6 +118,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
   const [eventQuantity, setEventQuantity] = useState<number>(1);
+  const [activeGateway, setActiveGateway] = useState<string | null>(null);
   
   const isDonation = product.product_type === 'donation';
   const isEvent = product.product_type === 'event';
@@ -264,18 +265,44 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const lastName = lastNameParts.join(' ');
     const [month, year] = data.cardExpiry.split('/');
 
-    const { data: result, error } = await supabase.functions.invoke('create-iugu-payment-token', {
-      body: {
-        card_number: data.cardNumber?.replace(/\s/g, ''),
-        verification_value: data.cardCvv,
-        first_name: firstName,
-        last_name: lastName,
-        month,
-        year: `20${year}`,
-      },
-    });
-    if (error) throw new Error('Erro ao tokenizar cartão.');
-    return result.id;
+    if (activeGateway === 'asaas') {
+      // Tokenizar com Asaas
+      try {
+        const asaasToken = await new Promise((resolve, reject) => {
+          // @ts-ignore - Asaas SDK is loaded from external script
+          window.Asaas.CreditCard.createToken({
+            number: data.cardNumber?.replace(/\s/g, ''),
+            expiryMonth: month,
+            expiryYear: `20${year}`,
+            ccv: data.cardCvv,
+            holderName: data.cardName,
+          }, (token: string) => {
+            resolve(token);
+          }, (error: any) => {
+            reject(error);
+          });
+        });
+        
+        return { type: 'asaas', token: asaasToken };
+      } catch (error) {
+        console.error('Erro ao tokenizar cartão com Asaas:', error);
+        throw new Error('Erro ao processar dados do cartão.');
+      }
+    } else {
+      // Tokenizar com Iugu (código existente)
+      const { data: result, error } = await supabase.functions.invoke('create-iugu-payment-token', {
+        body: {
+          card_number: data.cardNumber?.replace(/\s/g, ''),
+          verification_value: data.cardCvv,
+          first_name: firstName,
+          last_name: lastName,
+          month,
+          year: `20${year}`,
+        },
+      });
+      if (error) throw new Error('Erro ao tokenizar cartão.');
+      return { type: 'iugu', token: result.id };
+    }
   };
 
   const onSubmit = async (data: CheckoutFormData) => {
@@ -283,23 +310,49 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     setIsLoading(true);
 
     try {
-      const customerResponse = await createIuguCustomer(data);
-      if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
-      const { iugu_customer_id, buyer_profile_id } = customerResponse;
+      let customerResponse;
+      let buyer_profile_id;
+      let iugu_customer_id = null;
 
-      const cardToken = await createPaymentToken(data);
+      if (activeGateway === 'iugu') {
+        customerResponse = await createIuguCustomer(data);
+        if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
+        buyer_profile_id = customerResponse.buyer_profile_id;
+        iugu_customer_id = customerResponse.iugu_customer_id;
+      } else {
+        // Para outros gateways, apenas buscar/criar o perfil do comprador
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', data.email)
+          .single();
+        
+        buyer_profile_id = profile?.id || null;
+      }
+
+      const cardTokenResult = await createPaymentToken(data);
 
       const transactionPayload: any = {
         product_id: product.id,
         buyer_email: data.email || data.phone,
-        iugu_customer_id,
         buyer_profile_id,
         payment_method_selected: data.paymentMethod,
-        card_token: cardToken,
         installments: data.installments,
         buyer_name: data.fullName,
         buyer_cpf_cnpj: data.cpfCnpj,
       };
+
+      // Adicionar tokens baseado no gateway
+      if (cardTokenResult) {
+        if (cardTokenResult.type === 'asaas') {
+          transactionPayload.credit_card_token = cardTokenResult.token;
+        } else if (cardTokenResult.type === 'iugu') {
+          transactionPayload.card_token = cardTokenResult.token;
+          transactionPayload.iugu_customer_id = iugu_customer_id;
+        }
+      } else if (activeGateway === 'iugu') {
+        transactionPayload.iugu_customer_id = iugu_customer_id;
+      }
 
       if (isDonation) {
         const donationValue = (data as any).donationAmount;
@@ -315,7 +368,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       console.log('[DEBUG] PAYLOAD FINAL SENDO ENVIADO:', transactionPayload);
 
       const { data: result, error: transactionError } = await supabase.functions.invoke(
-        'create-iugu-transaction',
+        'create-payment-transaction',
         { body: transactionPayload }
       );
 
@@ -349,6 +402,22 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     }
     return product.price_cents;
   }, [isDonation, isEvent, product.price_cents, eventQuantity, form]);
+
+  // Fetch active gateway on component mount
+  useEffect(() => {
+    const fetchActiveGateway = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-active-gateway');
+        if (!error && data.success) {
+          setActiveGateway(data.gateway.gateway_identifier);
+        }
+      } catch (error) {
+        console.error('Error fetching active gateway:', error);
+      }
+    };
+    
+    fetchActiveGateway();
+  }, []);
 
   return (
     <div className="max-w-2xl mx-auto">
