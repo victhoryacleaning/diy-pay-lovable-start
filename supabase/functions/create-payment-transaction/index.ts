@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
 
       console.log('[ASAAS_GATEWAY] Credenciais validadas, criando cobrança...');
 
-      // Mapear método de pagamento
+      // Mapear método de pagamento para o formato do Asaas
       let billingType = 'CREDIT_CARD';
       if (payment_method_selected === 'pix') {
         billingType = 'PIX';
@@ -176,7 +176,10 @@ Deno.serve(async (req) => {
         cpfCnpj: buyer_cpf_cnpj,
       };
 
-      // Criar cliente no Asaas primeiro
+      // Criar ou buscar cliente no Asaas
+      let asaasCustomerId = null;
+      
+      // Tentar criar cliente
       const customerResponse = await fetch('https://sandbox.asaas.com/api/v3/customers', {
         method: 'POST',
         headers: {
@@ -186,12 +189,12 @@ Deno.serve(async (req) => {
         body: JSON.stringify(customerData),
       });
 
-      let asaasCustomerId = null;
       if (customerResponse.ok) {
         const customerResult = await customerResponse.json();
         asaasCustomerId = customerResult.id;
+        console.log(`[ASAAS_CUSTOMER_SUCCESS] Cliente criado: ${asaasCustomerId}`);
       } else {
-        // Se falhar ao criar, pode ser que já exista - tente buscar
+        // Se falhar ao criar, pode ser que já exista - tentar buscar
         const searchResponse = await fetch(`https://sandbox.asaas.com/api/v3/customers?email=${buyer_email}`, {
           headers: {
             'access_token': api_key,
@@ -202,6 +205,7 @@ Deno.serve(async (req) => {
           const searchResult = await searchResponse.json();
           if (searchResult.data && searchResult.data.length > 0) {
             asaasCustomerId = searchResult.data[0].id;
+            console.log(`[ASAAS_CUSTOMER_FOUND] Cliente encontrado: ${asaasCustomerId}`);
           }
         }
       }
@@ -214,7 +218,7 @@ Deno.serve(async (req) => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 3);
 
-      // Preparar payload da cobrança
+      // Preparar payload da cobrança - CORRIGIDO
       const paymentPayload: any = {
         customer: asaasCustomerId,
         billingType: billingType,
@@ -234,6 +238,8 @@ Deno.serve(async (req) => {
           paymentPayload.installmentCount = installments;
         }
       }
+
+      console.log('[ASAAS_PAYLOAD]', JSON.stringify(paymentPayload, null, 2));
 
       // Criar cobrança no Asaas
       const paymentResponse = await fetch('https://sandbox.asaas.com/api/v3/payments', {
