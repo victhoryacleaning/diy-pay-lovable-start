@@ -54,6 +54,39 @@ export type Database = {
           },
         ]
       }
+      payment_gateways: {
+        Row: {
+          created_at: string | null
+          credentials: Json | null
+          gateway_identifier: string
+          gateway_name: string
+          id: string
+          is_active: boolean
+          priority: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credentials?: Json | null
+          gateway_identifier: string
+          gateway_name: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credentials?: Json | null
+          gateway_identifier?: string
+          gateway_name?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           created_at: string
