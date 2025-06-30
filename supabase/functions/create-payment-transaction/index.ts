@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 3);
 
-      // Preparar payload da cobrança - CORRIGIDO
+      // Preparar payload da cobrança
       const paymentPayload: any = {
         customer: asaasCustomerId,
         billingType: billingType,
@@ -303,13 +303,6 @@ Deno.serve(async (req) => {
       platform_fee_cents: 0, // Será calculado posteriormente
       producer_share_cents: 0, // Será calculado posteriormente
       event_attendees: attendees,
-      // Manter compatibilidade com campos antigos da Iugu (para não quebrar código existente)
-      iugu_invoice_id: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.id : null,
-      iugu_status: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.status : null,
-      iugu_invoice_secure_url: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.secure_url : null,
-      iugu_pix_qr_code_text: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.pix_qr_code_text : null,
-      iugu_pix_qr_code_base64: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.pix_qr_code_base64 : null,
-      iugu_bank_slip_barcode: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.bank_slip_barcode : null,
     };
     
     const { data: newSale, error: insertError } = await supabase

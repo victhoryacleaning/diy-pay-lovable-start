@@ -92,9 +92,9 @@ Deno.serve(async (req) => {
       id: sale.id,
       payment_method: sale.payment_method_used,
       status: sale.status,
-      has_pix_qr_code: !!sale.iugu_pix_qr_code_base64,
-      has_pix_text: !!sale.iugu_pix_qr_code_text,
-      has_invoice_url: !!sale.iugu_invoice_secure_url,
+      has_pix_qr_code: !!sale.gateway_pix_qrcode_base64,
+      has_pix_text: !!sale.gateway_pix_qrcode_text,
+      has_invoice_url: !!sale.gateway_payment_url,
     });
 
     return new Response(
@@ -108,10 +108,11 @@ Deno.serve(async (req) => {
           payment_method_used: sale.payment_method_used,
           installments_chosen: sale.installments_chosen,
           status: sale.status,
-          iugu_invoice_secure_url: sale.iugu_invoice_secure_url,
-          iugu_pix_qr_code_base64: sale.iugu_pix_qr_code_base64,
-          iugu_pix_qr_code_text: sale.iugu_pix_qr_code_text,
-          iugu_bank_slip_barcode: sale.iugu_bank_slip_barcode,
+          gateway_payment_url: sale.gateway_payment_url,
+          gateway_pix_qrcode_base64: sale.gateway_pix_qrcode_base64,
+          gateway_pix_qrcode_text: sale.gateway_pix_qrcode_text,
+          gateway_bank_slip_barcode: sale.gateway_bank_slip_barcode,
+          gateway_identifier: sale.gateway_identifier,
           created_at: sale.created_at,
           paid_at: sale.paid_at,
           products: sale.products,
