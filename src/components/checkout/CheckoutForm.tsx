@@ -266,7 +266,17 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const [month, year] = data.cardExpiry.split('/');
 
     if (activeGateway === 'asaas') {
-      // Tokenizar com Asaas
+      // Verificar se o SDK do Asaas está disponível
+      if (typeof window.Asaas === 'undefined' || typeof window.Asaas.CreditCard === 'undefined') {
+        console.error('SDK do Asaas não foi carregado corretamente.');
+        toast({
+          title: "Erro de Configuração",
+          description: "Não foi possível iniciar o pagamento com Asaas. Por favor, recarregue a página ou contate o suporte.",
+          variant: "destructive",
+        });
+        throw new Error('SDK do Asaas não está disponível');
+      }
+
       try {
         const asaasToken = await new Promise((resolve, reject) => {
           // @ts-ignore - Asaas SDK is loaded from external script
@@ -286,6 +296,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
         return { type: 'asaas', token: asaasToken };
       } catch (error) {
         console.error('Erro ao tokenizar cartão com Asaas:', error);
+        toast({
+          title: "Erro nos Dados do Cartão",
+          description: "Não foi possível processar os dados do seu cartão. Verifique as informações e tente novamente.",
+          variant: "destructive",
+        });
         throw new Error('Erro ao processar dados do cartão.');
       }
     } else {
