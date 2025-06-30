@@ -446,6 +446,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       upsert_producer_balance: {
         Args: { p_producer_id: string; amount_to_add: number }
         Returns: undefined
