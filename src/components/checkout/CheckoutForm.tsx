@@ -278,10 +278,9 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
       }
 
       try {
-        const asaasToken = await new Promise((resolve, reject) => {
-          // @ts-ignore - Asaas SDK is loaded from external script
+        const asaasToken = await new Promise<string>((resolve, reject) => {
           window.Asaas.CreditCard.createToken({
-            number: data.cardNumber?.replace(/\s/g, ''),
+            number: data.cardNumber?.replace(/\s/g, '') || '',
             expiryMonth: month,
             expiryYear: `20${year}`,
             ccv: data.cardCvv,
