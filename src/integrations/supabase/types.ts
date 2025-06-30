@@ -345,15 +345,16 @@ export type Database = {
           error_message_internal: string | null
           error_message_iugu: string | null
           event_attendees: Json | null
+          gateway_bank_slip_barcode: string | null
+          gateway_identifier: string | null
+          gateway_payment_url: string | null
+          gateway_pix_qrcode_base64: string | null
+          gateway_pix_qrcode_text: string | null
+          gateway_status: string | null
+          gateway_transaction_id: string | null
           id: string
           installments_chosen: number | null
-          iugu_bank_slip_barcode: string | null
           iugu_charge_id: string | null
-          iugu_invoice_id: string | null
-          iugu_invoice_secure_url: string | null
-          iugu_pix_qr_code_base64: string | null
-          iugu_pix_qr_code_text: string | null
-          iugu_status: string | null
           iugu_subscription_id: string | null
           paid_at: string | null
           payment_method_used: string
@@ -374,15 +375,16 @@ export type Database = {
           error_message_internal?: string | null
           error_message_iugu?: string | null
           event_attendees?: Json | null
+          gateway_bank_slip_barcode?: string | null
+          gateway_identifier?: string | null
+          gateway_payment_url?: string | null
+          gateway_pix_qrcode_base64?: string | null
+          gateway_pix_qrcode_text?: string | null
+          gateway_status?: string | null
+          gateway_transaction_id?: string | null
           id?: string
           installments_chosen?: number | null
-          iugu_bank_slip_barcode?: string | null
           iugu_charge_id?: string | null
-          iugu_invoice_id?: string | null
-          iugu_invoice_secure_url?: string | null
-          iugu_pix_qr_code_base64?: string | null
-          iugu_pix_qr_code_text?: string | null
-          iugu_status?: string | null
           iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used: string
@@ -403,15 +405,16 @@ export type Database = {
           error_message_internal?: string | null
           error_message_iugu?: string | null
           event_attendees?: Json | null
+          gateway_bank_slip_barcode?: string | null
+          gateway_identifier?: string | null
+          gateway_payment_url?: string | null
+          gateway_pix_qrcode_base64?: string | null
+          gateway_pix_qrcode_text?: string | null
+          gateway_status?: string | null
+          gateway_transaction_id?: string | null
           id?: string
           installments_chosen?: number | null
-          iugu_bank_slip_barcode?: string | null
           iugu_charge_id?: string | null
-          iugu_invoice_id?: string | null
-          iugu_invoice_secure_url?: string | null
-          iugu_pix_qr_code_base64?: string | null
-          iugu_pix_qr_code_text?: string | null
-          iugu_status?: string | null
           iugu_subscription_id?: string | null
           paid_at?: string | null
           payment_method_used?: string

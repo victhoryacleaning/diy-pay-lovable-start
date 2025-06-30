@@ -284,24 +284,26 @@ Deno.serve(async (req) => {
       throw new Error(`Gateway "${activeGateway.gateway_identifier}" não é suportado.`);
     }
 
-    // --- Inserir a Venda no Nosso Banco de Dados (Unificado) ---
+    // --- Inserir a Venda no Nosso Banco de Dados (Usando as novas colunas genéricas) ---
     const saleData = {
       product_id,
       buyer_profile_id,
       buyer_email,
       gateway_transaction_id: gatewayResponse.id,
-      gateway_name: gatewayResponse.gateway_name,
+      gateway_identifier: activeGateway.gateway_identifier,
+      gateway_status: gatewayResponse.status,
+      gateway_payment_url: gatewayResponse.secure_url,
+      gateway_pix_qrcode_text: gatewayResponse.pix_qr_code_text,
+      gateway_pix_qrcode_base64: gatewayResponse.pix_qr_code_base64,
+      gateway_bank_slip_barcode: gatewayResponse.bank_slip_barcode,
       amount_total_cents,
       payment_method_used: payment_method_selected,
       installments_chosen: installments || 1,
-      gateway_status: gatewayResponse.status,
       status: 'pending_payment',
-      gateway_secure_url: gatewayResponse.secure_url,
-      gateway_pix_qr_code_text: gatewayResponse.pix_qr_code_text,
-      gateway_pix_qr_code_base64: gatewayResponse.pix_qr_code_base64,
-      gateway_bank_slip_barcode: gatewayResponse.bank_slip_barcode,
+      platform_fee_cents: 0, // Será calculado posteriormente
+      producer_share_cents: 0, // Será calculado posteriormente
       event_attendees: attendees,
-      // Manter compatibilidade com campos antigos da Iugu
+      // Manter compatibilidade com campos antigos da Iugu (para não quebrar código existente)
       iugu_invoice_id: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.id : null,
       iugu_status: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.status : null,
       iugu_invoice_secure_url: activeGateway.gateway_identifier === 'iugu' ? gatewayResponse.secure_url : null,
