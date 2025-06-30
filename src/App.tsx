@@ -20,7 +20,10 @@ import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import AdminLayout from "./pages/Admin/AdminLayout";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
-import GatewaysPage from "./pages/Admin/GatewaysPage";
+import AdminProducersPage from "./pages/Admin/AdminProducersPage";
+import AdminFinancialsPage from "./pages/Admin/AdminFinancialsPage";
+import AdminFeesPage from "./pages/Admin/AdminFeesPage";
+import AdminGatewaysPage from "./pages/Admin/AdminGatewaysPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -108,7 +111,7 @@ const App = () => {
 
               {/* Admin Routes */}
               <Route 
-                path="/admin" 
+                path="/admin-dashboard" 
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <AdminLayout />
@@ -116,7 +119,50 @@ const App = () => {
                 }
               >
                 <Route index element={<AdminDashboard />} />
-                <Route path="gateways" element={<GatewaysPage />} />
+              </Route>
+              
+              <Route 
+                path="/admin-producers" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminProducersPage />} />
+              </Route>
+
+              <Route 
+                path="/admin-financials" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminFinancialsPage />} />
+              </Route>
+
+              <Route 
+                path="/admin-fees" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminFeesPage />} />
+              </Route>
+
+              <Route 
+                path="/admin-gateways" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminGatewaysPage />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

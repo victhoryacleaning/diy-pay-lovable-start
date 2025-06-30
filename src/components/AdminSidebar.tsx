@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { CreditCard, Users, BarChart3, Settings, Menu, X } from 'lucide-react';
+import { BarChart3, CreditCard, Users, DollarSign, Percent, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -12,31 +12,33 @@ const AdminSidebar = () => {
   const navigationItems = [
     {
       title: 'Dashboard',
-      href: '/admin',
+      href: '/admin-dashboard',
       icon: BarChart3,
     },
     {
-      title: 'Gateways de Pagamento',
-      href: '/admin/gateways',
-      icon: CreditCard,
-    },
-    {
-      title: 'Usuários',
-      href: '/admin/users',
+      title: 'Produtores',
+      href: '/admin-producers',
       icon: Users,
     },
     {
-      title: 'Configurações',
-      href: '/admin/settings',
-      icon: Settings,
+      title: 'Financeiro',
+      href: '/admin-financials',
+      icon: DollarSign,
+    },
+    {
+      title: 'Taxas e Prazos',
+      href: '/admin-fees',
+      icon: Percent,
+    },
+    {
+      title: 'Gateways de Pagamento',
+      href: '/admin-gateways',
+      icon: CreditCard,
     },
   ];
 
   const isActive = (path: string) => {
-    if (path === '/admin') {
-      return location.pathname === '/admin';
-    }
-    return location.pathname.startsWith(path);
+    return location.pathname === path;
   };
 
   const SidebarContent = () => (

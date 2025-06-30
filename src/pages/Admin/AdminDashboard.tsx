@@ -1,16 +1,14 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CreditCard, Users, Settings, BarChart3 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { DollarSign, BarChart3, Users } from 'lucide-react';
 
 const AdminDashboard = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Painel de Administração</h1>
+        <h1 className="text-3xl font-bold">Dashboard do Administrador</h1>
         <p className="text-muted-foreground mt-2">
-          Gerencie todos os aspectos da plataforma de pagamentos.
+          Visão geral das métricas e atividades da plataforma.
         </p>
       </div>
 
@@ -18,76 +16,45 @@ const AdminDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Gateways de Pagamento
-            </CardTitle>
-            <CardDescription>
-              Configure e gerencie os provedores de pagamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link to="/admin/gateways">
-                Gerenciar Gateways
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Usuários e Produtores
-            </CardTitle>
-            <CardDescription>
-              Visualize e gerencie usuários da plataforma
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full" variant="outline">
-              <Link to="/admin/users">
-                Ver Usuários
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Relatórios
+              Gráfico de Valores
             </CardTitle>
             <CardDescription>
-              Acompanhe métricas e relatórios da plataforma
+              Visualização dos dados financeiros
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full" variant="outline">
-              <Link to="/admin/reports">
-                Ver Relatórios
-              </Link>
-            </Button>
+            <p className="text-2xl font-bold text-muted-foreground">Em breve</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Configurações
+              <DollarSign className="h-5 w-5" />
+              Valor Total Movimentado
             </CardTitle>
             <CardDescription>
-              Ajuste configurações gerais da plataforma
+              Volume total de transações
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full" variant="outline">
-              <Link to="/admin/settings">
-                Configurações
-              </Link>
-            </Button>
+            <p className="text-2xl font-bold text-muted-foreground">R$ --</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Valor Total Lucro
+            </CardTitle>
+            <CardDescription>
+              Receita total da plataforma
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-muted-foreground">R$ --</p>
           </CardContent>
         </Card>
       </div>
