@@ -34,6 +34,7 @@ interface FinalSettings {
   boleto_release_days: number;
   card_release_days: number;
   security_reserve_percent: number;
+  fixed_fee_cents: number;
 }
 
 // --- Constantes e Configurações ---
@@ -190,11 +191,13 @@ async function getFinancialSettings(supabase: SupabaseClient, producerId: string
     boleto_release_days: producerSettings?.custom_boleto_release_days ?? platformSettings.default_boleto_release_days,
     card_release_days: producerSettings?.custom_card_release_days ?? platformSettings.default_card_release_days,
     security_reserve_percent: producerSettings?.custom_security_reserve_percent ?? platformSettings.default_security_reserve_percent,
+    fixed_fee_cents: producerSettings?.custom_fixed_fee_cents ?? platformSettings.default_fixed_fee_cents,
   };
 }
 
 /**
  * Calcula a taxa da plataforma em centavos com base nas configurações.
+ * Agora inclui tanto a taxa percentual quanto a taxa fixa.
  */
 function calculatePlatformFee(settings: FinalSettings, paymentMethod: string, installments: number, amountCents: number): number {
   let feePercent: number;
@@ -217,7 +220,18 @@ function calculatePlatformFee(settings: FinalSettings, paymentMethod: string, in
     feePercent = settings.card_installments_fees["1"];
   }
 
-  return Math.round(amountCents * (feePercent / 100));
+  // 1. Calcular a parte percentual da taxa
+  const percentageFee = Math.round(amountCents * (feePercent / 100));
+
+  // 2. Obter a parte fixa da taxa
+  const fixedFee = settings.fixed_fee_cents || 0; // Use 0 como fallback seguro
+
+  // 3. Somar as duas partes para obter a taxa total
+  const totalPlatformFeeCents = percentageFee + fixedFee;
+  
+  console.log(`[FEE_CALCULATION] Amount: ${amountCents}, Percentage: ${feePercent}%, Fixed: ${fixedFee}, Total Fee: ${totalPlatformFeeCents}`);
+  
+  return totalPlatformFeeCents;
 }
 
 /**
