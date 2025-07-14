@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body = await req.json()
-    const { gateway_id, is_active, priority, credentials } = body
+    const { gateway_id, is_active, priority, credentials, fixed_fee_cents } = body
 
     if (!gateway_id) {
       return new Response(
@@ -96,6 +96,20 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Failed to update gateway' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Update platform settings if fixed_fee_cents is provided
+    if (typeof fixed_fee_cents === 'number') {
+      const { error: settingsError } = await supabase
+        .from('platform_settings')
+        .update({ default_fixed_fee_cents: fixed_fee_cents })
+        .eq('id', (await supabase.from('platform_settings').select('id').single()).data?.id)
+
+      if (settingsError) {
+        console.error('[update-payment-gateway] Error updating platform settings:', settingsError)
+      } else {
+        console.log('[update-payment-gateway] Updated platform fixed fee to:', fixed_fee_cents)
+      }
     }
 
     console.log('[update-payment-gateway] Successfully updated gateway:', updatedGateway.gateway_name)

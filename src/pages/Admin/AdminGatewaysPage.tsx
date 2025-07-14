@@ -49,6 +49,7 @@ interface GatewayFormData {
   is_active: boolean;
   priority: number;
   credentials: Record<string, string>;
+  fixed_fee_reais: string;
 }
 
 const AdminGatewaysPage = () => {
@@ -57,11 +58,23 @@ const AdminGatewaysPage = () => {
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Fetch gateways
+  // Fetch gateways and platform settings
   const { data: gatewaysData, isLoading } = useQuery({
     queryKey: ['payment-gateways'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-payment-gateways');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: platformSettings } = useQuery({
+    queryKey: ['platform-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('default_fixed_fee_cents')
+        .single();
       if (error) throw error;
       return data;
     },
@@ -100,10 +113,15 @@ const AdminGatewaysPage = () => {
 
   const handleManageGateway = (gateway: PaymentGateway) => {
     setSelectedGateway(gateway);
+    const fixedFeeReais = platformSettings?.default_fixed_fee_cents 
+      ? (platformSettings.default_fixed_fee_cents / 100).toFixed(2).replace('.', ',')
+      : '1,00';
+    
     form.reset({
       is_active: gateway.is_active,
       priority: gateway.priority,
       credentials: gateway.credentials || {},
+      fixed_fee_reais: fixedFeeReais,
     });
     setIsDialogOpen(true);
   };
@@ -111,9 +129,21 @@ const AdminGatewaysPage = () => {
   const onSubmit = (data: GatewayFormData) => {
     if (!selectedGateway) return;
 
+    // Convert fixed_fee_reais to cents
+    const fixedFeeCents = Math.round(
+      parseFloat(data.fixed_fee_reais.replace(',', '.')) * 100
+    );
+
+    const updateData = {
+      is_active: data.is_active,
+      priority: data.priority,
+      credentials: data.credentials,
+      fixed_fee_cents: fixedFeeCents,
+    };
+
     updateGatewayMutation.mutate({
       gatewayId: selectedGateway.id,
-      updateData: data,
+      updateData,
     });
   };
 
@@ -238,6 +268,27 @@ const AdminGatewaysPage = () => {
                                     onChange={(e) => field.onChange(Number(e.target.value))}
                                   />
                                 </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="fixed_fee_reais"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Taxa Fixa por Transação (R$)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    placeholder="1,00"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <div className="text-sm text-muted-foreground">
+                                  Taxa fixa aplicada a todas as transações (formato: 1,50)
+                                </div>
                                 <FormMessage />
                               </FormItem>
                             )}
