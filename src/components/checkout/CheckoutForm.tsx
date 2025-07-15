@@ -258,7 +258,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     return result;
   };
   
-  const createPaymentToken = async (data: CheckoutFormData) => {
+  const createPaymentToken = async (data: CheckoutFormData, customerId?: string) => {
     if (data.paymentMethod !== "credit_card" || !data.cardName || !data.cardExpiry || !data.cardCvv) return null;
     
     const [firstName, ...lastNameParts] = data.cardName.split(' ');
@@ -277,7 +277,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
             ccv: data.cardCvv,
             name: data.fullName,
             email: data.email,
-            cpfCnpj: data.cpfCnpj
+            cpfCnpj: data.cpfCnpj,
+            customer_id: customerId // Adiciona o customer_id do Asaas
           },
         });
 
@@ -336,7 +337,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
         buyer_profile_id = profile?.id || null;
       }
 
-      const cardTokenResult = await createPaymentToken(data);
+      const cardTokenResult = await createPaymentToken(data, buyer_profile_id);
 
       const transactionPayload: any = {
         product_id: product.id,

@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { holderName, number, expiryMonth, expiryYear, ccv, name, email, cpfCnpj } = await req.json();
+    const { holderName, number, expiryMonth, expiryYear, ccv, name, email, cpfCnpj, customer_id } = await req.json();
 
     console.log('[TOKENIZE_CARD] Iniciando tokenização de cartão de crédito');
 
@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
       console.log('[ASAAS_TOKENIZE] Iniciando tokenização via Asaas...');
 
       const asaasPayload = {
+        customer: customer_id,
         creditCard: {
           holderName,
           number: number.replace(/\s/g, ''),
