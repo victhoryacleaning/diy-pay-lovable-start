@@ -16,10 +16,10 @@ interface SaleData {
   payment_method_used: string;
   installments_chosen: number;
   status: string;
-  iugu_invoice_secure_url: string | null;
-  iugu_pix_qr_code_base64: string | null;
-  iugu_pix_qr_code_text: string | null;
-  iugu_bank_slip_barcode: string | null;
+  gateway_payment_url: string | null;
+  gateway_pix_qrcode_base64: string | null;
+  gateway_pix_qrcode_text: string | null;
+  gateway_bank_slip_barcode: string | null;
   created_at: string;
   paid_at: string | null;
   products: {
@@ -147,9 +147,9 @@ const PaymentConfirmation = () => {
   }, [saleId, sale?.status]);
 
   const handleCopyPixCode = async () => {
-    if (sale?.iugu_pix_qr_code_text) {
+    if (sale?.gateway_pix_qrcode_text) {
       try {
-        await navigator.clipboard.writeText(sale.iugu_pix_qr_code_text);
+        await navigator.clipboard.writeText(sale.gateway_pix_qrcode_text);
         setCopiedPix(true);
         toast({
           title: "Código PIX copiado!",
@@ -167,9 +167,9 @@ const PaymentConfirmation = () => {
   };
 
   const handleCopyBarcode = async () => {
-    if (sale?.iugu_bank_slip_barcode) {
+    if (sale?.gateway_bank_slip_barcode) {
       try {
-        await navigator.clipboard.writeText(sale.iugu_bank_slip_barcode);
+        await navigator.clipboard.writeText(sale.gateway_bank_slip_barcode);
         setCopiedBarcode(true);
         toast({
           title: "Linha digitável copiada!",
@@ -187,8 +187,8 @@ const PaymentConfirmation = () => {
   };
 
   const handleOpenBankSlip = () => {
-    if (sale?.iugu_invoice_secure_url) {
-      window.open(sale.iugu_invoice_secure_url, '_blank');
+    if (sale?.gateway_payment_url) {
+      window.open(sale.gateway_payment_url, '_blank');
     }
   };
 
@@ -269,7 +269,7 @@ const PaymentConfirmation = () => {
   const statusDisplay = getStatusDisplay(sale.status);
 
   // Verifica se o código PIX é uma URL (ambiente de teste)
-  const isPixTestUrl = sale.iugu_pix_qr_code_text?.startsWith('http');
+  const isPixTestUrl = sale.gateway_pix_qrcode_text?.startsWith('http');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -326,10 +326,10 @@ const PaymentConfirmation = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* QR Code PIX */}
-                  {sale.iugu_pix_qr_code_base64 && (
+                  {sale.gateway_pix_qrcode_base64 && (
                     <div className="text-center">
                       <img 
-                        src={`data:image/png;base64,${sale.iugu_pix_qr_code_base64}`}
+                        src={`data:image/png;base64,${sale.gateway_pix_qrcode_base64}`}
                         alt="QR Code PIX"
                         className="mx-auto mb-4 border rounded-lg"
                         style={{ maxWidth: '200px', height: 'auto' }}
@@ -341,13 +341,13 @@ const PaymentConfirmation = () => {
                   )}
                   
                   {/* Código PIX ou Link de Teste */}
-                  {sale.iugu_pix_qr_code_text && (
+                  {sale.gateway_pix_qrcode_text && (
                     <div className="space-y-3">
                       {isPixTestUrl ? (
                         // Ambiente de teste - mostra link
                         <div className="text-center">
                           <a
-                            href={sale.iugu_pix_qr_code_text}
+                            href={sale.gateway_pix_qrcode_text}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
@@ -366,7 +366,7 @@ const PaymentConfirmation = () => {
                             Código PIX (Copia e Cola):
                           </label>
                           <Textarea
-                            value={sale.iugu_pix_qr_code_text}
+                            value={sale.gateway_pix_qrcode_text}
                             readOnly
                             className="text-xs font-mono bg-gray-50 resize-none"
                             rows={4}
@@ -387,7 +387,7 @@ const PaymentConfirmation = () => {
                   )}
 
                   {/* Mensagem quando não há código PIX disponível */}
-                  {!sale.iugu_pix_qr_code_text && (
+                  {!sale.gateway_pix_qrcode_text && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-500">
                         Código Copia e Cola indisponível no ambiente de teste.
@@ -415,7 +415,7 @@ const PaymentConfirmation = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Botão para imprimir boleto */}
-                  {sale.iugu_invoice_secure_url && (
+                  {sale.gateway_payment_url && (
                     <div className="text-center">
                       <Button
                         onClick={handleOpenBankSlip}
@@ -429,7 +429,7 @@ const PaymentConfirmation = () => {
                   )}
 
                   {/* Linha digitável do boleto */}
-                  {sale.iugu_bank_slip_barcode && (
+                  {sale.gateway_bank_slip_barcode && (
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">
                         Linha Digitável:
@@ -437,7 +437,7 @@ const PaymentConfirmation = () => {
                       <div className="flex gap-2">
                         <Input
                           type="text"
-                          value={sale.iugu_bank_slip_barcode}
+                          value={sale.gateway_bank_slip_barcode}
                           readOnly
                           className="flex-1 text-sm font-mono bg-gray-50"
                         />
