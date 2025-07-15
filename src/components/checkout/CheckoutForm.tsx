@@ -266,33 +266,25 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const [month, year] = data.cardExpiry.split('/');
 
     if (activeGateway === 'asaas') {
-      // Verificar se o SDK do Asaas está disponível
-      if (typeof window.Asaas === 'undefined' || typeof window.Asaas.CreditCard === 'undefined') {
-        console.error('SDK do Asaas não foi carregado corretamente.');
-        toast({
-          title: "Erro de Configuração",
-          description: "Não foi possível iniciar o pagamento com Asaas. Por favor, recarregue a página ou contate o suporte.",
-          variant: "destructive",
-        });
-        throw new Error('SDK do Asaas não está disponível');
-      }
-
+      // Usar a nova Edge Function de tokenização no backend
       try {
-        const asaasToken = await new Promise<string>((resolve, reject) => {
-          window.Asaas.CreditCard.createToken({
+        const { data: result, error } = await supabase.functions.invoke('tokenize-card', {
+          body: {
+            holderName: data.cardName,
             number: data.cardNumber?.replace(/\s/g, '') || '',
             expiryMonth: month,
             expiryYear: `20${year}`,
             ccv: data.cardCvv,
-            holderName: data.cardName,
-          }, (token: string) => {
-            resolve(token);
-          }, (error: any) => {
-            reject(error);
-          });
+            name: data.fullName,
+            email: data.email,
+            cpfCnpj: data.cpfCnpj
+          },
         });
+
+        if (error) throw new Error('Erro ao comunicar com o serviço de tokenização.');
+        if (!result.success) throw new Error(result.error || 'Erro ao tokenizar cartão.');
         
-        return { type: 'asaas', token: asaasToken };
+        return { type: 'asaas', token: result.creditCardToken };
       } catch (error) {
         console.error('Erro ao tokenizar cartão com Asaas:', error);
         toast({
