@@ -327,17 +327,14 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
         buyer_profile_id = customerResponse.buyer_profile_id;
         iugu_customer_id = customerResponse.iugu_customer_id;
       } else {
-        // Para outros gateways, apenas buscar/criar o perfil do comprador
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', data.email)
-          .single();
-        
-        buyer_profile_id = profile?.id || null;
+        // Para outros gateways (incluindo Asaas), criar/buscar cliente
+        customerResponse = await createIuguCustomer(data);
+        if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente");
+        buyer_profile_id = customerResponse.buyer_profile_id;
+        iugu_customer_id = customerResponse.iugu_customer_id;
       }
 
-      const cardTokenResult = await createPaymentToken(data, buyer_profile_id);
+      const cardTokenResult = await createPaymentToken(data, iugu_customer_id);
 
       const transactionPayload: any = {
         product_id: product.id,
