@@ -259,18 +259,35 @@ Deno.serve(async (req) => {
       const paymentResult = await paymentResponse.json();
       console.log(`[ASAAS_PAYMENT_SUCCESS] Cobrança criada com sucesso. ID: ${paymentResult.id}`);
 
-      // **CORREÇÃO CRÍTICA**: Mapeamento correto dos dados PIX do Asaas
-      console.log('[ASAAS_PIX_DEBUG] Dados PIX na resposta:', JSON.stringify(paymentResult.pixQrCode, null, 2));
+      let pixData = { qrCodeBase64: null, qrCodeText: null };
+
+      // ETAPA ADICIONAL E CRUCIAL PARA PIX - Segunda chamada de API
+      if (billingType === 'PIX') {
+        console.log(`[ASAAS_PIX] Cobrança PIX criada. Buscando dados do QR Code para ${paymentResult.id}...`);
+        const pixQrCodeResponse = await fetch(`https://sandbox.asaas.com/api/v3/payments/${paymentResult.id}/pixQrCode`, {
+          headers: { 'access_token': api_key }
+        });
+
+        if (pixQrCodeResponse.ok) {
+          const pixQrCodeData = await pixQrCodeResponse.json();
+          pixData.qrCodeBase64 = pixQrCodeData.encodedImage;
+          pixData.qrCodeText = pixQrCodeData.payload;
+          console.log('[ASAAS_PIX] Dados do QR Code obtidos com sucesso.');
+          console.log('[ASAAS_PIX_DEBUG] QR Code Data:', JSON.stringify(pixQrCodeData, null, 2));
+        } else {
+          console.error('[ASAAS_PIX_ERROR] Falha ao buscar dados do QR Code.');
+        }
+      }
 
       // Padronizar resposta do Asaas
       gatewayResponse = {
         id: paymentResult.id,
         status: paymentResult.status,
         secure_url: paymentResult.invoiceUrl,
-        // Mapeamento CORRETO dos campos PIX do Asaas
-        pix_qr_code_text: paymentResult.pixQrCode?.payload || null, // 'payload' é o Copia e Cola
-        pix_qr_code_base64: paymentResult.pixQrCode?.encodedImage || null, // 'encodedImage' é o Base64 do QR Code
-        // Mapeamento CORRETO dos campos de Boleto do Asaas
+        // Usar dados da segunda chamada para PIX ou fallback para dados da primeira chamada
+        pix_qr_code_text: pixData.qrCodeText || paymentResult.pixQrCode?.payload || null,
+        pix_qr_code_base64: pixData.qrCodeBase64 || paymentResult.pixQrCode?.encodedImage || null,
+        // Mapeamento dos campos de Boleto do Asaas
         bank_slip_barcode: paymentResult.identificationField || paymentResult.nossoNumero || null,
         gateway_name: 'Asaas'
       };
