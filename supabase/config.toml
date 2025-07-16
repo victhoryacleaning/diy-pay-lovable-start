@@ -1,7 +1,7 @@
 
 project_id = "huakzwguwjulxhvcztuh"
 
-[functions.get-or-create-iugu-customer]
+[functions.get-or-create-payment-customer]
 verify_jwt = false
 
 [functions.create-iugu-payment-token]

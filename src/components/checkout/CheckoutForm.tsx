@@ -250,12 +250,22 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     return Math.round(numberValue * 100);
   };
   
-  const createIuguCustomer = async (data: CheckoutFormData) => {
-    const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
-      body: { email: data.email, name: data.fullName, cpf_cnpj: data.cpfCnpj, phone: data.phone },
+  const createPaymentCustomer = async (data: CheckoutFormData) => {
+    const { data: response, error } = await supabase.functions.invoke('get-or-create-payment-customer', {
+      body: {
+        email: data.email,
+        name: data.fullName,
+        cpfCnpj: data.cpfCnpj,
+        phone: data.phone,
+      },
     });
-    if (error) throw new Error('Erro ao criar ou buscar cliente Iugu.');
-    return result;
+
+    if (error) {
+      console.error('Erro ao criar cliente:', error);
+      throw new Error('Erro ao criar ou buscar cliente.');
+    }
+
+    return response;
   };
   
   const createPaymentToken = async (data: CheckoutFormData, customerId?: string) => {
@@ -317,24 +327,16 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     setIsLoading(true);
 
     try {
-      let customerResponse;
-      let buyer_profile_id;
-      let iugu_customer_id = null;
-
-      if (activeGateway === 'iugu') {
-        customerResponse = await createIuguCustomer(data);
-        if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
-        buyer_profile_id = customerResponse.buyer_profile_id;
-        iugu_customer_id = customerResponse.iugu_customer_id;
-      } else {
-        // Para outros gateways (incluindo Asaas), criar/buscar cliente
-        customerResponse = await createIuguCustomer(data);
-        if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente");
-        buyer_profile_id = customerResponse.buyer_profile_id;
-        iugu_customer_id = customerResponse.iugu_customer_id;
+      // Criar ou buscar cliente no gateway ativo
+      const customerResponse = await createPaymentCustomer(data);
+      if (!customerResponse.success) {
+        throw new Error(customerResponse.message || "Falha ao criar cliente");
       }
+      
+      const buyer_profile_id = customerResponse.buyer_profile_id;
+      const customer_id = customerResponse.customer_id;
 
-      const cardTokenResult = await createPaymentToken(data, iugu_customer_id);
+      const cardTokenResult = await createPaymentToken(data, customer_id);
 
       const transactionPayload: any = {
         product_id: product.id,
@@ -352,10 +354,10 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
           transactionPayload.credit_card_token = cardTokenResult.token;
         } else if (cardTokenResult.type === 'iugu') {
           transactionPayload.card_token = cardTokenResult.token;
-          transactionPayload.iugu_customer_id = iugu_customer_id;
+          transactionPayload.iugu_customer_id = customer_id;
         }
       } else if (activeGateway === 'iugu') {
-        transactionPayload.iugu_customer_id = iugu_customer_id;
+        transactionPayload.iugu_customer_id = customer_id;
       }
 
       if (isDonation) {
