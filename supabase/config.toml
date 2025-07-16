@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.payment-webhook-handler]
 verify_jwt = false
+
+[functions.get-producer-financials]
+verify_jwt = true
