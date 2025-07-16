@@ -150,13 +150,22 @@ Deno.serve(async (req) => {
       
       const appEnv = Deno.env.get('APP_ENV') || 'test';
       const isProduction = appEnv === 'production';
+      
+      // --- INÍCIO DA CORREÇÃO ---
+      // Garante que 'credentials' seja um objeto e extrai a 'api_key'.
+      const credentials = activeGateway.credentials;
+      if (typeof credentials !== 'object' || credentials === null) {
+        throw new Error('Credenciais do gateway Asaas não configuradas ou em formato inválido.');
+      }
+      
       const asaasApiKey = isProduction 
-        ? activeGateway.credentials?.api_key_live || Deno.env.get('ASAAS_API_KEY_LIVE')
-        : activeGateway.credentials?.api_key_test || Deno.env.get('ASAAS_API_KEY_TEST');
+        ? credentials.api_key_live || Deno.env.get('ASAAS_API_KEY_LIVE')
+        : credentials.api_key_test || Deno.env.get('ASAAS_API_KEY_TEST');
 
       if (!asaasApiKey) {
         throw new Error('API key do Asaas não configurada');
       }
+      // --- FIM DA CORREÇÃO ---
 
       const baseUrl = isProduction ? 'https://api.asaas.com' : 'https://sandbox.asaas.com';
       
