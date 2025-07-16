@@ -266,42 +266,17 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const [month, year] = data.cardExpiry.split('/');
 
     if (activeGateway === 'asaas') {
-      // Verificar se o SDK do Asaas está disponível
-      if (typeof window.Asaas === 'undefined' || typeof window.Asaas.CreditCard === 'undefined') {
-        console.error('SDK do Asaas não foi carregado corretamente.');
-        toast({
-          title: "Erro de Configuração",
-          description: "Não foi possível iniciar o pagamento com Asaas. Por favor, recarregue a página ou contate o suporte.",
-          variant: "destructive",
-        });
-        throw new Error('SDK do Asaas não está disponível');
-      }
-
-      try {
-        const asaasToken = await new Promise<string>((resolve, reject) => {
-          window.Asaas.CreditCard.createToken({
-            number: data.cardNumber?.replace(/\s/g, '') || '',
-            expiryMonth: month,
-            expiryYear: `20${year}`,
-            ccv: data.cardCvv,
-            holderName: data.cardName,
-          }, (token: string) => {
-            resolve(token);
-          }, (error: any) => {
-            reject(error);
-          });
-        });
-        
-        return { type: 'asaas', token: asaasToken };
-      } catch (error) {
-        console.error('Erro ao tokenizar cartão com Asaas:', error);
-        toast({
-          title: "Erro nos Dados do Cartão",
-          description: "Não foi possível processar os dados do seu cartão. Verifique as informações e tente novamente.",
-          variant: "destructive",
-        });
-        throw new Error('Erro ao processar dados do cartão.');
-      }
+      // Para Asaas, retornamos os dados brutos do cartão em vez de tokenizar
+      return { 
+        type: 'asaas', 
+        cardData: {
+          number: data.cardNumber?.replace(/\s/g, '') || '',
+          expiryMonth: month,
+          expiryYear: `20${year}`,
+          ccv: data.cardCvv,
+          holderName: data.cardName,
+        }
+      };
     } else {
       // Tokenizar com Iugu (código existente)
       const { data: result, error } = await supabase.functions.invoke('create-iugu-payment-token', {
@@ -356,10 +331,11 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
         buyer_cpf_cnpj: data.cpfCnpj,
       };
 
-      // Adicionar tokens baseado no gateway
+      // Adicionar dados do cartão baseado no gateway
       if (cardTokenResult) {
         if (cardTokenResult.type === 'asaas') {
-          transactionPayload.credit_card_token = cardTokenResult.token;
+          // Para Asaas, enviamos os dados brutos do cartão
+          transactionPayload.credit_card_data = cardTokenResult.cardData;
         } else if (cardTokenResult.type === 'iugu') {
           transactionPayload.card_token = cardTokenResult.token;
           transactionPayload.iugu_customer_id = iugu_customer_id;
