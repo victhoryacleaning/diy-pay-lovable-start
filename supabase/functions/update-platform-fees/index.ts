@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
     const { data: updatedSettings, error: updateError } = await supabase
       .from('platform_settings')
       .update(updateData)
+      .eq('id', (await supabase.from('platform_settings').select('id').single()).data?.id)
       .single()
 
     if (updateError) {
