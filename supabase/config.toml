@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.get-producer-financials]
 verify_jwt = true
+
+[functions.get-withdrawal-history]
+verify_jwt = true

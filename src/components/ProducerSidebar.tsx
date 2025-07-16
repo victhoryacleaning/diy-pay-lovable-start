@@ -49,15 +49,8 @@ const menuItems = [
   },
   {
     title: "Financeiro",
-    url: "/financials", // Future implementation
+    url: "/financials",
     icon: CreditCard,
-    subItems: [
-      {
-        title: "Dados Bancários",
-        url: "/complete-producer-profile",
-        icon: CreditCard,
-      }
-    ]
   },
   {
     title: "Configurações",
@@ -123,25 +116,6 @@ export function ProducerSidebar() {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  
-                  {item.subItems && (
-                    <SidebarMenu className="ml-6 mt-1">
-                      {item.subItems.map((subItem) => (
-                        <SidebarMenuItem key={subItem.title}>
-                          <SidebarMenuButton 
-                            asChild 
-                            size="sm"
-                            isActive={isActive(subItem.url)}
-                          >
-                            <Link to={subItem.url} className="flex items-center gap-2">
-                              <subItem.icon className="h-3 w-3" />
-                              <span className="text-xs">{subItem.title}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
