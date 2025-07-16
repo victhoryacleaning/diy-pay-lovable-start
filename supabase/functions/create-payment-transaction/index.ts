@@ -24,9 +24,11 @@ Deno.serve(async (req) => {
       payment_method_selected,
       card_token,
       credit_card_token,
+      credit_card_data,
       installments,
       buyer_name,
       buyer_cpf_cnpj,
+      buyer_phone,
       donation_amount_cents,
       quantity,
       attendees,
@@ -228,10 +230,38 @@ Deno.serve(async (req) => {
       };
 
       // Adicionar dados do cartão se for cartão de crédito
-      if (payment_method_selected === 'credit_card' && credit_card_token) {
-        paymentPayload.creditCard = {
-          creditCardToken: credit_card_token,
-        };
+      if (payment_method_selected === 'credit_card') {
+        if (credit_card_data) {
+          // Usar dados brutos do cartão para Asaas
+          if (!credit_card_data.number || !credit_card_data.holderName || !credit_card_data.ccv) {
+            throw new Error('Dados completos do cartão de crédito são obrigatórios.');
+          }
+
+          // Monta os objetos que a API do Asaas espera
+          paymentPayload.creditCard = {
+            holderName: credit_card_data.holderName,
+            number: credit_card_data.number,
+            expiryMonth: credit_card_data.expiryMonth,
+            expiryYear: credit_card_data.expiryYear,
+            ccv: credit_card_data.ccv
+          };
+
+          paymentPayload.creditCardHolderInfo = {
+            name: buyer_name,
+            email: buyer_email,
+            cpfCnpj: buyer_cpf_cnpj,
+            postalCode: "01001-000", // CEP genérico. Idealmente, coletar do usuário.
+            addressNumber: "123", // Número genérico. Idealmente, coletar do usuário.
+            phone: buyer_phone || "11999999999", // Telefone genérico se não fornecido
+          };
+        } else if (credit_card_token) {
+          // Fallback para token (compatibilidade com Iugu)
+          paymentPayload.creditCard = {
+            creditCardToken: credit_card_token,
+          };
+        } else {
+          throw new Error('Dados do cartão de crédito ou token são obrigatórios.');
+        }
         
         if (installments > 1) {
           paymentPayload.installmentCount = installments;
