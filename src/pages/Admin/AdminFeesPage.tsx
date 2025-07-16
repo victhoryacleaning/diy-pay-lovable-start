@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,7 +80,7 @@ const AdminFeesPage = () => {
   });
 
   // Query for platform settings
-  const { data: platformSettings, isLoading: platformLoading } = useQuery({
+  const { data: platformSettings, isLoading: platformLoading, isError: platformError } = useQuery({
     queryKey: ['platform-fees'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-platform-fees');
@@ -242,7 +242,7 @@ const AdminFeesPage = () => {
   });
 
   // Set form values when platform settings are loaded
-  useState(() => {
+  useEffect(() => {
     if (platformSettings?.data) {
       const settings = platformSettings.data;
       const creditCardFees = settings.default_fees_json?.credit_card_fees || {};
@@ -268,10 +268,10 @@ const AdminFeesPage = () => {
         installment_12x: creditCardFees["12"] || 0,
       });
     }
-  });
+  }, [platformSettings, platformForm]);
 
   // Set producer form values when producer settings are loaded
-  useState(() => {
+  useEffect(() => {
     if (producerSettings) {
       const customFees = producerSettings.custom_fees_json || {};
       const customReleaseRules = producerSettings.custom_release_rules_json || {};
@@ -301,7 +301,7 @@ const AdminFeesPage = () => {
       // Reset form if no custom settings exist
       producerForm.reset({});
     }
-  });
+  }, [producerSettings, selectedProducer, producerForm]);
 
   const onPlatformSubmit = (data: PlatformFeesForm) => {
     updatePlatformFeesMutation.mutate(data);
@@ -310,6 +310,44 @@ const AdminFeesPage = () => {
   const onProducerSubmit = (data: ProducerSettingsForm) => {
     updateProducerSettingsMutation.mutate(data);
   };
+
+  // Loading state
+  if (platformLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Taxas e Prazos</h1>
+          <p className="text-muted-foreground mt-2">
+            Configure as taxas de comissão e prazos de repasse da plataforma.
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando configurações...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (platformError) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Taxas e Prazos</h1>
+          <p className="text-muted-foreground mt-2">
+            Configure as taxas de comissão e prazos de repasse da plataforma.
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <p className="text-destructive mb-2">Erro ao carregar as configurações.</p>
+            <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8">
@@ -333,12 +371,7 @@ const AdminFeesPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {platformLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-            ) : (
-              <Form {...platformForm}>
+            <Form {...platformForm}>
                 <form onSubmit={platformForm.handleSubmit(onPlatformSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
@@ -516,8 +549,7 @@ const AdminFeesPage = () => {
                     Salvar Taxas Padrão
                   </Button>
                 </form>
-              </Form>
-            )}
+            </Form>
           </CardContent>
         </Card>
 
