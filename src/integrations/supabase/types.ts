@@ -455,6 +455,44 @@ export type Database = {
           },
         ]
       }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount_cents: number
+          id: string
+          processed_at: string | null
+          producer_id: string
+          requested_at: string | null
+          status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_cents: number
+          id?: string
+          processed_at?: string | null
+          producer_id: string
+          requested_at?: string | null
+          status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_cents?: number
+          id?: string
+          processed_at?: string | null
+          producer_id?: string
+          requested_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

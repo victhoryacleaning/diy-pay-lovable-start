@@ -58,8 +58,21 @@ Deno.serve(async (req) => {
 
     console.log('Fetching withdrawal history for producer:', user.id)
 
-    // For now, return empty array as withdrawal_requests table doesn't exist yet
-    const withdrawalHistory = []
+    // Get withdrawal history for the producer
+    const { data: withdrawalHistory, error: withdrawalError } = await supabase
+      .from('withdrawal_requests')
+      .select('id, amount_cents, status, requested_at, processed_at, admin_notes')
+      .eq('producer_id', user.id)
+      .order('requested_at', { ascending: false })
+      .limit(50)
+
+    if (withdrawalError) {
+      console.error('Error fetching withdrawal history:', withdrawalError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch withdrawal history' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     console.log('Withdrawal history fetched successfully')
 
