@@ -251,7 +251,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   };
   
   const createPaymentCustomer = async (data: CheckoutFormData) => {
-    const { data: response, error } = await supabase.functions.invoke('get-or-create-payment-customer', {
+    const { data: response, error } = await supabase.functions.invoke('resolve-customer', {
       body: {
         email: data.email,
         name: data.fullName,

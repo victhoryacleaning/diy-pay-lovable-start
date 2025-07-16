@@ -1,4 +1,3 @@
-// Force redeploy
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -14,7 +13,7 @@ interface CustomerPayload {
 }
 
 Deno.serve(async (req) => {
-  console.log('[DEBUG] *** INÍCIO DA FUNÇÃO get-or-create-payment-customer ***');
+  console.log('[DEBUG] *** INÍCIO DA FUNÇÃO resolve-customer ***');
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -35,7 +34,7 @@ Deno.serve(async (req) => {
           success: false,
           error: true, 
           message: errorMsg,
-          functionName: 'get-or-create-payment-customer'
+          functionName: 'resolve-customer'
         }),
         { 
           status: 500, 
@@ -62,7 +61,7 @@ Deno.serve(async (req) => {
           success: false,
           error: true, 
           message: errorMsg,
-          functionName: 'get-or-create-payment-customer'
+          functionName: 'resolve-customer'
         }),
         { 
           status: 400, 
@@ -80,7 +79,7 @@ Deno.serve(async (req) => {
           success: false, 
           error: true,
           message: errorMsg,
-          functionName: 'get-or-create-payment-customer'
+          functionName: 'resolve-customer'
         }),
         { 
           status: 400, 
@@ -107,7 +106,7 @@ Deno.serve(async (req) => {
           success: false, 
           error: true,
           message: errorMsg,
-          functionName: 'get-or-create-payment-customer'
+          functionName: 'resolve-customer'
         }),
         { 
           status: 500, 
@@ -366,14 +365,14 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[ERRO] *** ERRO GERAL NA get-or-create-payment-customer ***:', error);
+    console.error('[ERRO] *** ERRO GERAL NA resolve-customer ***:', error);
     return new Response(
       JSON.stringify({
         success: false, 
         error: true,
         message: 'Erro ao criar ou buscar cliente', 
         details: error.message,
-        functionName: 'get-or-create-payment-customer'
+        functionName: 'resolve-customer'
       }),
       { 
         status: 500, 
