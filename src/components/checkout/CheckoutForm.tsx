@@ -250,25 +250,15 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     return Math.round(numberValue * 100);
   };
   
-  const createPaymentCustomer = async (data: CheckoutFormData) => {
-    const { data: response, error } = await supabase.functions.invoke('resolve-customer', {
-      body: {
-        email: data.email,
-        name: data.fullName,
-        cpfCnpj: data.cpfCnpj,
-        phone: data.phone,
-      },
+  const createIuguCustomer = async (data: CheckoutFormData) => {
+    const { data: result, error } = await supabase.functions.invoke('get-or-create-iugu-customer', {
+      body: { email: data.email, name: data.fullName, cpf_cnpj: data.cpfCnpj, phone: data.phone },
     });
-
-    if (error) {
-      console.error('Erro ao criar cliente:', error);
-      throw new Error('Erro ao criar ou buscar cliente.');
-    }
-
-    return response;
+    if (error) throw new Error('Erro ao criar ou buscar cliente Iugu.');
+    return result;
   };
   
-  const createPaymentToken = async (data: CheckoutFormData, customerId?: string) => {
+  const createPaymentToken = async (data: CheckoutFormData) => {
     if (data.paymentMethod !== "credit_card" || !data.cardName || !data.cardExpiry || !data.cardCvv) return null;
     
     const [firstName, ...lastNameParts] = data.cardName.split(' ');
@@ -276,26 +266,33 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const [month, year] = data.cardExpiry.split('/');
 
     if (activeGateway === 'asaas') {
-      // Usar a nova Edge Function de tokenização no backend
+      // Verificar se o SDK do Asaas está disponível
+      if (typeof window.Asaas === 'undefined' || typeof window.Asaas.CreditCard === 'undefined') {
+        console.error('SDK do Asaas não foi carregado corretamente.');
+        toast({
+          title: "Erro de Configuração",
+          description: "Não foi possível iniciar o pagamento com Asaas. Por favor, recarregue a página ou contate o suporte.",
+          variant: "destructive",
+        });
+        throw new Error('SDK do Asaas não está disponível');
+      }
+
       try {
-        const { data: result, error } = await supabase.functions.invoke('tokenize-card', {
-          body: {
-            holderName: data.cardName,
+        const asaasToken = await new Promise<string>((resolve, reject) => {
+          window.Asaas.CreditCard.createToken({
             number: data.cardNumber?.replace(/\s/g, '') || '',
             expiryMonth: month,
             expiryYear: `20${year}`,
             ccv: data.cardCvv,
-            name: data.fullName,
-            email: data.email,
-            cpfCnpj: data.cpfCnpj,
-            customer_id: customerId // Adiciona o customer_id do Asaas
-          },
+            holderName: data.cardName,
+          }, (token: string) => {
+            resolve(token);
+          }, (error: any) => {
+            reject(error);
+          });
         });
-
-        if (error) throw new Error('Erro ao comunicar com o serviço de tokenização.');
-        if (!result.success) throw new Error(result.error || 'Erro ao tokenizar cartão.');
         
-        return { type: 'asaas', token: result.creditCardToken };
+        return { type: 'asaas', token: asaasToken };
       } catch (error) {
         console.error('Erro ao tokenizar cartão com Asaas:', error);
         toast({
@@ -327,16 +324,27 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     setIsLoading(true);
 
     try {
-      // Criar ou buscar cliente no gateway ativo
-      const customerResponse = await createPaymentCustomer(data);
-      if (!customerResponse.success) {
-        throw new Error(customerResponse.message || "Falha ao criar cliente");
-      }
-      
-      const buyer_profile_id = customerResponse.buyer_profile_id;
-      const customer_id = customerResponse.customer_id;
+      let customerResponse;
+      let buyer_profile_id;
+      let iugu_customer_id = null;
 
-      const cardTokenResult = await createPaymentToken(data, customer_id);
+      if (activeGateway === 'iugu') {
+        customerResponse = await createIuguCustomer(data);
+        if (!customerResponse.success) throw new Error(customerResponse.error || "Falha ao criar cliente Iugu");
+        buyer_profile_id = customerResponse.buyer_profile_id;
+        iugu_customer_id = customerResponse.iugu_customer_id;
+      } else {
+        // Para outros gateways, apenas buscar/criar o perfil do comprador
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', data.email)
+          .single();
+        
+        buyer_profile_id = profile?.id || null;
+      }
+
+      const cardTokenResult = await createPaymentToken(data);
 
       const transactionPayload: any = {
         product_id: product.id,
@@ -354,10 +362,10 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
           transactionPayload.credit_card_token = cardTokenResult.token;
         } else if (cardTokenResult.type === 'iugu') {
           transactionPayload.card_token = cardTokenResult.token;
-          transactionPayload.iugu_customer_id = customer_id;
+          transactionPayload.iugu_customer_id = iugu_customer_id;
         }
       } else if (activeGateway === 'iugu') {
-        transactionPayload.iugu_customer_id = customer_id;
+        transactionPayload.iugu_customer_id = iugu_customer_id;
       }
 
       if (isDonation) {
