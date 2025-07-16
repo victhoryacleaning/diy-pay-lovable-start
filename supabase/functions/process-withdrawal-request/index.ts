@@ -119,6 +119,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // If approved or paid, debit the amount from producer's available balance
+    if (new_status === 'approved' || new_status === 'paid') {
+      const { error: balanceError } = await supabase.rpc('upsert_producer_balance', {
+        p_producer_id: withdrawalRequest.producer_id,
+        amount_to_add: -withdrawalRequest.amount_cents // Negative amount to debit
+      });
+
+      if (balanceError) {
+        console.error('Error debiting producer balance:', balanceError);
+        return new Response(JSON.stringify({ error: 'Failed to debit funds from producer balance' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // If rejected, return the funds to the producer's available balance
     if (new_status === 'rejected') {
       const { error: balanceError } = await supabase.rpc('upsert_producer_balance', {
