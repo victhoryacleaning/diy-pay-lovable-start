@@ -16,11 +16,7 @@ interface ProducerLayoutProps {
 export function ProducerLayout({ children }: ProducerLayoutProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { financialData, fetchFinancialData } = useProducerFinancialsStore();
-
-  useEffect(() => {
-    fetchFinancialData();
-  }, [fetchFinancialData]);
+  const { financialData } = useProducerFinancialsStore();
 
   return (
     <SidebarProvider>
