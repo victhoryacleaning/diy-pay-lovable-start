@@ -81,7 +81,7 @@ export function ProducerSidebar() {
 
   return (
     <Sidebar className="bg-[#810ad1]">
-      <SidebarHeader className="border-b border-[#4d0782]">
+      <SidebarHeader className="border-b border-[#4d0782] bg-[#810ad1]">
         <div className="flex items-center gap-3 px-2 py-4">
           <div className="text-lg font-bold text-white">DiyPay</div>
         </div>
