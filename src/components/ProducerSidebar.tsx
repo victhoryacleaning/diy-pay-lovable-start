@@ -80,28 +80,31 @@ export function ProducerSidebar() {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b">
+    <Sidebar className="bg-[#810ad1]">
+      <SidebarHeader className="border-b border-[#4d0782]">
         <div className="flex items-center gap-3 px-2 py-4">
+          <div className="text-lg font-bold text-white">DiyPay</div>
+        </div>
+        <div className="flex items-center gap-3 px-2 pb-4">
           <Avatar>
-            <AvatarFallback className="bg-diypay-500 text-white">
+            <AvatarFallback className="bg-[#4d0782] text-white">
               {getInitials(profile?.full_name)}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">
+            <p className="font-semibold text-sm truncate text-white">
               {profile?.full_name || "Produtor"}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-purple-200 truncate">
               {profile?.email}
             </p>
           </div>
         </div>
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="bg-[#810ad1]">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-purple-200">Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -109,7 +112,11 @@ export function ProducerSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     isActive={isActive(item.url)}
-                    className="w-full"
+                    className={`w-full ${
+                      isActive(item.url) 
+                        ? "bg-[#4d0782] text-white hover:bg-[#4d0782] hover:text-white" 
+                        : "text-white hover:bg-[#4d0782] hover:text-white"
+                    }`}
                   >
                     <Link to={item.url} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
@@ -123,12 +130,12 @@ export function ProducerSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="border-t">
+      <SidebarFooter className="border-t border-[#4d0782] bg-[#810ad1]">
         <SidebarMenu>
           <SidebarMenuItem>
             <Button 
               variant="ghost" 
-              className="w-full justify-start gap-2" 
+              className="w-full justify-start gap-2 text-white hover:bg-[#4d0782] hover:text-white" 
               onClick={signOut}
             >
               <LogOut className="h-4 w-4" />

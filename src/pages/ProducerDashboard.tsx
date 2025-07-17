@@ -88,9 +88,16 @@ const ProducerDashboard = () => {
         <SidebarInset>
           <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
             {/* Header */}
-            <div className="flex items-center gap-2 px-6 py-4 border-b bg-white/80 backdrop-blur-sm">
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-white/80 backdrop-blur-sm">
               <SidebarTrigger />
-              <h1 className="text-xl font-semibold text-slate-800">Dashboard</h1>
+              <div className="flex items-center gap-4 ml-auto">
+                {/* User Profile Area */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    {isLoading ? 'Carregando...' : 'Marcos Madala'}
+                  </span>
+                </div>
+              </div>
             </div>
             
             <div className="p-6">
@@ -124,31 +131,31 @@ const ProducerDashboard = () => {
                     </Card>
 
                     {/* Vendas Card */}
-                    <Card className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-0 shadow-lg">
+                    <Card className="bg-white border-0 shadow-lg">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-emerald-100">Vendas</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-emerald-200" />
+                        <CardTitle className="text-sm font-medium text-slate-600">Vendas</CardTitle>
+                        <TrendingUp className="h-5 w-5 text-green-500" />
                       </CardHeader>
                       <CardContent>
                         {isLoading ? (
-                          <Skeleton className="h-8 w-16 bg-emerald-400" />
+                          <Skeleton className="h-8 w-16" />
                         ) : (
-                          <div className="text-2xl font-bold">{data?.kpiVendasCount || 0}</div>
+                          <div className="text-2xl font-bold text-green-500">{data?.kpiVendasCount || 0}</div>
                         )}
                       </CardContent>
                     </Card>
 
                     {/* Reembolso Card */}
-                    <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white border-0 shadow-lg">
+                    <Card className="bg-white border-0 shadow-lg">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-orange-100">Reembolso</CardTitle>
-                        <RotateCcw className="h-5 w-5 text-orange-200" />
+                        <CardTitle className="text-sm font-medium text-slate-600">Reembolso</CardTitle>
+                        <RotateCcw className="h-5 w-5 text-orange-500" />
                       </CardHeader>
                       <CardContent>
                         {isLoading ? (
-                          <Skeleton className="h-8 w-32 bg-orange-400" />
+                          <Skeleton className="h-8 w-32" />
                         ) : (
-                          <div className="text-2xl font-bold">
+                          <div className="text-2xl font-bold text-orange-500">
                             {formatCurrency(data?.kpiReembolso || 0)}
                           </div>
                         )}
