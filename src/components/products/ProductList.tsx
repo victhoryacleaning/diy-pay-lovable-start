@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Pencil, Eye, MoreHorizontal, Ticket, RefreshCw, Copy, Check } from "lucide-react";
+import { Pencil, Eye, MoreHorizontal, Ticket, RefreshCw, Copy, Check, Package, Repeat, Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -55,18 +55,18 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
     }
   };
 
-  const getProductTypeEmoji = (productType: string) => {
+  const getProductTypeIcon = (productType: string) => {
     switch (productType) {
       case 'single_payment':
-        return '📦';
+        return Package;
       case 'subscription':
-        return '🔄';
+        return Repeat;
       case 'donation':
-        return '❤️';
+        return Heart;
       case 'event':
-        return '🎫';
+        return Ticket;
       default:
-        return '📦';
+        return Package;
     }
   };
 
@@ -144,8 +144,12 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
                       >
                         {product.is_active ? "Ativo" : "Inativo"}
                       </Badge>
-                      <Badge variant="secondary" className="bg-gray-200 text-gray-800 hover:bg-gray-200">
-                        {getProductTypeEmoji(product.product_type)} {getProductTypeLabel(product.product_type)}
+                      <Badge variant="secondary" className="bg-gray-200 text-gray-800 hover:bg-gray-200 flex items-center gap-1">
+                        {(() => {
+                          const Icon = getProductTypeIcon(product.product_type);
+                          return <Icon className="h-3 w-3" />;
+                        })()}
+                        {getProductTypeLabel(product.product_type)}
                       </Badge>
                     </div>
                   </div>

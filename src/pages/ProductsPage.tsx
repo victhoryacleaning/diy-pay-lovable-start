@@ -6,27 +6,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { ProducerLayout } from "@/components/ProducerLayout";
+import { Button } from "@/components/ui/button";
 
 const ProductsPage = () => {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const { data: products = [], isLoading, error } = useQuery({
-    queryKey: ['products', user?.id],
+  const { data: productsData, isLoading, error } = useQuery({
+    queryKey: ['products', user?.id, currentPage],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) return null;
       
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('producer_id', user.id)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('get-producer-products', {
+        body: {
+          page: currentPage,
+          limit: itemsPerPage
+        }
+      });
       
       if (error) throw error;
-      return data || [];
+      return data;
     },
     enabled: !!user?.id,
   });
+
+  const products = productsData?.products || [];
+  const totalProducts = productsData?.totalProducts || 0;
+  const hasMore = productsData?.hasMore || false;
 
   return (
     <ProducerLayout>
@@ -48,6 +56,33 @@ const ProductsPage = () => {
           products={products} 
           onCreateProduct={() => setIsModalOpen(true)}
         />
+      )}
+
+      {/* Paginação */}
+      {products.length > 0 && (
+        <div className="flex items-center justify-between mt-6">
+          <p className="text-sm text-gray-700">
+            Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalProducts)} até {Math.min(currentPage * itemsPerPage, totalProducts)} de {totalProducts} produtos
+          </p>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Anterior
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setCurrentPage(p => p + 1)}
+              disabled={!hasMore}
+            >
+              Próximo
+            </Button>
+          </div>
+        </div>
       )}
 
       <ProductTypeSelectionModal 

@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       payment_method, 
       status,
       page = 1,
-      limit = 20
+      limit = 12
     } = body
 
     console.log('Filters received:', { search_term, product_id, date_range, payment_method, status, page, limit })

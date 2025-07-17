@@ -280,7 +280,7 @@ const ProducerDashboard = () => {
                       <CardTitle>Transações Recentes</CardTitle>
                       <div className="flex justify-end">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to="/sales">Todas as Transações</Link>
+                          <Link to="/sales">Acessar todas as transações</Link>
                         </Button>
                       </div>
                     </CardHeader>

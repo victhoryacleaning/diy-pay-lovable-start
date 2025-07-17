@@ -114,7 +114,7 @@ export function ProducerSidebar() {
                     className={`w-full font-semibold ${
                       isActive(item.url) 
                         ? "bg-[#4d0782] text-white hover:bg-[#4d0782] hover:text-white" 
-                        : "text-white hover:bg-[#4d0782] hover:text-white"
+                        : "text-white hover:bg-[#6b1b94] hover:text-white"
                     }`}
                   >
                     <Link to={item.url} className="flex items-center gap-2">

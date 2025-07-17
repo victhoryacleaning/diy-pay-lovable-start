@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Download, Filter, MoreHorizontal, Ban } from "lucide-react";
+import { Search, Download, Filter, MoreHorizontal, Ban, Activity, DollarSign, BarChart } from "lucide-react";
 import { toast } from "sonner";
 import { ProducerLayout } from "@/components/ProducerLayout";
 
@@ -154,7 +154,7 @@ const ProducerSubscriptionsPage = () => {
         <Card className="bg-white border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Assinaturas Ativas</CardTitle>
-            <div className="h-4 w-4 text-primary">🟢</div>
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{stats.totalActive}</div>
@@ -164,7 +164,7 @@ const ProducerSubscriptionsPage = () => {
         <Card className="bg-white border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento Recorrente Mensal</CardTitle>
-            <div className="h-4 w-4 text-green-600">💰</div>
+            <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.monthlyRecurring)}</div>
@@ -174,7 +174,7 @@ const ProducerSubscriptionsPage = () => {
         <Card className="bg-white border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total de Assinaturas</CardTitle>
-            <div className="h-4 w-4 text-primary">📊</div>
+            <BarChart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{stats.totalSubscriptions}</div>

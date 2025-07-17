@@ -106,7 +106,7 @@ const ProducerSalesPage = () => {
             to: dateRange.to?.toISOString()
           },
           page,
-          limit: 20
+          limit: 12
         }
       })
 
@@ -462,13 +462,30 @@ const ProducerSalesPage = () => {
                   </Table>
                 </div>
 
-                {salesData.hasMore && (
-                  <div className="flex justify-center">
-                    <Button onClick={loadMore} variant="outline">
-                      Carregar mais vendas
+                {/* Paginação */}
+                <div className="flex items-center justify-between mt-6">
+                  <p className="text-sm text-gray-700">
+                    Mostrando {Math.min((page - 1) * 12 + 1, salesData.kpis.totalVendas)} até {Math.min(page * 12, salesData.kpis.totalVendas)} de {salesData.kpis.totalVendas} vendas
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      Anterior
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={!salesData.hasMore}
+                    >
+                      Próximo
                     </Button>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </CardContent>
