@@ -1,21 +1,22 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { AwardsModal } from '@/components/AwardsModal';
 import { 
   LayoutDashboard,
   Package,
@@ -24,6 +25,7 @@ import {
   Settings,
   LogOut,
   RefreshCw,
+  TrendingUp,
 } from 'lucide-react';
 
 const menuItems = [
@@ -60,23 +62,41 @@ const menuItems = [
 ];
 
 export function ProducerSidebar() {
-  const { profile, signOut } = useAuth();
+  const { signOut } = useAuth();
   const location = useLocation();
+  const [dashboardData, setDashboardData] = useState<any>(null);
+
+  // Fetch dashboard data for progress bar
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
+          body: { date_filter: 'last_30_days' }
+        });
+        
+        if (!error && data) {
+          setDashboardData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data for sidebar:', error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const isActive = (url: string) => {
     if (url === "/producer-dashboard") {
-      return location.pathname === url;
+      return location.pathname === url || location.pathname === "/";
     }
     return location.pathname.startsWith(url);
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "P";
-    return name.split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const formatRevenue = (cents: number) => {
+    const reais = cents / 100;
+    if (reais >= 1000000) return `${(reais / 1000000).toFixed(1)}M`;
+    if (reais >= 1000) return `${(reais / 1000).toFixed(0)}K`;
+    return `${reais.toFixed(0)}`;
   };
 
   return (
@@ -85,21 +105,36 @@ export function ProducerSidebar() {
         <div className="flex items-center gap-3 px-2 py-4">
           <div className="text-lg font-bold text-white">DiyPay</div>
         </div>
-        <div className="flex items-center gap-3 px-2 pb-4">
-          <Avatar>
-            <AvatarFallback className="bg-[#4d0782] text-white">
-              {getInitials(profile?.full_name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate text-white">
-              {profile?.full_name || "Produtor"}
-            </p>
-            <p className="text-xs text-purple-200 truncate">
-              {profile?.email}
-            </p>
+        
+        {/* Progress Bar Section */}
+        {dashboardData && (
+          <div className="px-2 pb-4">
+            <AwardsModal currentRevenue={dashboardData.currentRevenue || 0}>
+              <div className="cursor-pointer p-3 rounded-lg bg-[#4d0782] hover:bg-[#3d0564] transition-all duration-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-white" />
+                  <span className="text-xs font-medium text-white">Meta de Faturamento</span>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-white">
+                    <span>R$ {formatRevenue(dashboardData.currentRevenue || 0)}</span>
+                    <span>R$ {formatRevenue(dashboardData.currentMilestone || 1000000)}</span>
+                  </div>
+                  
+                  <Progress 
+                    value={dashboardData.progressPercentage || 0} 
+                    className="h-2"
+                  />
+                  
+                  <div className="text-xs text-purple-200 text-center">
+                    {Math.round(dashboardData.progressPercentage || 0)}% concluído
+                  </div>
+                </div>
+              </div>
+            </AwardsModal>
           </div>
-        </div>
+        )}
       </SidebarHeader>
       
       <SidebarContent className="bg-[#810ad1]">
@@ -108,15 +143,14 @@ export function ProducerSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.url)}
-                    className={`w-full font-semibold ${
-                      isActive(item.url) 
-                        ? "bg-[#4d0782] text-white hover:bg-[#4d0782] hover:text-white" 
-                        : "text-white hover:bg-[#6b1b94] hover:text-white"
-                    }`}
-                  >
+                   <SidebarMenuButton 
+                     asChild 
+                     className={`w-full font-semibold transition-colors ${
+                       isActive(item.url) 
+                         ? "bg-[#4d0782] text-white hover:bg-[#4d0782]" 
+                         : "text-white hover:bg-[#6b1b94] hover:text-white"
+                     }`}
+                   >
                     <Link to={item.url} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>

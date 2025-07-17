@@ -214,6 +214,39 @@ Deno.serve(async (req) => {
 
     const saldoPendente = pendingBalanceData?.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0) || 0
 
+    // Calculate milestone data for progress bar
+    const getTotalRevenue = async () => {
+      const { data: totalRevenueData } = await supabaseClient
+        .from('sales')
+        .select('producer_share_cents')
+        .in('product_id', productIds)
+        .eq('status', 'paid')
+        .not('producer_share_cents', 'is', null)
+      
+      return totalRevenueData?.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0) || 0
+    }
+
+    const totalRevenue = await getTotalRevenue()
+    
+    // Define milestones (in cents)
+    const milestones = [1000000, 10000000, 100000000] // 10K, 100K, 1M
+    
+    let currentMilestone = milestones[0]
+    let progressPercentage = 0
+    
+    // Find current milestone
+    for (let i = 0; i < milestones.length; i++) {
+      if (totalRevenue < milestones[i]) {
+        currentMilestone = milestones[i]
+        progressPercentage = Math.min((totalRevenue / milestones[i]) * 100, 100)
+        break
+      } else if (i === milestones.length - 1) {
+        // Exceeded all milestones
+        currentMilestone = milestones[i]
+        progressPercentage = 100
+      }
+    }
+
     const dashboardData = {
       // Dynamic data
       kpiValorLiquido,
@@ -224,6 +257,10 @@ Deno.serve(async (req) => {
       // Static data
       saldoDisponivel,
       saldoPendente,
+      // Milestone data
+      currentRevenue: totalRevenue,
+      currentMilestone,
+      progressPercentage,
       // Products for filter
       products: products?.map(p => ({ id: p.id, name: p.name })) || []
     }
