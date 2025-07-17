@@ -33,3 +33,6 @@ verify_jwt = false
 
 [functions.get-producer-dashboard-v2]
 verify_jwt = true
+
+[functions.update-user-profile]
+verify_jwt = true

@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   CreditCard, 
   DollarSign, 
@@ -12,17 +14,22 @@ import {
   Plus,
   Settings,
   Eye,
-  Calendar
+  Calendar,
+  Bell,
+  LogOut
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAuth } from '@/hooks/useAuth';
 
 const ProducerDashboard = () => {
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [dateFilter, setDateFilter] = useState("last_30_days");
   const [productFilter, setProductFilter] = useState("all");
 
@@ -91,12 +98,39 @@ const ProducerDashboard = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b bg-white/80 backdrop-blur-sm">
               <SidebarTrigger />
               <div className="flex items-center gap-4 ml-auto">
-                {/* User Profile Area */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-700">
-                    {isLoading ? 'Carregando...' : 'Marcos Madala'}
-                  </span>
-                </div>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 p-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="bg-purple-100 text-purple-800 text-sm font-semibold">
+                          {(data?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{data?.userName || profile?.full_name}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2 w-full">
+                        Minha conta
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        signOut();
+                        navigate('/login');
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             
@@ -104,7 +138,7 @@ const ProducerDashboard = () => {
               {/* Welcome Message */}
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold text-slate-900 mb-2">
-                  Bem vindo, {isLoading ? 'Carregando...' : 'Marcos Madala'}!
+                  Bem vindo, {data?.userName || profile?.full_name || 'Produtor'}!
                 </h2>
               </div>
 

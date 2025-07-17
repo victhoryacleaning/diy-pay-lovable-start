@@ -25,6 +25,7 @@ import AdminProducersPage from "./pages/Admin/AdminProducersPage";
 import AdminFinancialsPage from "./pages/Admin/AdminFinancialsPage";
 import AdminFeesPage from "./pages/Admin/AdminFeesPage";
 import AdminGatewaysPage from "./pages/Admin/AdminGatewaysPage";
+import ProfilePage from "./pages/Producer/ProfilePage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -114,6 +115,14 @@ const App = () => {
                 element={
                   <ProtectedRoute requiredRole="producer">
                     <ProducerFinancialsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <ProfilePage />
                   </ProtectedRoute>
                 } 
               />

@@ -104,7 +104,6 @@ export function ProducerSidebar() {
       
       <SidebarContent className="bg-[#810ad1]">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-purple-200">Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -112,7 +111,7 @@ export function ProducerSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     isActive={isActive(item.url)}
-                    className={`w-full ${
+                    className={`w-full font-semibold ${
                       isActive(item.url) 
                         ? "bg-[#4d0782] text-white hover:bg-[#4d0782] hover:text-white" 
                         : "text-white hover:bg-[#4d0782] hover:text-white"
