@@ -76,6 +76,15 @@ Deno.serve(async (req) => {
     if (payload.custom_fixed_fee_cents !== undefined) {
       updateData.custom_fixed_fee_cents = parseInt(payload.custom_fixed_fee_cents)
     }
+    if (payload.custom_security_reserve_percent !== undefined) {
+      updateData.custom_security_reserve_percent = parseFloat(payload.custom_security_reserve_percent)
+    }
+    if (payload.custom_security_reserve_days !== undefined) {
+      updateData.custom_security_reserve_days = parseInt(payload.custom_security_reserve_days)
+    }
+    if (payload.custom_withdrawal_fee_cents !== undefined) {
+      updateData.custom_withdrawal_fee_cents = parseInt(payload.custom_withdrawal_fee_cents)
+    }
 
     // Handle JSON fields
     if (payload.custom_fees_json !== undefined) {

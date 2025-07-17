@@ -23,6 +23,9 @@ const platformFeesSchema = z.object({
   default_pix_release_days: z.number().min(0),
   default_boleto_release_days: z.number().min(0),
   default_card_release_days: z.number().min(0),
+  default_security_reserve_percent: z.number().min(0).max(100),
+  default_security_reserve_days: z.number().min(0),
+  default_withdrawal_fee_cents: z.number().min(0),
   installment_1x: z.number().min(0).max(100),
   installment_2x: z.number().min(0).max(100),
   installment_3x: z.number().min(0).max(100),
@@ -47,6 +50,9 @@ const producerSettingsSchema = z.object({
   custom_pix_release_days: z.number().min(0).optional(),
   custom_boleto_release_days: z.number().min(0).optional(),
   custom_card_release_days: z.number().min(0).optional(),
+  custom_security_reserve_percent: z.number().min(0).max(100).optional(),
+  custom_security_reserve_days: z.number().min(0).optional(),
+  custom_withdrawal_fee_cents: z.number().min(0).optional(),
   custom_installment_1x: z.number().min(0).max(100).optional(),
   custom_installment_2x: z.number().min(0).max(100).optional(),
   custom_installment_3x: z.number().min(0).max(100).optional(),
@@ -143,6 +149,9 @@ const AdminFeesPage = () => {
         default_pix_release_days: data.default_pix_release_days,
         default_boleto_release_days: data.default_boleto_release_days,
         default_card_release_days: data.default_card_release_days,
+        default_security_reserve_percent: data.default_security_reserve_percent,
+        default_security_reserve_days: data.default_security_reserve_days,
+        default_withdrawal_fee_cents: Math.round(data.default_withdrawal_fee_cents * 100), // Convert to cents
         default_fees_json: {
           pix_fee_percent: data.default_pix_fee_percent,
           bank_slip_fee_percent: data.default_boleto_fee_percent,
@@ -154,7 +163,7 @@ const AdminFeesPage = () => {
             bank_slip: data.default_boleto_release_days,
             credit_card: data.default_card_release_days,
           },
-          security_reserve_days: 30,
+          security_reserve_days: data.default_security_reserve_days,
         },
       };
 
@@ -203,18 +212,21 @@ const AdminFeesPage = () => {
       const payload = {
         producer_id: selectedProducer.id,
         custom_fixed_fee_cents: data.custom_fixed_fee_cents ? Math.round(data.custom_fixed_fee_cents * 100) : undefined,
+        custom_security_reserve_percent: data.custom_security_reserve_percent,
+        custom_security_reserve_days: data.custom_security_reserve_days,
+        custom_withdrawal_fee_cents: data.custom_withdrawal_fee_cents ? Math.round(data.custom_withdrawal_fee_cents * 100) : undefined,
         custom_fees_json: Object.keys(customCreditCardFees).length > 0 || data.custom_pix_fee_percent !== undefined || data.custom_boleto_fee_percent !== undefined ? {
           ...(data.custom_pix_fee_percent !== undefined && { pix_fee_percent: data.custom_pix_fee_percent }),
           ...(data.custom_boleto_fee_percent !== undefined && { bank_slip_fee_percent: data.custom_boleto_fee_percent }),
           ...(Object.keys(customCreditCardFees).length > 0 && { credit_card_fees: customCreditCardFees }),
         } : undefined,
-        custom_release_rules_json: data.custom_pix_release_days !== undefined || data.custom_boleto_release_days !== undefined || data.custom_card_release_days !== undefined ? {
+        custom_release_rules_json: data.custom_pix_release_days !== undefined || data.custom_boleto_release_days !== undefined || data.custom_card_release_days !== undefined || data.custom_security_reserve_days !== undefined ? {
           release_days: {
             ...(data.custom_pix_release_days !== undefined && { pix: data.custom_pix_release_days }),
             ...(data.custom_boleto_release_days !== undefined && { bank_slip: data.custom_boleto_release_days }),
             ...(data.custom_card_release_days !== undefined && { credit_card: data.custom_card_release_days }),
           },
-          security_reserve_days: 30,
+          security_reserve_days: data.custom_security_reserve_days,
         } : undefined,
       };
 
@@ -254,6 +266,9 @@ const AdminFeesPage = () => {
         default_pix_release_days: settings.default_pix_release_days || settings.default_release_rules_json?.release_days?.pix || 0,
         default_boleto_release_days: settings.default_boleto_release_days || settings.default_release_rules_json?.release_days?.bank_slip || 0,
         default_card_release_days: settings.default_card_release_days || settings.default_release_rules_json?.release_days?.credit_card || 0,
+        default_security_reserve_percent: settings.default_security_reserve_percent || 4.0,
+        default_security_reserve_days: settings.default_security_reserve_days || settings.default_release_rules_json?.security_reserve_days || 30,
+        default_withdrawal_fee_cents: (settings.default_withdrawal_fee_cents || 0) / 100, // Convert from cents
         installment_1x: creditCardFees["1"] || 0,
         installment_2x: creditCardFees["2"] || 0,
         installment_3x: creditCardFees["3"] || 0,
@@ -284,6 +299,9 @@ const AdminFeesPage = () => {
         custom_pix_release_days: customReleaseRules.release_days?.pix,
         custom_boleto_release_days: customReleaseRules.release_days?.bank_slip,
         custom_card_release_days: customReleaseRules.release_days?.credit_card,
+        custom_security_reserve_percent: producerSettings.custom_security_reserve_percent,
+        custom_security_reserve_days: customReleaseRules.security_reserve_days || producerSettings.custom_security_reserve_days,
+        custom_withdrawal_fee_cents: producerSettings.custom_withdrawal_fee_cents ? producerSettings.custom_withdrawal_fee_cents / 100 : undefined,
         custom_installment_1x: customCreditCardFees["1"],
         custom_installment_2x: customCreditCardFees["2"],
         custom_installment_3x: customCreditCardFees["3"],
@@ -430,6 +448,73 @@ const AdminFeesPage = () => {
                               step="0.01"
                               min="0"
                               placeholder="1.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={platformForm.control}
+                      name="default_security_reserve_percent"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reserva de Segurança (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="4.0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={platformForm.control}
+                      name="default_security_reserve_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prazo da Reserva (dias)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="30"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={platformForm.control}
+                      name="default_withdrawal_fee_cents"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Taxa de Saque (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="3.67"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             />
@@ -762,6 +847,74 @@ const AdminFeesPage = () => {
                                   {...field}
                                   value={field.value || ''}
                                   onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField
+                          control={producerForm.control}
+                          name="custom_security_reserve_percent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reserva de Segurança (%) - Personalizada</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="100"
+                                  placeholder="Usar padrão"
+                                  {...field}
+                                  value={field.value || ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={producerForm.control}
+                          name="custom_security_reserve_days"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Prazo da Reserva (dias) - Personalizado</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  placeholder="Usar padrão"
+                                  {...field}
+                                  value={field.value || ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={producerForm.control}
+                          name="custom_withdrawal_fee_cents"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Taxa de Saque (R$) - Personalizada</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Usar padrão"
+                                  {...field}
+                                  value={field.value || ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                                 />
                               </FormControl>
                               <FormMessage />

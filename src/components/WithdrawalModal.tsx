@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 interface WithdrawalModalProps {
   isOpen: boolean;
@@ -15,8 +15,44 @@ interface WithdrawalModalProps {
 
 export const WithdrawalModal = ({ isOpen, onClose, availableBalance }: WithdrawalModalProps) => {
   const [amount, setAmount] = useState("");
+  const [withdrawalFee, setWithdrawalFee] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Query to get withdrawal fee settings
+  const { data: platformSettings } = useQuery({
+    queryKey: ['platform-fees'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-platform-fees');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: producerSettings } = useQuery({
+    queryKey: ['producer-settings'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const { data, error } = await supabase.functions.invoke('get-producer-settings', {
+        body: { producer_id: user.id }
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Calculate withdrawal fee
+  useEffect(() => {
+    if (platformSettings?.data && producerSettings?.data) {
+      const defaultFee = platformSettings.data.default_withdrawal_fee_cents || 367;
+      const customFee = producerSettings.data.custom_withdrawal_fee_cents;
+      setWithdrawalFee(customFee !== null ? customFee : defaultFee);
+    } else if (platformSettings?.data) {
+      setWithdrawalFee(platformSettings.data.default_withdrawal_fee_cents || 367);
+    }
+  }, [platformSettings, producerSettings]);
 
   const withdrawalMutation = useMutation({
     mutationFn: async (amountCents: number) => {
@@ -62,11 +98,12 @@ export const WithdrawalModal = ({ isOpen, onClose, availableBalance }: Withdrawa
     }
 
     const amountCents = Math.round(numericAmount * 100);
+    const totalRequired = amountCents + withdrawalFee;
     
-    if (amountCents > availableBalance) {
+    if (totalRequired > availableBalance) {
       toast({
         title: "Saldo insuficiente",
-        description: `Você tem apenas R$ ${(availableBalance / 100).toFixed(2)} disponível para saque.`,
+        description: `Você precisa de R$ ${(totalRequired / 100).toFixed(2)} (valor + taxa) mas tem apenas R$ ${(availableBalance / 100).toFixed(2)} disponível.`,
         variant: "destructive",
       });
       return;
@@ -102,6 +139,18 @@ export const WithdrawalModal = ({ isOpen, onClose, availableBalance }: Withdrawa
             <p className="text-sm text-muted-foreground">
               Saldo disponível: {formatCurrency(availableBalance)}
             </p>
+            {withdrawalFee > 0 && (
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Taxa de saque: {formatCurrency(withdrawalFee)}
+                </p>
+                {amount && !isNaN(parseFloat(amount.replace(',', '.'))) && (
+                  <p className="text-sm text-muted-foreground">
+                    Total a ser debitado: {formatCurrency(Math.round(parseFloat(amount.replace(',', '.')) * 100) + withdrawalFee)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-2 justify-end">
             <Button

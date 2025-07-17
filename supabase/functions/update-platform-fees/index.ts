@@ -89,6 +89,9 @@ Deno.serve(async (req) => {
     if (payload.default_anticipation_fee_percent !== undefined) {
       updateData.default_anticipation_fee_percent = parseFloat(payload.default_anticipation_fee_percent)
     }
+    if (payload.default_withdrawal_fee_cents !== undefined) {
+      updateData.default_withdrawal_fee_cents = parseInt(payload.default_withdrawal_fee_cents)
+    }
 
     // Handle JSON fields
     if (payload.default_fees_json !== undefined) {

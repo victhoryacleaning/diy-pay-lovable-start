@@ -105,7 +105,9 @@ export type Database = {
           default_pix_fee_percent: number | null
           default_pix_release_days: number | null
           default_release_rules_json: Json
+          default_security_reserve_days: number
           default_security_reserve_percent: number | null
+          default_withdrawal_fee_cents: number
           id: string
           updated_at: string
         }
@@ -121,7 +123,9 @@ export type Database = {
           default_pix_fee_percent?: number | null
           default_pix_release_days?: number | null
           default_release_rules_json?: Json
+          default_security_reserve_days?: number
           default_security_reserve_percent?: number | null
+          default_withdrawal_fee_cents?: number
           id?: string
           updated_at?: string
         }
@@ -137,7 +141,9 @@ export type Database = {
           default_pix_fee_percent?: number | null
           default_pix_release_days?: number | null
           default_release_rules_json?: Json
+          default_security_reserve_days?: number
           default_security_reserve_percent?: number | null
+          default_withdrawal_fee_cents?: number
           id?: string
           updated_at?: string
         }
@@ -193,6 +199,9 @@ export type Database = {
           custom_fees_json: Json | null
           custom_fixed_fee_cents: number | null
           custom_release_rules_json: Json | null
+          custom_security_reserve_days: number | null
+          custom_security_reserve_percent: number | null
+          custom_withdrawal_fee_cents: number | null
           id: string
           producer_id: string
           updated_at: string
@@ -202,6 +211,9 @@ export type Database = {
           custom_fees_json?: Json | null
           custom_fixed_fee_cents?: number | null
           custom_release_rules_json?: Json | null
+          custom_security_reserve_days?: number | null
+          custom_security_reserve_percent?: number | null
+          custom_withdrawal_fee_cents?: number | null
           id?: string
           producer_id: string
           updated_at?: string
@@ -211,6 +223,9 @@ export type Database = {
           custom_fees_json?: Json | null
           custom_fixed_fee_cents?: number | null
           custom_release_rules_json?: Json | null
+          custom_security_reserve_days?: number | null
+          custom_security_reserve_percent?: number | null
+          custom_withdrawal_fee_cents?: number | null
           id?: string
           producer_id?: string
           updated_at?: string
@@ -459,6 +474,7 @@ export type Database = {
         Row: {
           admin_notes: string | null
           amount_cents: number
+          fee_cents: number
           id: string
           processed_at: string | null
           producer_id: string
@@ -468,6 +484,7 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           amount_cents: number
+          fee_cents?: number
           id?: string
           processed_at?: string | null
           producer_id: string
@@ -477,6 +494,7 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           amount_cents?: number
+          fee_cents?: number
           id?: string
           processed_at?: string | null
           producer_id?: string

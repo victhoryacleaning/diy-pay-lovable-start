@@ -60,17 +60,53 @@ Deno.serve(async (req) => {
         return createJsonResponse({ success: true, message: 'Webhook ignorado (venda já paga).' }, 200);
       }
       
-      // Lógica de cálculo (simplificada, pois as funções auxiliares já existem)
-      const platformFee = sale.platform_fee_cents; // Assumindo que já foi calculado na criação
-      const producerShare = sale.producer_share_cents; // Assumindo que já foi calculado
-      // A data de liberação também deveria ser calculada aqui, baseada no `paid_at`.
+      // Get product and producer information for calculations
+      const { data: product, error: productError } = await supabaseAdmin
+        .from('products')
+        .select('producer_id')
+        .eq('id', sale.product_id)
+        .single();
+
+      if (productError) {
+        throw new Error(`Failed to fetch product ${sale.product_id}: ${productError.message}`);
+      }
+
+      // Get platform settings and producer settings for security reserve
+      const [platformResult, producerResult] = await Promise.all([
+        supabaseAdmin.from('platform_settings').select('default_security_reserve_percent, default_security_reserve_days').single(),
+        supabaseAdmin.from('producer_settings').select('custom_security_reserve_percent, custom_security_reserve_days').eq('producer_id', product.producer_id).maybeSingle()
+      ]);
+
+      const defaultSecurityReservePercent = platformResult.data?.default_security_reserve_percent || 4.0;
+      const defaultSecurityReserveDays = platformResult.data?.default_security_reserve_days || 30;
+      
+      const customSecurityReservePercent = producerResult.data?.custom_security_reserve_percent;
+      const customSecurityReserveDays = producerResult.data?.custom_security_reserve_days;
+      
+      const securityReservePercent = customSecurityReservePercent !== null ? customSecurityReservePercent : defaultSecurityReservePercent;
+      const securityReserveDays = customSecurityReserveDays !== null ? customSecurityReserveDays : defaultSecurityReserveDays;
+
+      // Calculate security reserve amount
+      const securityReserveCents = Math.round(sale.amount_total_cents * (securityReservePercent / 100));
+      
+      // Recalculate producer share: amount_total - platform_fee - security_reserve
+      const recalculatedProducerShare = sale.amount_total_cents - sale.platform_fee_cents - securityReserveCents;
+
+      // Calculate release date
+      const paidAt = new Date();
+      const releaseDate = new Date(paidAt.getTime() + (securityReserveDays * 24 * 60 * 60 * 1000));
+
+      console.log(`[SECURITY_RESERVE] Security reserve: ${securityReserveCents} cents (${securityReservePercent}%)`);
+      console.log(`[PRODUCER_SHARE] Recalculated producer share: ${recalculatedProducerShare} cents`);
 
       const updatePayload = {
         status: 'paid',
-        paid_at: new Date().toISOString(),
+        paid_at: paidAt.toISOString(),
         payout_status: 'pending',
-        gateway_status: payment.status, // Atualiza com o status final do Asaas
-        // Adicionar cálculo de release_date aqui
+        gateway_status: payment.status,
+        security_reserve_cents: securityReserveCents,
+        producer_share_cents: recalculatedProducerShare,
+        release_date: releaseDate.toISOString().split('T')[0] // Store as date only
       };
       
       const { error: updateError } = await supabaseAdmin
@@ -82,7 +118,22 @@ Deno.serve(async (req) => {
         throw new Error(`Falha ao atualizar a venda ${sale.id}: ${updateError.message}`);
       }
       
-      console.log(`[SALE_UPDATED] Venda ${sale.id} atualizada para 'paid'.`);
+      // Add only the available amount (producer_share without security reserve) to producer balance
+      if (recalculatedProducerShare > 0) {
+        const { error: balanceError } = await supabaseAdmin.rpc('upsert_producer_balance', {
+          p_producer_id: product.producer_id,
+          amount_to_add: recalculatedProducerShare
+        });
+
+        if (balanceError) {
+          console.error(`[BALANCE_ERROR] Failed to update producer balance: ${balanceError.message}`);
+          // Don't throw here to avoid marking the payment as failed
+        } else {
+          console.log(`[BALANCE_UPDATED] Added ${recalculatedProducerShare} cents to producer ${product.producer_id} balance`);
+        }
+      }
+      
+      console.log(`[SALE_UPDATED] Venda ${sale.id} atualizada para 'paid' com reserva de segurança de ${securityReserveCents} cents.`);
     } else {
       console.log(`[EVENT_IGNORED] Evento "${event}" não requer ação.`);
     }
