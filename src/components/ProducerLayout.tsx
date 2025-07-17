@@ -18,7 +18,7 @@ export function ProducerLayout({ children }: ProducerLayoutProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const { data } = useQuery({
+  const { data, isLoading: isDashboardLoading } = useQuery({
     queryKey: ['producerDashboard'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
@@ -35,7 +35,7 @@ export function ProducerLayout({ children }: ProducerLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <ProducerSidebar />
+        <ProducerSidebar dashboardData={data} isLoading={isDashboardLoading} />
         <SidebarInset>
           <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
             {/* Header */}

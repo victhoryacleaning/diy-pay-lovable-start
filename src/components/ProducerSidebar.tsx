@@ -1,8 +1,6 @@
 
-import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import {
   Sidebar,
   SidebarContent,
@@ -61,29 +59,14 @@ const menuItems = [
   },
 ];
 
-export function ProducerSidebar() {
+interface ProducerSidebarProps {
+  dashboardData?: any;
+  isLoading?: boolean;
+}
+
+export function ProducerSidebar({ dashboardData, isLoading }: ProducerSidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
-  const [dashboardData, setDashboardData] = useState<any>(null);
-
-  // Fetch dashboard data for progress bar
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
-          body: { date_filter: 'last_30_days' }
-        });
-        
-        if (!error && data) {
-          setDashboardData(data);
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data for sidebar:', error);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
 
   const isActive = (url: string) => {
     if (url === "/producer-dashboard") {
@@ -107,8 +90,16 @@ export function ProducerSidebar() {
         </div>
         
         {/* Progress Bar Section */}
-        {dashboardData && (
-          <div className="px-2 pb-4">
+        <div className="px-2 pb-4">
+          {isLoading ? (
+            <div className="p-3 rounded-lg bg-[#4d0782]">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-white" />
+                <span className="text-xs font-medium text-white">Meta de Faturamento</span>
+              </div>
+              <div className="h-6 bg-[#3d0564] rounded animate-pulse"></div>
+            </div>
+          ) : dashboardData ? (
             <AwardsModal currentRevenue={dashboardData.currentRevenue || 0}>
               <div className="cursor-pointer p-3 rounded-lg bg-[#4d0782] hover:bg-[#3d0564] transition-all duration-200">
                 <div className="flex items-center gap-2 mb-2">
@@ -133,8 +124,8 @@ export function ProducerSidebar() {
                 </div>
               </div>
             </AwardsModal>
-          </div>
-        )}
+          ) : null}
+        </div>
       </SidebarHeader>
       
       <SidebarContent className="bg-[#810ad1]">
