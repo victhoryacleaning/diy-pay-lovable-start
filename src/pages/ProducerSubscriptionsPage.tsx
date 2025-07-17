@@ -88,15 +88,15 @@ const ProducerSubscriptionsPage = () => {
     switch (status) {
       case 'paid':
       case 'active':
-        return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
+        return <Badge className="bg-green-100 text-green-700 border-green-200">Ativa</Badge>;
       case 'canceled':
-        return <Badge variant="destructive">Cancelada</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-red-200">Cancelada</Badge>;
       case 'expired':
-        return <Badge variant="secondary">Expirada</Badge>;
+        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">Expirada</Badge>;
       case 'pending':
-        return <Badge variant="outline">Pendente</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pendente</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
     }
   };
 
@@ -151,28 +151,34 @@ const ProducerSubscriptionsPage = () => {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Assinaturas Ativas</CardTitle>
+        <Card className="bg-white border shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Assinaturas Ativas</CardTitle>
+            <div className="h-4 w-4 text-primary">🟢</div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalActive}</div>
+            <div className="text-2xl font-bold text-foreground">{stats.totalActive}</div>
+            <p className="text-xs text-muted-foreground">Assinaturas em andamento</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Faturamento Recorrente Mensal</CardTitle>
+        <Card className="bg-white border shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento Recorrente Mensal</CardTitle>
+            <div className="h-4 w-4 text-green-600">💰</div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.monthlyRecurring)}</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.monthlyRecurring)}</div>
+            <p className="text-xs text-muted-foreground">Receita mensal recorrente</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Assinaturas</CardTitle>
+        <Card className="bg-white border shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Assinaturas</CardTitle>
+            <div className="h-4 w-4 text-primary">📊</div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSubscriptions}</div>
+            <div className="text-2xl font-bold text-foreground">{stats.totalSubscriptions}</div>
+            <p className="text-xs text-muted-foreground">Todas as assinaturas</p>
           </CardContent>
         </Card>
       </div>
@@ -196,26 +202,29 @@ const ProducerSubscriptionsPage = () => {
 
       {/* Status Filter Tabs */}
       <div className="flex gap-2 mb-6">
-                <Button
-                  variant={statusFilter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('all')}
-                >
-                  Todas ({stats.totalSubscriptions})
-                </Button>
-                <Button
-                  variant={statusFilter === 'active' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('active')}
-                >
-                  Ativas ({stats.totalActive})
-                </Button>
-                <Button
-                  variant={statusFilter === 'canceled' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('canceled')}
-                >
-                  Canceladas ({stats.totalSubscriptions - stats.totalActive})
+        <Button
+          variant={statusFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatusFilter('all')}
+          className={statusFilter === 'all' ? 'bg-primary text-primary-foreground' : ''}
+        >
+          Todas ({stats.totalSubscriptions})
+        </Button>
+        <Button
+          variant={statusFilter === 'active' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatusFilter('active')}
+          className={statusFilter === 'active' ? 'bg-primary text-primary-foreground' : ''}
+        >
+          Ativas ({stats.totalActive})
+        </Button>
+        <Button
+          variant={statusFilter === 'canceled' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatusFilter('canceled')}
+          className={statusFilter === 'canceled' ? 'bg-primary text-primary-foreground' : ''}
+        >
+          Canceladas ({stats.totalSubscriptions - stats.totalActive})
         </Button>
       </div>
 

@@ -163,21 +163,21 @@ const ProducerFinancialsPage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">Paga</Badge>;
+        return <Badge className="bg-green-100 text-green-700 border-green-200">Paga</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pendente</Badge>;
       case 'approved':
-        return <Badge className="bg-blue-100 text-blue-800">Aprovado</Badge>;
+        return <Badge className="bg-green-100 text-green-700 border-green-200">Aprovado</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-800">Rejeitado</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-red-200">Rejeitado</Badge>;
       case 'pending_payment':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pendente</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800">Falhada</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-red-200">Falhada</Badge>;
       case 'authorized':
-        return <Badge className="bg-blue-100 text-blue-800">Autorizada</Badge>;
+        return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Autorizada</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
     }
   };
 
@@ -269,34 +269,34 @@ const ProducerFinancialsPage = () => {
       </div>
 
       <Tabs defaultValue="saques" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="saques">Saques</TabsTrigger>
-                    <TabsTrigger value="dados-bancarios">Dados Bancários</TabsTrigger>
-                    <TabsTrigger value="taxas-prazos">Taxas e Prazos</TabsTrigger>
-                    <TabsTrigger value="identidade">Identidade</TabsTrigger>
-                  </TabsList>
+        <TabsList className="grid w-full grid-cols-4 bg-muted">
+          <TabsTrigger value="saques" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Saques</TabsTrigger>
+          <TabsTrigger value="dados-bancarios" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Dados Bancários</TabsTrigger>
+          <TabsTrigger value="taxas-prazos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Taxas e Prazos</TabsTrigger>
+          <TabsTrigger value="identidade" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Identidade</TabsTrigger>
+        </TabsList>
 
                   {/* Aba Saques */}
                   <TabsContent value="saques" className="space-y-6">
         {/* Cards de saldo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+          <Card className="bg-green-500 border-green-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-800">Saldo Disponível para Saque</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium text-green-50">Saldo Disponível para Saque</CardTitle>
+              <DollarSign className="h-4 w-4 text-green-100" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-700">
+              <div className="text-2xl font-bold text-white">
                 {formatCurrency(financialData?.availableBalance || 0)}
               </div>
-              <p className="text-xs text-green-600">
+              <p className="text-xs text-green-100">
                 Valor liberado e disponível para saque
               </p>
               <div className="mt-4">
                 <Button 
                   onClick={handleWithdrawRequest}
                   disabled={!financialData?.availableBalance || financialData.availableBalance === 0}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Solicitar Saque
@@ -305,16 +305,16 @@ const ProducerFinancialsPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+          <Card className="bg-orange-500 border-orange-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-orange-800">Saldo Pendente</CardTitle>
-              <Clock className="h-4 w-4 text-orange-600" />
+              <CardTitle className="text-sm font-medium text-orange-50">Saldo Pendente</CardTitle>
+              <Clock className="h-4 w-4 text-orange-100" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-700">
+              <div className="text-2xl font-bold text-white">
                 {formatCurrency(financialData?.pendingBalance || 0)}
               </div>
-              <p className="text-xs text-orange-600">
+              <p className="text-xs text-orange-100">
                 Aguardando prazo de liberação
               </p>
             </CardContent>
