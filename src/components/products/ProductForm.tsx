@@ -323,7 +323,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </Button>
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            {mode === 'create' ? `Criando um Novo ${getProductTypeLabel(formData.product_type)}` : 'Editar Produto'}
+            {mode === 'create' ? 'Criar Novo Produto' : 'Editar Produto'}
           </h2>
           <p className="text-muted-foreground">
             {mode === 'create' 
