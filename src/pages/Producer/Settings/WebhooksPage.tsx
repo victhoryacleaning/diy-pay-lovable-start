@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ProducerLayout } from '@/components/ProducerLayout';
 
 export default function WebhooksPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -23,12 +24,14 @@ export default function WebhooksPage() {
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link to="/settings" className="text-muted-foreground hover:text-foreground">
+    <ProducerLayout>
+      <div className="flex items-center gap-4 mb-8">
+        <Link to="/settings" className="text-slate-600 hover:text-slate-900">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-semibold">Webhooks</h1>
+        <h2 className="text-2xl font-semibold text-slate-900">
+          Webhooks
+        </h2>
       </div>
 
       <Card>
@@ -119,6 +122,6 @@ export default function WebhooksPage() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </ProducerLayout>
   );
 }

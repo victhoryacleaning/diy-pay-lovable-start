@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, Plus, Search, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ProducerLayout } from '@/components/ProducerLayout';
 
 export default function APIPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -22,12 +23,14 @@ export default function APIPage() {
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link to="/settings" className="text-muted-foreground hover:text-foreground">
+    <ProducerLayout>
+      <div className="flex items-center gap-4 mb-8">
+        <Link to="/settings" className="text-slate-600 hover:text-slate-900">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-semibold">API</h1>
+        <h2 className="text-2xl font-semibold text-slate-900">
+          API
+        </h2>
       </div>
 
       <Card>
@@ -101,6 +104,6 @@ export default function APIPage() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </ProducerLayout>
   );
 }
