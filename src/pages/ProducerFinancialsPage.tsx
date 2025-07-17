@@ -18,13 +18,12 @@ import {
   Shield,
   Calendar
 } from "lucide-react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { WithdrawalModal } from "@/components/WithdrawalModal";
+import { ProducerLayout } from "@/components/ProducerLayout";
 
 interface FinancialTransaction {
   id: string;
@@ -240,75 +239,36 @@ const ProducerFinancialsPage = () => {
 
   if (isLoading) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <ProducerSidebar />
-          <SidebarInset>
-            <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-              <div className="flex items-center gap-2 px-4 py-2 border-b">
-                <SidebarTrigger />
-                <h1 className="text-xl font-semibold">Financeiro</h1>
-              </div>
-              
-              <div className="container mx-auto px-4 py-8">
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                  <span className="ml-2">Carregando dados financeiros...</span>
-                </div>
-              </div>
-            </div>
-          </SidebarInset>
+      <ProducerLayout>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando dados financeiros...</span>
         </div>
-      </SidebarProvider>
+      </ProducerLayout>
     );
   }
 
   if (isError) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <ProducerSidebar />
-          <SidebarInset>
-            <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-              <div className="flex items-center gap-2 px-4 py-2 border-b">
-                <SidebarTrigger />
-                <h1 className="text-xl font-semibold">Financeiro</h1>
-              </div>
-              
-              <div className="container mx-auto px-4 py-8">
-                <div className="flex items-center justify-center py-16">
-                  <div className="text-center">
-                    <p className="text-destructive mb-2">Erro ao carregar dados financeiros.</p>
-                    <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </SidebarInset>
+      <ProducerLayout>
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <p className="text-destructive mb-2">Erro ao carregar dados financeiros.</p>
+            <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+          </div>
         </div>
-      </SidebarProvider>
+      </ProducerLayout>
     );
   }
 
   return (
-    <>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <ProducerSidebar />
-          <SidebarInset>
-            <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-              <div className="flex items-center gap-2 px-4 py-2 border-b">
-                <SidebarTrigger />
-                <h1 className="text-xl font-semibold">Financeiro</h1>
-              </div>
-              
-              <div className="container mx-auto px-4 py-8">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900">Central Financeira</h2>
-                  <p className="text-gray-600 mt-2">Gerencie seus dados financeiros e bancários</p>
-                </div>
+    <ProducerLayout>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Central Financeira</h1>
+        <p className="text-gray-600 mt-2">Gerencie seus dados financeiros e bancários</p>
+      </div>
 
-                <Tabs defaultValue="saques" className="w-full">
+      <Tabs defaultValue="saques" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="saques">Saques</TabsTrigger>
                     <TabsTrigger value="dados-bancarios">Dados Bancários</TabsTrigger>
@@ -318,51 +278,51 @@ const ProducerFinancialsPage = () => {
 
                   {/* Aba Saques */}
                   <TabsContent value="saques" className="space-y-6">
-                    {/* Cards de saldo */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Saldo Disponível para Saque</CardTitle>
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-green-600">
-                            {formatCurrency(financialData?.availableBalance || 0)}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Valor liberado e disponível para saque
-                          </p>
-                          <div className="mt-4">
-                            <Button 
-                              onClick={handleWithdrawRequest}
-                              disabled={!financialData?.availableBalance || financialData.availableBalance === 0}
-                              className="w-full"
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              Solicitar Saque
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+        {/* Cards de saldo */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-green-800">Saldo Disponível para Saque</CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">
+                {formatCurrency(financialData?.availableBalance || 0)}
+              </div>
+              <p className="text-xs text-green-600">
+                Valor liberado e disponível para saque
+              </p>
+              <div className="mt-4">
+                <Button 
+                  onClick={handleWithdrawRequest}
+                  disabled={!financialData?.availableBalance || financialData.availableBalance === 0}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Solicitar Saque
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Saldo Pendente</CardTitle>
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-yellow-600">
-                            {formatCurrency(financialData?.pendingBalance || 0)}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Aguardando prazo de liberação
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
+          <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-orange-800">Saldo Pendente</CardTitle>
+              <Clock className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-700">
+                {formatCurrency(financialData?.pendingBalance || 0)}
+              </div>
+              <p className="text-xs text-orange-600">
+                Aguardando prazo de liberação
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-                    {/* Histórico de Saques */}
-                    <Card>
+        {/* Histórico de Saques */}
+        <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Calendar className="h-5 w-5" />
@@ -405,11 +365,11 @@ const ProducerFinancialsPage = () => {
                           </div>
                         )}
                       </CardContent>
-                    </Card>
-                  </TabsContent>
+        </Card>
+      </TabsContent>
 
-                  {/* Aba Dados Bancários */}
-                  <TabsContent value="dados-bancarios" className="space-y-6">
+      {/* Aba Dados Bancários */}
+      <TabsContent value="dados-bancarios" className="space-y-6">
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -602,20 +562,15 @@ const ProducerFinancialsPage = () => {
                         )}
                       </CardContent>
                     </Card>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </div>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+        </TabsContent>
+      </Tabs>
       
       <WithdrawalModal
         isOpen={isWithdrawalModalOpen}
         onClose={() => setIsWithdrawalModalOpen(false)}
         availableBalance={financialData?.availableBalance || 0}
       />
-    </>
+    </ProducerLayout>
   );
 };
 

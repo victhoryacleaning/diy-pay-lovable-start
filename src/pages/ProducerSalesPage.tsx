@@ -1,7 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Calendar, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProducerLayout } from "@/components/ProducerLayout";
 
 interface Sale {
   id: string;
@@ -278,50 +277,45 @@ const ProducerSalesPage = () => {
   const totalEarnings = sales.reduce((sum, sale) => sum + (sale?.producer_share_cents || 0), 0);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <ProducerSidebar />
-        <SidebarInset>
-          <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-            <div className="flex items-center gap-2 px-4 py-2 border-b">
-              <SidebarTrigger />
-              <h1 className="text-xl font-semibold">Vendas</h1>
+    <ProducerLayout>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Vendas</h1>
+        <p className="text-gray-600 mt-2">Acompanhe todas as suas vendas e faturamento</p>
+      </div>
+      
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalSales}</div>
+            <p className="text-xs text-muted-foreground">
+              Todas as transações
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valor Líquido Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(totalEarnings)}
             </div>
-            
-            <div className="container mx-auto px-4 py-8">
-              {/* Estatísticas simplificadas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{totalSales}</div>
-                    <p className="text-xs text-muted-foreground">
-                      Todas as transações
-                    </p>
-                  </CardContent>
-                </Card>
+            <p className="text-xs text-muted-foreground">
+              Após taxas da plataforma
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Valor Líquido Total</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(totalEarnings)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Após taxas da plataforma
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Filtros aprimorados */}
-              <Card className="mb-6">
+      {/* Filtros */}
+      <Card className="mb-6">
                 <CardHeader>
                   <CardTitle>Filtrar Vendas</CardTitle>
                   <CardDescription>Busque e filtre suas vendas</CardDescription>
@@ -404,11 +398,11 @@ const ProducerSalesPage = () => {
                       </Select>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+        </CardContent>
+      </Card>
 
-              {/* Tabela de vendas */}
-              <Card>
+      {/* Tabela de vendas */}
+      <Card>
                 <CardHeader>
                   <CardTitle>Histórico de Vendas</CardTitle>
                   <CardDescription>
@@ -508,13 +502,9 @@ const ProducerSalesPage = () => {
                       )}
                     </>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+        </CardContent>
+      </Card>
+    </ProducerLayout>
   );
 };
 

@@ -1,12 +1,11 @@
 
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
 import ProductList from "@/components/products/ProductList";
 import ProductTypeSelectionModal from "@/components/products/ProductTypeSelectionModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
+import { ProducerLayout } from "@/components/ProducerLayout";
 
 const ProductsPage = () => {
   const { user } = useAuth();
@@ -30,41 +29,32 @@ const ProductsPage = () => {
   });
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <ProducerSidebar />
-        <SidebarInset>
-          <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-            <div className="flex items-center gap-2 px-4 py-2 border-b">
-              <SidebarTrigger />
-              <h1 className="text-xl font-semibold">Produtos</h1>
-            </div>
-            
-            <div className="container mx-auto px-4 py-8">
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">Carregando produtos...</p>
-                </div>
-              ) : error ? (
-                <div className="text-center py-12">
-                  <p className="text-red-500">Erro ao carregar produtos</p>
-                </div>
-              ) : (
-                <ProductList 
-                  products={products} 
-                  onCreateProduct={() => setIsModalOpen(true)}
-                />
-              )}
-            </div>
-          </div>
-        </SidebarInset>
+    <ProducerLayout>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Seus Produtos</h1>
+        <p className="text-gray-600 mt-2">Gerencie todos os seus produtos digitais</p>
       </div>
+      
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Carregando produtos...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-500">Erro ao carregar produtos</p>
+        </div>
+      ) : (
+        <ProductList 
+          products={products} 
+          onCreateProduct={() => setIsModalOpen(true)}
+        />
+      )}
 
       <ProductTypeSelectionModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
       />
-    </SidebarProvider>
+    </ProducerLayout>
   );
 };
 

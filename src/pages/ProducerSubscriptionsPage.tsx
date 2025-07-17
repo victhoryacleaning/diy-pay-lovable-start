@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, Download, Filter, MoreHorizontal, Ban } from "lucide-react";
 import { toast } from "sonner";
+import { ProducerLayout } from "@/components/ProducerLayout";
 
 const ProducerSubscriptionsPage = () => {
   const { user } = useAuth();
@@ -112,102 +111,74 @@ const ProducerSubscriptionsPage = () => {
 
   if (isLoading) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <ProducerSidebar />
-          <SidebarInset>
-            <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-              <div className="flex items-center gap-2 px-4 py-2 border-b">
-                <SidebarTrigger />
-                <h1 className="text-xl font-semibold">Assinaturas</h1>
-              </div>
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-diypay-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Carregando assinaturas...</p>
-                </div>
-              </div>
-            </div>
-          </SidebarInset>
+      <ProducerLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-gray-600">Carregando assinaturas...</p>
+          </div>
         </div>
-      </SidebarProvider>
+      </ProducerLayout>
     );
   }
 
   if (error) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <ProducerSidebar />
-          <SidebarInset>
-            <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-              <div className="flex items-center gap-2 px-4 py-2 border-b">
-                <SidebarTrigger />
-                <h1 className="text-xl font-semibold">Assinaturas</h1>
-              </div>
-              <div className="text-center py-12">
-                <p className="text-red-500">Erro ao carregar assinaturas</p>
-              </div>
-            </div>
-          </SidebarInset>
+      <ProducerLayout>
+        <div className="text-center py-12">
+          <p className="text-red-500">Erro ao carregar assinaturas</p>
         </div>
-      </SidebarProvider>
+      </ProducerLayout>
     );
   }
 
   const stats = subscriptionsData?.stats || { totalActive: 0, monthlyRecurring: 0, totalSubscriptions: 0 };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <ProducerSidebar />
-        <SidebarInset>
-          <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-            <div className="flex items-center gap-2 px-4 py-2 border-b">
-              <SidebarTrigger />
-              <h1 className="text-xl font-semibold">Assinaturas</h1>
-            </div>
-            
-            <div className="container mx-auto px-4 py-8 space-y-6">
-              {/* Header */}
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Todas as Assinaturas</h2>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Exportar
-                </Button>
-              </div>
+    <ProducerLayout>
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Todas as Assinaturas</h1>
+            <p className="text-gray-600 mt-2">Gerencie todas as assinaturas dos seus produtos</p>
+          </div>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
+      </div>
 
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Assinaturas Ativas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalActive}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Faturamento Recorrente Mensal</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(stats.monthlyRecurring)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Total de Assinaturas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalSubscriptions}</div>
-                  </CardContent>
-                </Card>
-              </div>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Assinaturas Ativas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalActive}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Faturamento Recorrente Mensal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(stats.monthlyRecurring)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Total de Assinaturas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalSubscriptions}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-              {/* Search and Filters */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -216,15 +187,15 @@ const ProducerSubscriptionsPage = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
-                </div>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtros
-                </Button>
-              </div>
+        </div>
+        <Button variant="outline" className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          Filtros
+        </Button>
+      </div>
 
-              {/* Status Filter Tabs */}
-              <div className="flex gap-2">
+      {/* Status Filter Tabs */}
+      <div className="flex gap-2 mb-6">
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
@@ -245,11 +216,11 @@ const ProducerSubscriptionsPage = () => {
                   onClick={() => setStatusFilter('canceled')}
                 >
                   Canceladas ({stats.totalSubscriptions - stats.totalActive})
-                </Button>
-              </div>
+        </Button>
+      </div>
 
-              {/* Subscriptions Table */}
-              <Card>
+      {/* Subscriptions Table */}
+      <Card>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -315,28 +286,24 @@ const ProducerSubscriptionsPage = () => {
                       ))
                     )}
                   </TableBody>
-                </Table>
-              </Card>
+        </Table>
+      </Card>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-700">
-                  Mostrando {filteredSubscriptions.length} de {stats.totalSubscriptions} assinaturas
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Anterior
-                  </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    Próximo
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-6">
+        <p className="text-sm text-gray-700">
+          Mostrando {filteredSubscriptions.length} de {stats.totalSubscriptions} assinaturas
+        </p>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" disabled>
+            Anterior
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            Próximo
+          </Button>
+        </div>
       </div>
-    </SidebarProvider>
+    </ProducerLayout>
   );
 };
 
