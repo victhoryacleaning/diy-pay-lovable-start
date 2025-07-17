@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { AwardsModal } from '@/components/AwardsModal';
 import { 
   LayoutDashboard,
@@ -97,10 +98,19 @@ export function ProducerSidebar({ dashboardData, isLoading }: ProducerSidebarPro
                 <TrendingUp className="h-4 w-4 text-white" />
                 <span className="text-xs font-medium text-white">Meta de Faturamento</span>
               </div>
-              <div className="h-6 bg-[#3d0564] rounded animate-pulse"></div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-8 bg-[#3d0564]" />
+                  <Skeleton className="h-3 w-8 bg-[#3d0564]" />
+                </div>
+                <Skeleton className="h-2 w-full bg-[#3d0564]" />
+                <div className="text-center">
+                  <Skeleton className="h-3 w-16 bg-[#3d0564] mx-auto" />
+                </div>
+              </div>
             </div>
           ) : dashboardData ? (
-            <AwardsModal currentRevenue={dashboardData.currentRevenue || 0}>
+            <AwardsModal currentRevenue={dashboardData.currentRevenue || dashboardData.kpiValorLiquido || 0}>
               <div className="cursor-pointer p-3 rounded-lg bg-[#4d0782] hover:bg-[#3d0564] transition-all duration-200">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-white" />
@@ -109,7 +119,7 @@ export function ProducerSidebar({ dashboardData, isLoading }: ProducerSidebarPro
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-white">
-                    <span>R$ {formatRevenue(dashboardData.currentRevenue || 0)}</span>
+                    <span>R$ {formatRevenue(dashboardData.currentRevenue || dashboardData.kpiValorLiquido || 0)}</span>
                     <span>R$ {formatRevenue(dashboardData.currentMilestone || 1000000)}</span>
                   </div>
                   
