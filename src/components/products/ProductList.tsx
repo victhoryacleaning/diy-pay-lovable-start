@@ -55,18 +55,18 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
     }
   };
 
-  const getProductTypeBadgeVariant = (productType: string) => {
+  const getProductTypeEmoji = (productType: string) => {
     switch (productType) {
       case 'single_payment':
-        return 'default';
+        return '📦';
       case 'subscription':
-        return 'secondary';
+        return '🔄';
       case 'donation':
-        return 'outline';
+        return '❤️';
       case 'event':
-        return 'destructive';
+        return '🎫';
       default:
-        return 'default';
+        return '📦';
     }
   };
 
@@ -144,8 +144,8 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
                       >
                         {product.is_active ? "Ativo" : "Inativo"}
                       </Badge>
-                      <Badge variant={getProductTypeBadgeVariant(product.product_type)}>
-                        {getProductTypeLabel(product.product_type)}
+                      <Badge variant="secondary" className="bg-gray-200 text-gray-800 hover:bg-gray-200">
+                        {getProductTypeEmoji(product.product_type)} {getProductTypeLabel(product.product_type)}
                       </Badge>
                     </div>
                   </div>

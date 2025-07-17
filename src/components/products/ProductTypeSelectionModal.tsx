@@ -69,18 +69,18 @@ const ProductTypeSelectionModal = ({ isOpen, onClose }: ProductTypeSelectionModa
             return (
               <Card
                 key={productType.type}
-                className="cursor-pointer border-2 border-gray-200 hover:border-diypay-500 hover:shadow-md transition-all duration-200"
+                className="cursor-pointer bg-white shadow-sm hover:border-[#810ad1] hover:shadow-md transition-all duration-200 border-2 border-gray-200"
                 onClick={() => handleTypeSelection(productType.type)}
               >
                 <CardContent className="p-6 text-center">
                   <div className="flex flex-col items-center space-y-3">
-                    <div className="p-3 bg-diypay-50 rounded-full">
-                      <IconComponent className="h-8 w-8 text-diypay-600" />
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <IconComponent className="h-8 w-8 text-[#810ad1]" />
                     </div>
-                    <h3 className="font-bold text-lg text-gray-900">
+                    <h3 className="font-semibold text-lg text-foreground">
                       {productType.title}
                     </h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {productType.description}
                     </p>
                   </div>

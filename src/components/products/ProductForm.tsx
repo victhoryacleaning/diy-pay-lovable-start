@@ -322,10 +322,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
           Voltar
         </Button>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {mode === 'create' ? `Criando um Novo ${getProductTypeLabel(formData.product_type)}` : 'Editar Produto'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {mode === 'create' 
               ? 'Preencha as informações do seu produto' 
               : 'Altere as informações do produto'
@@ -334,13 +334,13 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         </div>
       </div>
 
-      <Card className="w-full">
+      <Card className="w-full bg-white shadow-sm">
         <CardHeader>
-          <CardTitle>Configurações do Produto</CardTitle>
+          <CardTitle className="text-foreground">Configurações do Produto</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 mb-6">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6 mb-6 bg-muted">
               <TabsTrigger value="geral">Geral</TabsTrigger>
               <TabsTrigger value="configuracao">Configuração</TabsTrigger>
               <TabsTrigger value="checkout">Checkout</TabsTrigger>
@@ -429,7 +429,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
           <div className="flex justify-end pt-6 mt-6 border-t">
             <Button
               onClick={handleSubmit}
-              className="bg-diypay-600 hover:bg-diypay-700"
+              className="bg-[#4d0782] hover:bg-[#4d0782]/90 text-white"
               disabled={saveProductMutation.isPending}
             >
               {saveProductMutation.isPending
