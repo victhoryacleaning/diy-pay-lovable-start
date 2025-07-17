@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useProducerFinancialsStore } from '@/stores/producer-financials-store';
 
 interface ProducerLayoutProps {
   children: ReactNode;
@@ -17,25 +16,16 @@ interface ProducerLayoutProps {
 export function ProducerLayout({ children }: ProducerLayoutProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { financialData, fetchFinancialData } = useProducerFinancialsStore();
 
-  const { data, isLoading: isDashboardLoading } = useQuery({
-    queryKey: ['producerDashboard'],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
-        body: { 
-          date_filter: "last_30_days",
-          product_id: null
-        }
-      });
-      if (error) throw error;
-      return data;
-    }
-  });
+  useEffect(() => {
+    fetchFinancialData();
+  }, [fetchFinancialData]);
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <ProducerSidebar dashboardData={data} isLoading={isDashboardLoading} />
+        <ProducerSidebar />
         <SidebarInset>
           <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
             {/* Header */}
@@ -51,10 +41,10 @@ export function ProducerLayout({ children }: ProducerLayoutProps) {
                     <Button variant="ghost" className="flex items-center gap-2 p-2">
                       <Avatar className="w-8 h-8">
                         <AvatarFallback className="bg-purple-100 text-purple-800 text-sm font-semibold">
-                          {(data?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
+                          {(financialData?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{data?.userName || profile?.full_name}</span>
+                      <span className="text-sm font-medium">{financialData?.userName || profile?.full_name}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">

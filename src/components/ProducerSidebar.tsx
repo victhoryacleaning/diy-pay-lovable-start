@@ -1,6 +1,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useProducerFinancialsStore } from '@/stores/producer-financials-store';
 import {
   Sidebar,
   SidebarContent,
@@ -60,14 +61,10 @@ const menuItems = [
   },
 ];
 
-interface ProducerSidebarProps {
-  dashboardData?: any;
-  isLoading?: boolean;
-}
-
-export function ProducerSidebar({ dashboardData, isLoading }: ProducerSidebarProps) {
+export function ProducerSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
+  const { financialData: dashboardData, isLoading } = useProducerFinancialsStore();
 
   const isActive = (url: string) => {
     if (url === "/producer-dashboard") {
