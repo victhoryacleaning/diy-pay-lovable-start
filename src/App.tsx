@@ -25,7 +25,10 @@ import AdminProducersPage from "./pages/Admin/AdminProducersPage";
 import AdminFinancialsPage from "./pages/Admin/AdminFinancialsPage";
 import AdminFeesPage from "./pages/Admin/AdminFeesPage";
 import AdminGatewaysPage from "./pages/Admin/AdminGatewaysPage";
-import ProfilePage from "./pages/Producer/ProfilePage";
+import SettingsHubPage from "./pages/Producer/SettingsHubPage";
+import AccountPage from "./pages/Producer/Settings/AccountPage";
+import WebhooksPage from "./pages/Producer/Settings/WebhooksPage";
+import APIPage from "./pages/Producer/Settings/APIPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -119,10 +122,34 @@ const App = () => {
                 } 
               />
               <Route 
-                path="/profile" 
+                path="/settings" 
                 element={
                   <ProtectedRoute requiredRole="producer">
-                    <ProfilePage />
+                    <SettingsHubPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings/account" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <AccountPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings/webhooks" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <WebhooksPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings/api" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <APIPage />
                   </ProtectedRoute>
                 } 
               />

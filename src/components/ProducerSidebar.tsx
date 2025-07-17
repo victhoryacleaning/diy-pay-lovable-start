@@ -54,7 +54,7 @@ const menuItems = [
   },
   {
     title: "Configurações",
-    url: "/settings", // Future implementation
+    url: "/settings",
     icon: Settings,
   },
 ];
