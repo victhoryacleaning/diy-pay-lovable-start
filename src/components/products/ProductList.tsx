@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Eye, MoreHorizontal, Ticket, RefreshCw } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Pencil, Eye, MoreHorizontal, Ticket, RefreshCw, Copy, Check } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +28,8 @@ interface ProductListProps {
 }
 
 const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
+  const { toast } = useToast();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const formatPrice = (priceCents: number, productType: string) => {
     if (productType === 'donation') {
       return 'Valor livre';
@@ -65,108 +70,194 @@ const ProductList = ({ products, onCreateProduct }: ProductListProps) => {
     }
   };
 
+  const copyCheckoutLink = async (product: Product) => {
+    if (!product.checkout_link_slug) return;
+    
+    const checkoutUrl = `${window.location.origin}/checkout/${product.checkout_link_slug}`;
+    
+    try {
+      await navigator.clipboard.writeText(checkoutUrl);
+      setCopiedId(product.id);
+      toast({
+        title: "Link do checkout copiado!",
+        description: "O link foi copiado para sua área de transferência.",
+      });
+      
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (error) {
+      toast({
+        title: "Erro ao copiar link",
+        description: "Não foi possível copiar o link. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const truncateUrl = (slug: string) => {
+    if (slug.length > 20) {
+      return `...${slug.slice(-20)}`;
+    }
+    return slug;
+  };
+
   if (products.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">Você ainda não criou nenhum produto.</p>
-        <Button onClick={onCreateProduct}>
-          Criar Primeiro Produto
-        </Button>
-      </div>
+      <Card className="text-center py-12">
+        <CardContent className="pt-6">
+          <p className="text-muted-foreground mb-4">Você ainda não criou nenhum produto.</p>
+          <Button 
+            onClick={onCreateProduct}
+            className="bg-[#4d0782] hover:bg-[#4d0782]/90 text-white"
+          >
+            Criar Primeiro Produto
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Seus Produtos</h2>
-        <Button onClick={onCreateProduct}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="hidden sm:block" /> {/* Spacer for alignment */}
+        <Button 
+          onClick={onCreateProduct}
+          className="bg-[#4d0782] hover:bg-[#4d0782]/90 text-white w-full sm:w-auto"
+        >
           Criar Novo Produto
         </Button>
       </div>
 
-      {products.map((product) => (
-        <div
-          key={product.id}
-          className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
-                <Badge 
-                  variant={product.is_active ? "default" : "secondary"}
-                  className={product.is_active ? "bg-green-100 text-green-800" : ""}
-                >
-                  {product.is_active ? "Ativo" : "Inativo"}
-                </Badge>
-                <Badge variant={getProductTypeBadgeVariant(product.product_type)}>
-                  {getProductTypeLabel(product.product_type)}
-                </Badge>
+      <div className="grid gap-6">
+        {products.map((product) => (
+          <Card key={product.id} className="bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex-1 space-y-4">
+                  {/* Header with title and badges */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <h3 className="text-xl font-semibold text-foreground">{product.name}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge 
+                        variant={product.is_active ? "default" : "secondary"}
+                        className={product.is_active ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}
+                      >
+                        {product.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                      <Badge variant={getProductTypeBadgeVariant(product.product_type)}>
+                        {getProductTypeLabel(product.product_type)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <p className="text-3xl font-bold text-[#810ad1]">
+                    {formatPrice(product.price_cents, product.product_type)}
+                  </p>
+
+                  {/* Product type */}
+                  <p className="text-sm text-muted-foreground">
+                    Tipo: {product.type === 'digital_file' ? 'Arquivo Digital' : 'Outro'}
+                  </p>
+
+                  {/* Checkout link with copy functionality */}
+                  {product.checkout_link_slug && (
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm text-muted-foreground flex-1 font-mono">
+                        .../checkout/{truncateUrl(product.checkout_link_slug)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyCheckoutLink(product)}
+                        className="text-[#810ad1] hover:text-[#810ad1]/80 hover:bg-[#810ad1]/10"
+                      >
+                        {copiedId === product.id ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2 lg:items-end xl:items-center">
+                  <div className="flex flex-wrap gap-2">
+                    {product.checkout_link_slug && (
+                      <Link
+                        to={`/checkout/${product.checkout_link_slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-[#810ad1] border-[#810ad1] hover:bg-[#810ad1] hover:text-white"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          <span className="hidden sm:inline">Ver Checkout</span>
+                          <span className="sm:hidden">Checkout</span>
+                        </Button>
+                      </Link>
+                    )}
+                    
+                    {/* Botão Ingressos - apenas para eventos */}
+                    {product.product_type === 'event' && (
+                      <Link to={`/products/edit/${product.id}?tab=ingressos`}>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-[#810ad1] border-[#810ad1] hover:bg-[#810ad1] hover:text-white"
+                        >
+                          <Ticket className="h-4 w-4 mr-2" />
+                          <span className="hidden sm:inline">Ingressos</span>
+                          <span className="sm:hidden">Tickets</span>
+                        </Button>
+                      </Link>
+                    )}
+
+                    {/* Botão Assinaturas - apenas para assinaturas */}
+                    {product.product_type === 'subscription' && (
+                      <Link to={`/products/edit/${product.id}?tab=assinaturas`}>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-[#810ad1] border-[#810ad1] hover:bg-[#810ad1] hover:text-white"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          <span className="hidden sm:inline">Assinaturas</span>
+                          <span className="sm:hidden">Subs</span>
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-[#810ad1] hover:text-[#810ad1]/80 hover:bg-[#810ad1]/10">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to={`/products/edit/${product.id}`}
+                          className="flex items-center"
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-              <p className="text-2xl font-bold text-diypay-600 mb-2">
-                {formatPrice(product.price_cents, product.product_type)}
-              </p>
-              <p className="text-sm text-gray-500">
-                Tipo: {product.type === 'digital_file' ? 'Arquivo Digital' : 'Outro'}
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              {product.checkout_link_slug && (
-                <Link
-                  to={`/checkout/${product.checkout_link_slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Checkout
-                  </Button>
-                </Link>
-              )}
-              
-              {/* Botão Ingressos - apenas para eventos */}
-              {product.product_type === 'event' && (
-                <Link to={`/products/edit/${product.id}?tab=ingressos`}>
-                  <Button variant="outline" size="sm">
-                    <Ticket className="h-4 w-4 mr-2" />
-                    Ingressos
-                  </Button>
-                </Link>
-              )}
-
-              {/* Botão Assinaturas - apenas para assinaturas */}
-              {product.product_type === 'subscription' && (
-                <Link to={`/products/edit/${product.id}?tab=assinaturas`}>
-                  <Button variant="outline" size="sm">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Assinaturas
-                  </Button>
-                </Link>
-              )}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to={`/products/edit/${product.id}`}
-                      className="flex items-center"
-                    >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
