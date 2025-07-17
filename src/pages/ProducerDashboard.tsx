@@ -1,24 +1,44 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   CreditCard, 
   DollarSign, 
-  Clock, 
+  TrendingUp, 
+  RotateCcw,
   Package, 
-  Users, 
-  Settings,
   Plus,
-  Eye
+  Settings,
+  Eye,
+  Calendar
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
-import { useProducerDashboardEdgeFunction } from "@/hooks/useProducerDashboardEdgeFunction";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const ProducerDashboard = () => {
-  const { data, loading } = useProducerDashboardEdgeFunction();
+  const [dateFilter, setDateFilter] = useState("last_30_days");
+  const [productFilter, setProductFilter] = useState("all");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['producerDashboard', dateFilter, productFilter],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
+        body: { 
+          date_filter: dateFilter,
+          product_id: productFilter === "all" ? null : productFilter
+        }
+      });
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -40,15 +60,24 @@ const ProducerDashboard = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">Paga</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
       case 'pending_payment':
         return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800">Falhada</Badge>;
-      case 'authorized':
-        return <Badge className="bg-blue-100 text-blue-800">Autorizada</Badge>;
+        return <Badge className="bg-red-100 text-red-800">Falhado</Badge>;
+      case 'refunded':
+        return <Badge className="bg-gray-100 text-gray-800">Reembolsado</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getDateFilterLabel = (filter: string) => {
+    switch (filter) {
+      case 'last_7_days': return 'Últimos 7 dias';
+      case 'last_30_days': return 'Últimos 30 dias';
+      case 'this_year': return 'Este ano';
+      default: return 'Últimos 30 dias';
     }
   };
 
@@ -57,214 +86,303 @@ const ProducerDashboard = () => {
       <div className="min-h-screen flex w-full">
         <ProducerSidebar />
         <SidebarInset>
-          <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-            <div className="flex items-center gap-2 px-4 py-2 border-b">
+          <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
+            {/* Header */}
+            <div className="flex items-center gap-2 px-6 py-4 border-b bg-white/80 backdrop-blur-sm">
               <SidebarTrigger />
-              <h1 className="text-xl font-semibold">Painel do Produtor</h1>
+              <h1 className="text-xl font-semibold text-slate-800">Dashboard</h1>
             </div>
             
-            <div className="container mx-auto px-4 py-8">
+            <div className="p-6">
+              {/* Welcome Message */}
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-                <p className="text-gray-600 mt-2">Acompanhe suas vendas e pagamentos</p>
+                <h2 className="text-2xl font-semibold text-slate-900 mb-2">
+                  Bem vindo, {isLoading ? 'Carregando...' : 'Marcos Madala'}!
+                </h2>
               </div>
 
-              {/* Cards de métricas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Saldo Disponível</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-32" />
-                    ) : (
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(data.availableBalance)}
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Disponível para saque
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Saldo Pendente</CardTitle>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-32" />
-                    ) : (
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {formatCurrency(data.pendingBalance)}
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Total a ser liberado
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Aguardando Pagamento</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-32" />
-                    ) : (
-                      <div className="text-2xl font-bold">
-                        {formatCurrency(data.waitingPayment)}
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Vendas com pagamento não confirmado
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Clientes este Mês</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-16" />
-                    ) : (
-                      <div className="text-2xl font-bold">{data.uniqueCustomersThisMonth}</div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Clientes únicos
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Ações rápidas */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ações Rápidas</CardTitle>
-                    <CardDescription>Gerencie seu negócio</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Link to="/products/new" className="block">
-                      <Button className="w-full justify-start" variant="outline">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Criar Novo Produto
-                      </Button>
-                    </Link>
-                    <Link to="/products" className="block">
-                      <Button className="w-full justify-start" variant="outline">
-                        <Package className="mr-2 h-4 w-4" />
-                        Gerenciar Produtos
-                      </Button>
-                    </Link>
-                    <Button className="w-full justify-start" variant="outline" disabled>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Ver Relatórios
-                    </Button>
-                    <Link to="/complete-producer-profile" className="block">
-                      <Button className="w-full justify-start" variant="outline">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Dados Bancários
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-
-                {/* Transações recentes */}
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Transações Recentes</CardTitle>
-                    <CardDescription>Suas 3 vendas mais recentes</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <div className="space-y-4">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex-1">
-                              <Skeleton className="h-4 w-32 mb-2" />
-                              <Skeleton className="h-3 w-24" />
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Skeleton className="h-4 w-20" />
-                              <Skeleton className="h-6 w-16" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {data.recentTransactions.length > 0 ? (
-                          data.recentTransactions.map((transaction) => (
-                            <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                              <div className="flex-1">
-                                <p className="font-medium">{transaction.buyer_email}</p>
-                                <p className="text-sm text-gray-500">{transaction.product_name}</p>
-                                <p className="text-xs text-gray-400">Criada em: {formatDate(transaction.created_at)}</p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="font-semibold">
-                                  {formatCurrency(transaction.amount)}
-                                </span>
-                                {getStatusBadge(transaction.status)}
-                              </div>
-                            </div>
-                          ))
+              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                {/* Main Content - Left Column */}
+                <div className="xl:col-span-3 space-y-6">
+                  {/* Top KPI Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Valor Líquido Card */}
+                    <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-purple-100">Valor líquido</CardTitle>
+                        <CreditCard className="h-5 w-5 text-purple-200" />
+                      </CardHeader>
+                      <CardContent>
+                        {isLoading ? (
+                          <Skeleton className="h-8 w-32 bg-purple-400" />
                         ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <p>Nenhuma transação encontrada</p>
-                            <p className="text-sm">Suas vendas aparecerão aqui quando realizadas</p>
+                          <div className="text-2xl font-bold">
+                            {formatCurrency(data?.kpiValorLiquido || 0)}
                           </div>
                         )}
-                      </div>
-                    )}
-                    <div className="mt-4">
-                      <Link to="/sales" className="block">
-                        <Button variant="outline" className="w-full">
-                          Ver todas as transações
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                      </CardContent>
+                    </Card>
 
-              {/* Informações importantes */}
-              <div className="mt-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Informações Importantes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <h4 className="font-semibold mb-2">Taxas da Plataforma</h4>
-                        <p className="text-gray-600">5% sobre cada transação processada</p>
+                    {/* Vendas Card */}
+                    <Card className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-0 shadow-lg">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-emerald-100">Vendas</CardTitle>
+                        <TrendingUp className="h-5 w-5 text-emerald-200" />
+                      </CardHeader>
+                      <CardContent>
+                        {isLoading ? (
+                          <Skeleton className="h-8 w-16 bg-emerald-400" />
+                        ) : (
+                          <div className="text-2xl font-bold">{data?.kpiVendasCount || 0}</div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Reembolso Card */}
+                    <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white border-0 shadow-lg">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-orange-100">Reembolso</CardTitle>
+                        <RotateCcw className="h-5 w-5 text-orange-200" />
+                      </CardHeader>
+                      <CardContent>
+                        {isLoading ? (
+                          <Skeleton className="h-8 w-32 bg-orange-400" />
+                        ) : (
+                          <div className="text-2xl font-bold">
+                            {formatCurrency(data?.kpiReembolso || 0)}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Filters */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Desempenho de vendas
+                      </CardTitle>
+                      <div className="flex gap-4">
+                        <Select value={dateFilter} onValueChange={setDateFilter}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Período" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
+                            <SelectItem value="last_30_days">Últimos 30 dias</SelectItem>
+                            <SelectItem value="this_year">Este ano</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Select value={productFilter} onValueChange={setProductFilter}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Produto" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os produtos</SelectItem>
+                            {data?.products?.map((product: any) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Prazo de Recebimento</h4>
-                        <p className="text-gray-600">Imediato para cartão, D+1 para PIX, D+30 para boleto</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        {isLoading ? (
+                          <Skeleton className="h-full w-full" />
+                        ) : (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={data?.chartData || []}>
+                              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                              <XAxis 
+                                dataKey="name" 
+                                className="text-sm text-slate-600"
+                                tick={{ fontSize: 12 }}
+                              />
+                              <YAxis 
+                                className="text-sm text-slate-600"
+                                tick={{ fontSize: 12 }}
+                                tickFormatter={(value) => `R$ ${value}`}
+                              />
+                              <Tooltip 
+                                formatter={(value) => [`R$ ${value}`, 'Vendas']}
+                                labelFormatter={(label) => `Data: ${label}`}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="total" 
+                                stroke="#8b5cf6" 
+                                strokeWidth={3}
+                                dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                                activeDot={{ r: 6, fill: '#7c3aed' }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        )}
                       </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Suporte</h4>
-                        <p className="text-gray-600">Disponível 24/7 via chat ou email</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Transactions */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Transações Recentes</CardTitle>
+                      <div className="flex justify-end">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/sales">Todas as Transações</Link>
+                        </Button>
                       </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Status da Conta</h4>
-                        <p className="text-green-600 font-medium">✓ Verificada e ativa</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b text-left">
+                              <th className="pb-3 text-sm font-semibold text-slate-600">Data</th>
+                              <th className="pb-3 text-sm font-semibold text-slate-600">Produto</th>
+                              <th className="pb-3 text-sm font-semibold text-slate-600">Cliente</th>
+                              <th className="pb-3 text-sm font-semibold text-slate-600">Status</th>
+                              <th className="pb-3 text-sm font-semibold text-slate-600 text-right">Valor Líquido</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {isLoading ? (
+                              Array.from({ length: 3 }).map((_, i) => (
+                                <tr key={i} className="border-b">
+                                  <td className="py-3"><Skeleton className="h-4 w-20" /></td>
+                                  <td className="py-3"><Skeleton className="h-4 w-24" /></td>
+                                  <td className="py-3"><Skeleton className="h-4 w-32" /></td>
+                                  <td className="py-3"><Skeleton className="h-6 w-16" /></td>
+                                  <td className="py-3"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                                </tr>
+                              ))
+                            ) : data?.recentTransactions?.length > 0 ? (
+                              data.recentTransactions.map((transaction: any) => (
+                                <tr key={transaction.id} className="border-b hover:bg-slate-50">
+                                  <td className="py-3 text-sm text-slate-600">
+                                    {formatDate(transaction.created_at).split(' ')[0]}
+                                  </td>
+                                  <td className="py-3 text-sm font-medium">{transaction.product_name}</td>
+                                  <td className="py-3 text-sm text-slate-600">{transaction.buyer_email}</td>
+                                  <td className="py-3">{getStatusBadge(transaction.status)}</td>
+                                  <td className="py-3 text-sm font-semibold text-right">
+                                    {formatCurrency(transaction.amount)}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={5} className="py-8 text-center text-slate-500">
+                                  Nenhuma transação encontrada
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Right Sidebar */}
+                <div className="space-y-6">
+                  {/* Saldo Disponível */}
+                  <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-white font-semibold">Saldo Disponível</CardTitle>
+                      <CardDescription className="text-purple-100">Disponível para saque</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <Skeleton className="h-10 w-32 bg-purple-400" />
+                      ) : (
+                        <div className="text-3xl font-bold mb-4">
+                          {formatCurrency(data?.saldoDisponivel || 0)}
+                        </div>
+                      )}
+                      <Button 
+                        className="w-full bg-white text-purple-700 hover:bg-purple-50 font-semibold"
+                        asChild
+                      >
+                        <Link to="/financials">Solicitar Saque</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Saldo Pendente */}
+                  <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-white font-semibold">Saldo Pendente</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <Skeleton className="h-10 w-32 bg-orange-400" />
+                      ) : (
+                        <div className="text-3xl font-bold">
+                          {formatCurrency(data?.saldoPendente || 0)}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Central Financeira */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-slate-800">Central Financeira</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Button variant="outline" className="w-full justify-start" asChild>
+                        <Link to="/financials">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Ver Extrato
+                        </Link>
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" asChild>
+                        <Link to="/sales">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Histórico de Vendas
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Ações Rápidas */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-slate-800">Ações Rápidas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700 font-semibold" asChild>
+                        <Link to="/products/new">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Criar Novo Produto
+                        </Link>
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" asChild>
+                        <Link to="/products">
+                          <Package className="mr-2 h-4 w-4" />
+                          Gerenciar Produtos
+                        </Link>
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" asChild>
+                        <Link to="/complete-producer-profile">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Configurações
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
           </div>
