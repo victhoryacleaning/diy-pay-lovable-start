@@ -139,20 +139,20 @@ const ProducerSalesPage = () => {
   }
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending_payment: { label: 'Pendente', variant: 'secondary' as const },
-      paid: { label: 'Pago', variant: 'default' as const },
-      failed: { label: 'Falhou', variant: 'destructive' as const },
-      cancelled: { label: 'Cancelado', variant: 'outline' as const },
-      refunded: { label: 'Reembolsado', variant: 'outline' as const }
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-[#4d0782] text-white border-[#4d0782] hover:bg-[#4d0782]">Pago</Badge>;
+      case 'pending_payment':
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Pendente</Badge>;
+      case 'failed':
+        return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Falhou</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Cancelado</Badge>;
+      case 'refunded':
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Reembolsado</Badge>;
+      default:
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">{status}</Badge>;
     }
-
-    const config = statusConfig[status as keyof typeof statusConfig] || { 
-      label: status, 
-      variant: 'secondary' as const 
-    }
-
-    return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
   const getPaymentMethodLabel = (method: string): string => {

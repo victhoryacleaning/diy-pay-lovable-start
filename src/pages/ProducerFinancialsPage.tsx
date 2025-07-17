@@ -163,21 +163,18 @@ const ProducerFinancialsPage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Paga</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pendente</Badge>;
       case 'approved':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Aprovado</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-100 text-red-700 border-red-200">Rejeitado</Badge>;
+        return <Badge className="bg-[#4d0782] text-white border-[#4d0782] hover:bg-[#4d0782]">Pago</Badge>;
+      case 'pending':
       case 'pending_payment':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pendente</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Pendente</Badge>;
+      case 'rejected':
       case 'failed':
-        return <Badge className="bg-red-100 text-red-700 border-red-200">Falhada</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Rejeitado</Badge>;
       case 'authorized':
-        return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Autorizada</Badge>;
+        return <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100">Autorizada</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">{status}</Badge>;
     }
   };
 
@@ -280,23 +277,23 @@ const ProducerFinancialsPage = () => {
                   <TabsContent value="saques" className="space-y-6">
         {/* Cards de saldo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-green-500 border-green-600 text-white">
+          <Card className="bg-[#4d0782] border-[#4d0782] text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-50">Saldo Disponível para Saque</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-100" />
+              <CardTitle className="text-sm font-medium text-white">Saldo Disponível para Saque</CardTitle>
+              <DollarSign className="h-4 w-4 text-white" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white">
                 {formatCurrency(financialData?.availableBalance || 0)}
               </div>
-              <p className="text-xs text-green-100">
+              <p className="text-xs text-white/80">
                 Valor liberado e disponível para saque
               </p>
               <div className="mt-4">
                 <Button 
                   onClick={handleWithdrawRequest}
                   disabled={!financialData?.availableBalance || financialData.availableBalance === 0}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="w-full bg-white hover:bg-white/90 text-[#4d0782]"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Solicitar Saque
@@ -493,9 +490,9 @@ const ProducerFinancialsPage = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="p-4 bg-blue-50 rounded-lg">
-                          <h4 className="font-medium text-blue-900 mb-2">Taxa do Produtor</h4>
-                          <p className="text-blue-800">
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-2">Taxa do Produtor</h4>
+                          <p className="text-gray-700">
                             {producerSettings?.custom_fees_json 
                               ? `Taxa personalizada: 5% + R$ ${(producerSettings.custom_fixed_fee_cents || 100) / 100}` 
                               : "5% + R$ 1,00 por venda (taxa padrão)"
@@ -503,18 +500,18 @@ const ProducerFinancialsPage = () => {
                           </p>
                         </div>
                         
-                        <div className="p-4 bg-green-50 rounded-lg">
-                          <h4 className="font-medium text-green-900 mb-2">Prazo de Recebimento</h4>
-                          <div className="text-green-800 space-y-1">
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-2">Prazo de Recebimento</h4>
+                          <div className="text-gray-700 space-y-1">
                             <p>• Cartão de crédito: 15 dias</p>
                             <p>• Boleto bancário: 2 dias</p>
                             <p>• PIX: 2 dias</p>
                           </div>
                         </div>
                         
-                        <div className="p-4 bg-yellow-50 rounded-lg">
-                          <h4 className="font-medium text-yellow-900 mb-2">Reserva de Segurança</h4>
-                          <p className="text-yellow-800">
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-2">Reserva de Segurança</h4>
+                          <p className="text-gray-700">
                             Não aplicável por 30 dias
                           </p>
                         </div>

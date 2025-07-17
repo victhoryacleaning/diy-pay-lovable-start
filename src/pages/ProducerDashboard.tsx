@@ -67,15 +67,15 @@ const ProducerDashboard = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
+        return <Badge className="bg-[#4d0782] text-white border-[#4d0782] hover:bg-[#4d0782]">Pago</Badge>;
       case 'pending_payment':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Pendente</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800">Falhado</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Falhado</Badge>;
       case 'refunded':
-        return <Badge className="bg-gray-100 text-gray-800">Reembolsado</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Reembolsado</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">{status}</Badge>;
     }
   };
 

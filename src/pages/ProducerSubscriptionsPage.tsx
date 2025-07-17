@@ -88,15 +88,15 @@ const ProducerSubscriptionsPage = () => {
     switch (status) {
       case 'paid':
       case 'active':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Ativa</Badge>;
+        return <Badge className="bg-[#4d0782] text-white border-[#4d0782] hover:bg-[#4d0782]">Ativa</Badge>;
       case 'canceled':
-        return <Badge className="bg-red-100 text-red-700 border-red-200">Cancelada</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Cancelada</Badge>;
       case 'expired':
-        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">Expirada</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Expirada</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Pendente</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Pendente</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
+        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">{status}</Badge>;
     }
   };
 
