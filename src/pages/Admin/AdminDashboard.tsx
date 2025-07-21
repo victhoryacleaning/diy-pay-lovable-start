@@ -23,7 +23,7 @@ interface AdminDashboardData {
 const AdminDashboard = () => {
   const [dateFilter, setDateFilter] = useState('last_30_days');
 
-  const { data, isLoading, error } = useQuery<AdminDashboardData>({
+  const { data, isLoading, isError, error } = useQuery<AdminDashboardData>({
     queryKey: ['admin-dashboard-data', dateFilter],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-admin-dashboard-data', {
@@ -52,6 +52,73 @@ const AdminDashboard = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Dashboard do Administrador</h1>
+          <p className="text-muted-foreground mt-2">
+            Carregando métricas...
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Valor Total Movimentado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-32" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Valor Total Lucro
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-32" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Total de Vendas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    console.error("Falha ao carregar dados do dashboard:", error);
+    return (
+      <div className="container mx-auto py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Dashboard do Administrador</h1>
+          <p className="text-muted-foreground mt-2">
+            Visão geral das métricas e atividades da plataforma.
+          </p>
+        </div>
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-destructive text-sm">
+            Ocorreu um erro ao carregar os dados.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8 flex items-center justify-between">
@@ -75,14 +142,6 @@ const AdminDashboard = () => {
         </Select>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-          <p className="text-destructive text-sm">
-            Erro ao carregar dados: {error.message}
-          </p>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -95,13 +154,9 @@ const AdminDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <p className="text-2xl font-bold">
-                {data ? formatCurrency(data.kpis.valorTotalMovimentado) : 'R$ 0,00'}
-              </p>
-            )}
+            <p className="text-2xl font-bold">
+              {data ? formatCurrency(data.kpis.valorTotalMovimentado) : 'R$ 0,00'}
+            </p>
           </CardContent>
         </Card>
 
@@ -116,13 +171,9 @@ const AdminDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <p className="text-2xl font-bold">
-                {data ? formatCurrency(data.kpis.valorTotalLucro) : 'R$ 0,00'}
-              </p>
-            )}
+            <p className="text-2xl font-bold">
+              {data ? formatCurrency(data.kpis.valorTotalLucro) : 'R$ 0,00'}
+            </p>
           </CardContent>
         </Card>
 
@@ -137,13 +188,9 @@ const AdminDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl font-bold">
-                {data?.totalVendas || 0}
-              </p>
-            )}
+            <p className="text-2xl font-bold">
+              {data?.totalVendas || 0}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -159,15 +206,7 @@ const AdminDashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-            </div>
-          ) : data?.chartData && data.chartData.length > 0 ? (
+          {data?.chartData && data.chartData.length > 0 ? (
             <div className="h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.chartData}>
