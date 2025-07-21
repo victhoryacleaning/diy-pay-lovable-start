@@ -155,14 +155,59 @@ const App = () => {
               />
 
               {/* Admin Routes */}
-              <Route element={<ProtectedRoute requiredRole="admin" />}>
-                <Route element={<AdminLayout />}>
-                  <Route path="/admin-dashboard" element={<AdminDashboard />} />
-                  <Route path="/admin-producers" element={<AdminProducersPage />} />
-                  <Route path="/admin-financials" element={<AdminFinancialsPage />} />
-                  <Route path="/admin-fees" element={<AdminFeesPage />} />
-                  <Route path="/admin-gateways" element={<AdminGatewaysPage />} />
-                </Route>
+              <Route 
+                path="/admin-dashboard" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+              </Route>
+              
+              <Route 
+                path="/admin-producers" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminProducersPage />} />
+              </Route>
+
+              <Route 
+                path="/admin-financials" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminFinancialsPage />} />
+              </Route>
+
+              <Route 
+                path="/admin-fees" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminFeesPage />} />
+              </Route>
+
+              <Route 
+                path="/admin-gateways" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminGatewaysPage />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
