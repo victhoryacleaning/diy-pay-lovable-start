@@ -1,10 +1,10 @@
 
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   requiredRole?: 'user' | 'producer' | 'admin';
   redirectTo?: string;
 }
@@ -40,7 +40,7 @@ const ProtectedRoute = ({
     return <Navigate to={roleRedirects[profile.role]} replace />;
   }
 
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 export default ProtectedRoute;
