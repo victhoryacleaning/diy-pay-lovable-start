@@ -325,40 +325,88 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birth_date: string | null
+          cnpj: string | null
+          company_name: string | null
+          company_phone: string | null
+          cpf: string | null
           cpf_cnpj: string | null
           created_at: string
+          document_back_url: string | null
+          document_front_url: string | null
           email: string
           full_name: string | null
           id: string
           instagram_handle: string | null
           iugu_customer_id: string | null
+          opening_date: string | null
+          person_type: string | null
           phone: string | null
+          responsible_birth_date: string | null
+          responsible_cpf: string | null
+          responsible_name: string | null
           role: string
+          selfie_url: string | null
+          social_contract_url: string | null
+          trading_name: string | null
           updated_at: string
+          verification_status: string
         }
         Insert: {
+          birth_date?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          company_phone?: string | null
+          cpf?: string | null
           cpf_cnpj?: string | null
           created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
           email: string
           full_name?: string | null
           id: string
           instagram_handle?: string | null
           iugu_customer_id?: string | null
+          opening_date?: string | null
+          person_type?: string | null
           phone?: string | null
+          responsible_birth_date?: string | null
+          responsible_cpf?: string | null
+          responsible_name?: string | null
           role?: string
+          selfie_url?: string | null
+          social_contract_url?: string | null
+          trading_name?: string | null
           updated_at?: string
+          verification_status?: string
         }
         Update: {
+          birth_date?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          company_phone?: string | null
+          cpf?: string | null
           cpf_cnpj?: string | null
           created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
           email?: string
           full_name?: string | null
           id?: string
           instagram_handle?: string | null
           iugu_customer_id?: string | null
+          opening_date?: string | null
+          person_type?: string | null
           phone?: string | null
+          responsible_birth_date?: string | null
+          responsible_cpf?: string | null
+          responsible_name?: string | null
           role?: string
+          selfie_url?: string | null
+          social_contract_url?: string | null
+          trading_name?: string | null
           updated_at?: string
+          verification_status?: string
         }
         Relationships: []
       }
