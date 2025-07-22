@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, CreditCard, Users, DollarSign, Percent, Menu, X } from 'lucide-react';
+import { BarChart3, CreditCard, Users, DollarSign, Percent, Menu, X, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -19,6 +19,11 @@ const AdminSidebar = () => {
       title: 'Produtores',
       href: '/admin-producers',
       icon: Users,
+    },
+    {
+      title: 'Verificações',
+      href: '/admin-verifications',
+      icon: UserCheck,
     },
     {
       title: 'Financeiro',
