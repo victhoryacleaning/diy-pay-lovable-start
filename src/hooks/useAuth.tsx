@@ -44,8 +44,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, cpfCnpj: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signInWithGoogle: () => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error?: string }>;
 }
@@ -122,20 +123,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, cpfCnpj: string) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      // ETAPA 3: Validação de CPF/CNPJ antes do cadastro
-      if (!validateCPFOrCNPJ(cpfCnpj)) {
-        return { error: 'CPF ou CNPJ inválido. Verifique os dados e tente novamente.' };
-      }
-      
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName
+          }
         }
       });
 
@@ -143,25 +142,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: error.message };
       }
 
-      if (data.user) {
-        // Criar registro na tabela profiles com status inicial
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: fullName,
-            cpf_cnpj: cpfCnpj,
-            verification_status: 'pending_submission' // Status inicial para KYC/KYB
-          })
-          .eq('id', data.user.id);
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  };
 
-        if (updateError) {
-          console.error('Error updating profile:', updateError);
-          return { error: 'Erro ao criar perfil do usuário' };
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
         }
+      });
+
+      if (error) {
+        return { error: error.message };
       }
 
       return {};
     } catch (error: any) {
+      console.error('Google sign in error:', error);
       return { error: error.message };
     }
   };
@@ -224,6 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loading,
       signUp,
       signIn,
+      signInWithGoogle,
       signOut,
       updateProfile
     }}>
