@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { validateCPFOrCNPJ } from '@/lib/utils';
 
 interface Profile {
   id: string;
@@ -15,6 +16,27 @@ interface Profile {
   iugu_customer_id: string | null;
   created_at: string;
   updated_at: string;
+  // Novos campos KYC/KYB
+  verification_status: 'pending_submission' | 'pending_approval' | 'approved' | 'rejected';
+  person_type: 'PF' | 'PJ' | null;
+  // Campos PF
+  cpf: string | null;
+  birth_date: string | null;
+  // Campos PJ
+  cnpj: string | null;
+  company_name: string | null;
+  trading_name: string | null;
+  opening_date: string | null;
+  company_phone: string | null;
+  // Responsável PJ
+  responsible_name: string | null;
+  responsible_cpf: string | null;
+  responsible_birth_date: string | null;
+  // URLs de documentos
+  document_front_url: string | null;
+  document_back_url: string | null;
+  selfie_url: string | null;
+  social_contract_url: string | null;
 }
 
 interface AuthContextType {
@@ -86,10 +108,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Type assertion to ensure role is one of the allowed values
+      // Type assertion to ensure specific fields are one of the allowed values
       const profileData: Profile = {
         ...data,
-        role: data.role as 'user' | 'producer' | 'admin'
+        role: data.role as 'user' | 'producer' | 'admin',
+        verification_status: data.verification_status as 'pending_submission' | 'pending_approval' | 'approved' | 'rejected',
+        person_type: data.person_type as 'PF' | 'PJ' | null
       };
 
       setProfile(profileData);
@@ -100,6 +124,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, fullName: string, cpfCnpj: string) => {
     try {
+      // ETAPA 3: Validação de CPF/CNPJ antes do cadastro
+      if (!validateCPFOrCNPJ(cpfCnpj)) {
+        return { error: 'CPF ou CNPJ inválido. Verifique os dados e tente novamente.' };
+      }
+      
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
@@ -115,17 +144,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data.user) {
-        // Update profile with additional data
+        // Criar registro na tabela profiles com status inicial
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
             full_name: fullName,
-            cpf_cnpj: cpfCnpj
+            cpf_cnpj: cpfCnpj,
+            verification_status: 'pending_submission' // Status inicial para KYC/KYB
           })
           .eq('id', data.user.id);
 
         if (updateError) {
           console.error('Error updating profile:', updateError);
+          return { error: 'Erro ao criar perfil do usuário' };
         }
       }
 
