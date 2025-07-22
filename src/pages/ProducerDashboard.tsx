@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { 
   CreditCard, 
   DollarSign, 
@@ -16,7 +17,9 @@ import {
   Eye,
   Calendar,
   Bell,
-  LogOut
+  LogOut,
+  X,
+  AlertTriangle
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -32,6 +35,18 @@ const ProducerDashboard = () => {
   const navigate = useNavigate();
   const [dateFilter, setDateFilter] = useState("last_30_days");
   const [productFilter, setProductFilter] = useState("all");
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [dismissedWelcome, setDismissedWelcome] = useState(false);
+
+  // Check if we need to show welcome dialog
+  const needsVerification = profile?.verification_status === 'pending_submission';
+  
+  // Show welcome dialog when component mounts if verification is needed
+  useEffect(() => {
+    if (needsVerification && !dismissedWelcome) {
+      setShowWelcomeDialog(true);
+    }
+  }, [needsVerification, dismissedWelcome]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['producerDashboard', dateFilter, productFilter],
@@ -137,9 +152,20 @@ const ProducerDashboard = () => {
             <div className="p-6">
               {/* Welcome Message */}
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-slate-900 mb-2">
-                  Bem vindo, {data?.userName || profile?.full_name || 'Produtor'}!
-                </h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-semibold text-slate-900">
+                    Bem vindo, {data?.userName || profile?.full_name || 'Produtor'}!
+                  </h2>
+                  {needsVerification && dismissedWelcome && (
+                    <Link 
+                      to="/settings/account" 
+                      className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium hover:bg-amber-200 transition-colors"
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      Complete seu cadastro
+                    </Link>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -429,6 +455,53 @@ const ProducerDashboard = () => {
           </div>
         </SidebarInset>
       </div>
+
+      {/* Welcome Dialog */}
+      <Dialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-semibold text-slate-900">
+                Bem-vindo à DiyPay!
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowWelcomeDialog(false);
+                  setDismissedWelcome(true);
+                }}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <DialogDescription className="text-slate-600 mt-2">
+              Finalize seu cadastro para liberar saques e funções avançadas.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowWelcomeDialog(false);
+                setDismissedWelcome(true);
+              }}
+            >
+              Depois
+            </Button>
+            <Button
+              onClick={() => {
+                setShowWelcomeDialog(false);
+                navigate('/settings/account');
+              }}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              Continuar cadastro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 };
