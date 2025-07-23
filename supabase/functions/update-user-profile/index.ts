@@ -11,6 +11,8 @@ interface ProfileUpdateData {
   cpf_cnpj?: string;
   phone?: string;
   instagram_handle?: string;
+  current_password?: string;
+  new_password?: string;
 }
 
 serve(async (req) => {
@@ -62,6 +64,57 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // Handle password change if provided
+    if (requestData.current_password && requestData.new_password) {
+      console.log('Processing password change...');
+      
+      // Verify current password by trying to sign in
+      const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+        email: user.email!,
+        password: requestData.current_password
+      });
+
+      if (signInError) {
+        console.error('Current password verification failed:', signInError);
+        return new Response(
+          JSON.stringify({ error: 'Senha atual incorreta' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Check if new password is different from current
+      if (requestData.current_password === requestData.new_password) {
+        return new Response(
+          JSON.stringify({ error: 'A nova senha deve ser diferente da senha atual' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Update password
+      const { error: passwordError } = await supabaseClient.auth.updateUser({
+        password: requestData.new_password
+      });
+
+      if (passwordError) {
+        console.error('Password update error:', passwordError);
+        return new Response(
+          JSON.stringify({ error: 'Erro ao atualizar senha' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      console.log('Password updated successfully');
     }
 
     // Update the profile in the database

@@ -44,6 +44,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  isGoogleUser: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
@@ -58,6 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Check if user signed up with Google
+  const isGoogleUser = user?.app_metadata?.provider === 'google';
 
   useEffect(() => {
     // Set up auth state listener
@@ -273,6 +277,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       profile,
       loading,
+      isGoogleUser,
       signUp,
       signIn,
       signInWithGoogle,

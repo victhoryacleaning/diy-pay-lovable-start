@@ -94,3 +94,11 @@ export function getFirstName(fullName: string): string {
   if (!fullName) return '';
   return fullName.trim().split(' ')[0];
 }
+
+// ETAPA 1: Função para formatar nome (primeiro + último)
+export function formatUserName(fullName: string): string {
+  if (!fullName) return '';
+  const names = fullName.trim().split(' ');
+  if (names.length === 1) return names[0];
+  return `${names[0]} ${names[names.length - 1]}`;
+}

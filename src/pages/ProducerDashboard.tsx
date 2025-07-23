@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
+import { formatUserName } from '@/lib/utils';
 
 const ProducerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -135,7 +136,7 @@ const ProducerDashboard = () => {
                           {(data?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{data?.userName ? data.userName.split(' ')[0] : (profile?.full_name ? profile.full_name.split(' ')[0] : 'Usuário')}</span>
+                      <span className="text-sm font-medium">{data?.userName ? formatUserName(data.userName) : (profile?.full_name ? formatUserName(profile.full_name) : 'Usuário')}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -164,9 +165,9 @@ const ProducerDashboard = () => {
               <div className="mb-8">
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-semibold text-slate-900">
-                    Bem vindo, {data?.userName ? data.userName.split(' ')[0] : (profile?.full_name ? profile.full_name.split(' ')[0] : 'Produtor')}!
+                    Bem vindo, {data?.userName ? formatUserName(data.userName) : (profile?.full_name ? formatUserName(profile.full_name) : 'Produtor')}!
                   </h2>
-                  {needsVerification && dismissedWelcome && (
+                  {(profile?.verification_status === 'pending_submission' || profile?.verification_status === 'rejected') && (
                     <Link 
                       to="/settings/account" 
                       className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium hover:bg-amber-200 transition-colors"

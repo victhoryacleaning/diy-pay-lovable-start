@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { formatUserName } from "@/lib/utils";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -27,7 +28,7 @@ const Header = ({
   // Use auth context if props not provided
   const isLoggedIn = isAuthenticated ?? !!user;
   const currentRole = userRole ?? profile?.role ?? 'user';
-  const displayName = userName ? userName.split(' ')[0] : (profile?.full_name ? profile.full_name.split(' ')[0] : 'Usuário');
+  const displayName = userName ? formatUserName(userName) : (profile?.full_name ? formatUserName(profile.full_name) : 'Usuário');
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
