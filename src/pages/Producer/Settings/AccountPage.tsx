@@ -6,13 +6,13 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { validateCPFOrCNPJ } from '@/lib/utils';
-import { ArrowLeft, Upload, User, ShieldCheck, AlertTriangle, Clock, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Upload, User, ShieldCheck, AlertTriangle, Clock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ProducerLayout } from '@/components/ProducerLayout';
 
 // Schemas de validação
 const basicFormSchema = z.object({
@@ -50,7 +50,6 @@ type VerificationFormData = z.infer<typeof verificationFormSchema>;
 
 const AccountPage = () => {
   const { profile, isGoogleUser } = useAuth();
-  const navigate = useNavigate();
   
   const [isLoading, setIsLoading] = useState(false);
   const [documentFrontFile, setDocumentFrontFile] = useState<File | null>(null);
@@ -305,23 +304,10 @@ const AccountPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header com botão voltar */}
-      <div className="bg-background border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/producer-dashboard')}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Dashboard
-          </Button>
-        </div>
+    <ProducerLayout>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Minha Conta</h1>
       </div>
-      
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8">Minha Conta</h1>
 
         {/* Seção 1: Informações da Conta */}
         <Card className="mb-8">
@@ -708,8 +694,7 @@ const AccountPage = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+    </ProducerLayout>
   );
 };
 
