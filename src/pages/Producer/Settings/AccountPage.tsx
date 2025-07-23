@@ -309,8 +309,10 @@ const AccountPage = () => {
         <h1 className="text-3xl font-bold">Minha Conta</h1>
       </div>
 
-        {/* Seção 1: Informações da Conta */}
-        <Card className="mb-8">
+      {/* Layout de duas colunas para desktop, empilhado no mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Coluna Esquerda: Informações da Conta */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -389,9 +391,9 @@ const AccountPage = () => {
           </CardContent>
         </Card>
 
-        {/* Seção 2: Verificação de Identidade (condicional) */}
+        {/* Coluna Direita: Verificação de Identidade (condicional) */}
         {(profile?.verification_status === 'pending_submission' || profile?.verification_status === 'rejected') && (
-          <Card className="mb-8">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5" />
@@ -633,67 +635,56 @@ const AccountPage = () => {
             </CardContent>
           </Card>
         )}
+      </div>
 
-        {/* Seção 3: Status de Verificação */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
-              Status de Verificação
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start gap-3">
+      {/* Seção de Status de Verificação - Centralizada abaixo da grade */}
+      <div className="flex justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-8 pb-8">
+            <div className="text-center space-y-4">
               {profile?.verification_status === 'approved' && (
                 <>
-                  <div className="p-2 bg-green-100 rounded-full">
-                    <ShieldCheck className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-green-800">✅ Identidade Verificada</h3>
-                    <p className="text-sm text-green-600">Sua identidade foi verificada com sucesso!</p>
-                  </div>
+                  <ShieldCheck className="h-12 w-12 text-green-600 mx-auto" />
+                  <p className="text-xl font-semibold text-green-600">✅ Identidade Verificada</p>
+                  <p className="text-sm text-muted-foreground">
+                    Sua conta foi verificada com sucesso!
+                  </p>
                 </>
               )}
               
               {profile?.verification_status === 'pending_approval' && (
                 <>
-                  <div className="p-2 bg-orange-100 rounded-full">
-                    <Clock className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-orange-800">🕐 Aguardando Verificação</h3>
-                    <p className="text-sm text-orange-600">Seus documentos estão sendo analisados. Aguarde até 48 horas.</p>
-                  </div>
+                  <Clock className="h-12 w-12 text-yellow-600 mx-auto" />
+                  <p className="text-xl font-semibold text-yellow-600">🕐 Aguardando Verificação</p>
+                  <p className="text-sm text-muted-foreground">
+                    Seus documentos estão sendo analisados. Em breve você receberá uma resposta.
+                  </p>
                 </>
               )}
               
               {profile?.verification_status === 'rejected' && (
                 <>
-                  <div className="p-2 bg-red-100 rounded-full">
-                    <X className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-red-800">❌ Verificação Recusada</h3>
-                    <p className="text-sm text-red-600">Seus documentos foram recusados. Reenvie os dados corretos acima.</p>
-                  </div>
+                  <AlertTriangle className="h-12 w-12 text-red-600 mx-auto" />
+                  <p className="text-xl font-semibold text-red-600">❌ Verificação Recusada</p>
+                  <p className="text-sm text-muted-foreground">
+                    Por favor, revise e reenvie seus documentos utilizando o formulário acima.
+                  </p>
                 </>
               )}
               
               {profile?.verification_status === 'pending_submission' && (
                 <>
-                  <div className="p-2 bg-amber-100 rounded-full">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-amber-800">⚠️ Verificação Pendente</h3>
-                    <p className="text-sm text-amber-600">Complete seu cadastro enviando os documentos necessários acima.</p>
-                  </div>
+                  <AlertTriangle className="h-12 w-12 text-orange-600 mx-auto" />
+                  <p className="text-xl font-semibold text-orange-600">⚠️ Verificação Pendente</p>
+                  <p className="text-sm text-muted-foreground">
+                    Complete o envio dos seus documentos utilizando o formulário acima para verificar sua identidade.
+                  </p>
                 </>
               )}
             </div>
           </CardContent>
         </Card>
+      </div>
     </ProducerLayout>
   );
 };
