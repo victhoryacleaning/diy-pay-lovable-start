@@ -43,10 +43,20 @@ const ProducerDashboard = () => {
   
   // Show welcome dialog when component mounts if verification is needed
   useEffect(() => {
-    if (needsVerification && !dismissedWelcome) {
+    // Check sessionStorage to see if popup was already shown
+    const welcomePopupShown = sessionStorage.getItem('welcomePopupShown');
+    
+    if (needsVerification && !dismissedWelcome && !welcomePopupShown) {
       setShowWelcomeDialog(true);
     }
   }, [needsVerification, dismissedWelcome]);
+
+  const handleCloseWelcomeDialog = () => {
+    setShowWelcomeDialog(false);
+    setDismissedWelcome(true);
+    // Mark popup as shown for this session
+    sessionStorage.setItem('welcomePopupShown', 'true');
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['producerDashboard', dateFilter, productFilter],
@@ -457,25 +467,12 @@ const ProducerDashboard = () => {
       </div>
 
       {/* Welcome Dialog */}
-      <Dialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
+      <Dialog open={showWelcomeDialog} onOpenChange={handleCloseWelcomeDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-semibold text-slate-900">
-                Bem-vindo à DiyPay!
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setShowWelcomeDialog(false);
-                  setDismissedWelcome(true);
-                }}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <DialogTitle className="text-xl font-semibold text-slate-900">
+              Bem-vindo à DiyPay!
+            </DialogTitle>
             <DialogDescription className="text-slate-600 mt-2">
               Finalize seu cadastro para liberar saques e funções avançadas.
             </DialogDescription>
@@ -483,16 +480,13 @@ const ProducerDashboard = () => {
           <DialogFooter className="flex gap-2 sm:gap-2">
             <Button
               variant="outline"
-              onClick={() => {
-                setShowWelcomeDialog(false);
-                setDismissedWelcome(true);
-              }}
+              onClick={handleCloseWelcomeDialog}
             >
               Depois
             </Button>
             <Button
               onClick={() => {
-                setShowWelcomeDialog(false);
+                handleCloseWelcomeDialog();
                 navigate('/settings/account');
               }}
               className="bg-purple-600 hover:bg-purple-700"

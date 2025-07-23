@@ -77,7 +77,7 @@ function AccountPage() {
         setPersonType(profile.person_type);
       }
       
-      // Load existing PF data
+      // Pre-fill with existing profile data
       setPfFormData(prev => ({
         ...prev,
         full_name: profile.full_name || '',
@@ -86,7 +86,7 @@ function AccountPage() {
         birth_date: profile.birth_date || '',
       }));
       
-      // Load existing PJ data
+      // Load existing PJ data and pre-fill responsible name with profile full_name if available
       setPjFormData(prev => ({
         ...prev,
         cnpj: profile.cnpj || '',
@@ -94,7 +94,7 @@ function AccountPage() {
         trading_name: profile.trading_name || '',
         opening_date: profile.opening_date || '',
         company_phone: profile.company_phone || '',
-        responsible_name: profile.responsible_name || '',
+        responsible_name: profile.responsible_name || profile.full_name || '',
         responsible_cpf: profile.responsible_cpf || '',
         responsible_birth_date: profile.responsible_birth_date || '',
       }));

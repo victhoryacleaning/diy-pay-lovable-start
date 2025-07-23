@@ -67,6 +67,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Check if this is a new Google signup
+          if (event === 'SIGNED_IN' && session.user.app_metadata.provider === 'google') {
+            // Extract Google profile data
+            const googleFullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+            const googleAvatarUrl = session.user.user_metadata?.avatar_url;
+            const googleEmail = session.user.email;
+
+            // Check if profile already exists
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', session.user.id)
+              .single();
+
+            if (!existingProfile && googleEmail) {
+              // Create profile with Google data
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert({
+                  id: session.user.id,
+                  email: googleEmail,
+                  full_name: googleFullName,
+                  avatar_url: googleAvatarUrl,
+                  verification_status: 'pending_submission'
+                });
+              
+              if (profileError) {
+                console.error('Error creating Google profile:', profileError);
+              }
+            }
+          }
+          
           // Fetch user profile
           setTimeout(async () => {
             await fetchUserProfile(session.user.id);
@@ -133,13 +165,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName
+            full_name: fullName,
+            email: email
           }
         }
       });
 
       if (error) {
         return { error: error.message };
+      }
+
+      // If user is created, create profile with full_name and email
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            verification_status: 'pending_submission'
+          });
+        
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
       }
 
       return {};
@@ -150,7 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`
