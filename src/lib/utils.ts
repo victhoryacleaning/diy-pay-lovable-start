@@ -88,3 +88,9 @@ export function validateCPFOrCNPJ(document: string): boolean {
   
   return false;
 }
+
+// ETAPA 1: Função para extrair apenas o primeiro nome
+export function getFirstName(fullName: string): string {
+  if (!fullName) return '';
+  return fullName.trim().split(' ')[0];
+}

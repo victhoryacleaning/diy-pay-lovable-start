@@ -27,7 +27,7 @@ const Header = ({
   // Use auth context if props not provided
   const isLoggedIn = isAuthenticated ?? !!user;
   const currentRole = userRole ?? profile?.role ?? 'user';
-  const displayName = userName ?? profile?.full_name ?? 'Usuário';
+  const displayName = userName ? userName.split(' ')[0] : (profile?.full_name ? profile.full_name.split(' ')[0] : 'Usuário');
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {

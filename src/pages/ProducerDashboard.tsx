@@ -135,7 +135,7 @@ const ProducerDashboard = () => {
                           {(data?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{data?.userName || profile?.full_name}</span>
+                      <span className="text-sm font-medium">{data?.userName ? data.userName.split(' ')[0] : (profile?.full_name ? profile.full_name.split(' ')[0] : 'Usuário')}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -164,7 +164,7 @@ const ProducerDashboard = () => {
               <div className="mb-8">
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-semibold text-slate-900">
-                    Bem vindo, {data?.userName || profile?.full_name || 'Produtor'}!
+                    Bem vindo, {data?.userName ? data.userName.split(' ')[0] : (profile?.full_name ? profile.full_name.split(' ')[0] : 'Produtor')}!
                   </h2>
                   {needsVerification && dismissedWelcome && (
                     <Link 

@@ -266,11 +266,10 @@ const ProducerFinancialsPage = () => {
       </div>
 
       <Tabs defaultValue="saques" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-muted">
+        <TabsList className="grid w-full grid-cols-3 bg-muted">
           <TabsTrigger value="saques" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Saques</TabsTrigger>
           <TabsTrigger value="dados-bancarios" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Dados Bancários</TabsTrigger>
           <TabsTrigger value="taxas-prazos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Taxas e Prazos</TabsTrigger>
-          <TabsTrigger value="identidade" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Identidade</TabsTrigger>
         </TabsList>
 
                   {/* Aba Saques */}
@@ -519,47 +518,6 @@ const ProducerFinancialsPage = () => {
                     </Card>
                   </TabsContent>
 
-                  {/* Aba Identidade */}
-                  <TabsContent value="identidade" className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Shield className="h-5 w-5" />
-                          Status de Verificação
-                        </CardTitle>
-                        <CardDescription>
-                          Situação da verificação da sua identidade
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="text-center py-8">
-                        {financialData?.identity_status === "verified" ? (
-                          <div className="space-y-4">
-                            <div className="flex justify-center">
-                              <CheckCircle className="h-16 w-16 text-green-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-semibold text-green-900">Identidade Verificada</h3>
-                              <p className="text-green-700 mt-2">
-                                Sua identidade foi verificada com sucesso. Você pode receber pagamentos normalmente.
-                              </p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="flex justify-center">
-                              <Clock className="h-16 w-16 text-yellow-600" />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-semibold text-yellow-900">Verificação Pendente</h3>
-                              <p className="text-yellow-700 mt-2">
-                                Sua identidade está sendo verificada. Aguarde até 48 horas para conclusão.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-        </TabsContent>
       </Tabs>
       
       <WithdrawalModal
