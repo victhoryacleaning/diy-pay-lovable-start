@@ -72,6 +72,8 @@ function AccountPage() {
 
   useEffect(() => {
     if (profile) {
+      console.log('Profile loaded in AccountPage:', profile); // Debug log
+      
       // Set person type based on existing data
       if (profile.person_type) {
         setPersonType(profile.person_type);
