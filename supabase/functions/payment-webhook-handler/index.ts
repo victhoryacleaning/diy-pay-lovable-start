@@ -78,8 +78,8 @@ Deno.serve(async (req) => {
         throw new Error("Webhook do Asaas não contém 'paymentDate'.");
       }
       
-      // Convert "YYYY-MM-DD" to Date object safely
-      const paidAt = new Date(`${paymentDateString}T00:00:00Z`);
+      // Convert "YYYY-MM-DD" to Date object safely with noon UTC to avoid timezone issues
+      const paidAt = new Date(`${paymentDateString}T12:00:00Z`);
       
       if (isNaN(paidAt.getTime())) {
         throw new Error(`Data de pagamento inválida: ${paymentDateString}`);
