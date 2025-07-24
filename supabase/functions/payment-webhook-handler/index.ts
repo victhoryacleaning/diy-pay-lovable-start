@@ -71,6 +71,20 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch product ${sale.product_id}: ${productError.message}`);
       }
 
+      // Get payment date from Asaas payload
+      const paymentDateString = payment.paymentDate; // ex: "2025-07-24"
+      
+      if (!paymentDateString) {
+        throw new Error("Webhook do Asaas não contém 'paymentDate'.");
+      }
+      
+      // Convert "YYYY-MM-DD" to Date object safely
+      const paidAt = new Date(`${paymentDateString}T00:00:00Z`);
+      
+      if (isNaN(paidAt.getTime())) {
+        throw new Error(`Data de pagamento inválida: ${paymentDateString}`);
+      }
+
       // Get platform settings and producer settings for security reserve
       const [platformResult, producerResult] = await Promise.all([
         supabaseAdmin.from('platform_settings').select('default_security_reserve_percent, default_security_reserve_days').single(),
@@ -92,8 +106,7 @@ Deno.serve(async (req) => {
       // Recalculate producer share: amount_total - platform_fee - security_reserve
       const recalculatedProducerShare = sale.amount_total_cents - sale.platform_fee_cents - securityReserveCents;
 
-      // Calculate release date
-      const paidAt = new Date();
+      // Calculate release date based on payment date
       const releaseDate = new Date(paidAt.getTime() + (securityReserveDays * 24 * 60 * 60 * 1000));
 
       console.log(`[SECURITY_RESERVE] Security reserve: ${securityReserveCents} cents (${securityReservePercent}%)`);

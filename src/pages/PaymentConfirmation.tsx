@@ -199,26 +199,44 @@ const PaymentConfirmation = () => {
     }).format(cents / 100);
   };
 
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'pending_payment':
+        return 'Aguardando Pagamento';
+      case 'paid':
+        return 'Pago';
+      case 'pending':
+        return 'Pendente';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return status;
+    }
+  };
+
   const getStatusDisplay = (status: string) => {
+    const formattedStatus = formatStatus(status);
+    
     switch (status) {
       case 'paid':
         return {
-          text: 'Pago',
+          text: formattedStatus,
           className: 'bg-green-100 text-green-800',
         };
       case 'pending':
+      case 'pending_payment':
         return {
-          text: 'Aguardando Pagamento',
+          text: formattedStatus,
           className: 'bg-yellow-100 text-yellow-800',
         };
       case 'cancelled':
         return {
-          text: 'Cancelado',
+          text: formattedStatus,
           className: 'bg-red-100 text-red-800',
         };
       default:
         return {
-          text: status,
+          text: formattedStatus,
           className: 'bg-gray-100 text-gray-800',
         };
     }
