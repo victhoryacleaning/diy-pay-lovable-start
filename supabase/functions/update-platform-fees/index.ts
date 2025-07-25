@@ -106,11 +106,27 @@ Deno.serve(async (req) => {
 
     console.log('Updating platform settings with:', updateData)
 
-    // Update platform settings (assuming there's only one row)
+    // Get the first (and only) platform settings record
+    const { data: currentSettings, error: currentError } = await supabase
+      .from('platform_settings')
+      .select('id')
+      .limit(1)
+      .single()
+
+    if (currentError || !currentSettings) {
+      console.error('Error getting current platform settings:', currentError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to get platform settings' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Update platform settings
     const { data: updatedSettings, error: updateError } = await supabase
       .from('platform_settings')
       .update(updateData)
-      .eq('id', (await supabase.from('platform_settings').select('id').single()).data?.id)
+      .eq('id', currentSettings.id)
+      .select()
       .single()
 
     if (updateError) {

@@ -141,17 +141,17 @@ const ProducerSalesPage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-[#4d0782] text-white border-[#4d0782] hover:bg-[#4d0782]">Pago</Badge>;
+        return <Badge variant="default" className="bg-primary text-primary-foreground border-primary">Pago</Badge>;
       case 'pending_payment':
-        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Pendente</Badge>;
+        return <Badge variant="secondary" className="bg-secondary text-secondary-foreground border-secondary">Pendente</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Falhou</Badge>;
+        return <Badge variant="destructive" className="bg-destructive text-destructive-foreground border-destructive">Falhou</Badge>;
       case 'cancelled':
-        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Cancelado</Badge>;
+        return <Badge variant="outline" className="border-muted-foreground text-muted-foreground">Cancelado</Badge>;
       case 'refunded':
-        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">Reembolsado</Badge>;
+        return <Badge variant="outline" className="border-muted-foreground text-muted-foreground">Reembolsado</Badge>;
       default:
-        return <Badge className="bg-gray-200 text-gray-800 border-gray-300 hover:bg-gray-200">{status}</Badge>;
+        return <Badge variant="outline" className="border-muted-foreground text-muted-foreground">{status}</Badge>;
     }
   }
 
@@ -212,33 +212,33 @@ const ProducerSalesPage = () => {
         {/* KPI Cards */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Valor Líquido Total */}
-          <Card className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+          <Card className="bg-gradient-to-r from-primary to-primary-glow border-0 text-primary-foreground">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-100">
+              <CardTitle className="text-sm font-medium text-primary-foreground/80">
                 Valor Líquido Total
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-purple-200" />
+              <DollarSign className="h-4 w-4 text-primary-foreground/70" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {isLoading ? 'Carregando...' : formatCurrency(salesData?.kpis?.valorLiquidoTotal || 0)}
               </div>
-              <p className="text-xs text-purple-200">
+              <p className="text-xs text-primary-foreground/70">
                 Receita após taxas da plataforma
               </p>
             </CardContent>
           </Card>
 
           {/* Total de Vendas */}
-          <Card>
+          <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium text-foreground">
                 Total de Vendas
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-accent">
                 {isLoading ? 'Carregando...' : (salesData?.kpis?.totalVendas || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -444,7 +444,7 @@ const ProducerSalesPage = () => {
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="font-medium text-primary">
+                          <TableCell className="font-medium text-accent">
                             {formatCurrency(sale.producer_share_cents)}
                           </TableCell>
                           <TableCell>
