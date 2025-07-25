@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         created_at,
         paid_at,
         installments_chosen,
-        products!inner(
+        products(
           id,
           name,
           type

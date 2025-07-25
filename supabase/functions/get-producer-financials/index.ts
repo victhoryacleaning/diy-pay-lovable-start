@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
         release_date,
         product_id,
         buyer_email,
-        products!inner(name)
+        products(name)
       `)
       .in('product_id', productIds)
       .eq('status', 'paid')

@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
           id,
           buyer_email,
           product_id,
-          products!inner(id, producer_id, name)
+          products(id, producer_id, name)
         `)
         .eq('products.producer_id', user.id)
         .in('status', ['paid', 'refunded', 'pending_payment'])

@@ -92,7 +92,7 @@ serve(async (req) => {
       .from('sales')
       .select(`
         *,
-        products!inner(
+        products(
           id,
           producer_id
         )

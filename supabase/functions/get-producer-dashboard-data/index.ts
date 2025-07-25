@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
         amount_total_cents,
         created_at,
         status,
-        products!inner(name)
+        products(name)
       `)
       .in('product_id', productIds)
       .order('created_at', { ascending: false })

@@ -434,7 +434,7 @@ const ProducerSalesPage = () => {
                             {sale.buyer_email}
                           </TableCell>
                           <TableCell>
-                            {sale.products?.name || 'Produto não encontrado'}
+                            {sale.products?.name || 'Produto Removido'}
                           </TableCell>
                           <TableCell>
                             {formatCurrency(sale.amount_total_cents)}
