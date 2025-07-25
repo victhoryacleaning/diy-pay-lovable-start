@@ -572,6 +572,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_producer_financial_report: {
+        Args: {
+          p_producer_id: string
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: Json
+      }
       upsert_producer_balance: {
         Args: { p_producer_id: string; amount_to_add: number }
         Returns: undefined
