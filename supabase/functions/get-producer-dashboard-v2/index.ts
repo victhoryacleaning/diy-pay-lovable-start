@@ -81,12 +81,23 @@ Deno.serve(async (req) => {
       productFilter = [product_id]
     }
 
-    // 1. BUSCAR TODAS AS VENDAS PAGAS DO PRODUTOR
+    // 1. BUSCAR TODAS AS VENDAS PAGAS DO PRODUTOR (Query Otimizada)
     const { data: allPaidSales, error: salesError } = await supabaseClient
       .from('sales')
-      .select('amount_total_cents, platform_fee_cents, producer_share_cents, paid_at, release_date, status, created_at, id, buyer_email')
+      .select(`
+        amount_total_cents,
+        platform_fee_cents,
+        producer_share_cents,
+        paid_at,
+        release_date,
+        status,
+        created_at,
+        id,
+        buyer_email,
+        products!inner(producer_id, name)
+      `)
       .eq('status', 'paid')
-      .in('product_id', productFilter)
+      .eq('products.producer_id', user.id)
       .not('producer_share_cents', 'is', null)
 
     if (salesError) {
@@ -95,6 +106,16 @@ Deno.serve(async (req) => {
     }
 
     console.log('Total paid sales found:', allPaidSales?.length || 0)
+
+    // Apply product filter to results if needed  
+    let filteredSalesByProduct = allPaidSales || []
+    if (product_id && product_id !== 'all') {
+      // Since we used JOIN, filter by the nested products data
+      filteredSalesByProduct = filteredSalesByProduct.filter(sale => {
+        const productData = sale.products as any
+        return productData && productData.id === product_id
+      })
+    }
 
     // 2. LÓGICA DE FILTRO DE DATA (EM JAVASCRIPT)
     const endDate = new Date()
@@ -109,10 +130,10 @@ Deno.serve(async (req) => {
     } else if (date_filter && date_filter.includes('to')) {
       const [start, end] = date_filter.split(' to ')
       startDate = new Date(start)
-      endDate = new Date(end)
+      endDate.setTime(new Date(end).getTime())
     }
     
-    const filteredSales = (allPaidSales || []).filter(sale => {
+    const filteredSales = filteredSalesByProduct.filter(sale => {
       if (!sale.paid_at) return false
       const saleDate = new Date(sale.paid_at)
       return saleDate >= startDate && saleDate <= endDate
@@ -142,7 +163,7 @@ Deno.serve(async (req) => {
     let totalLiberado = 0
     let saldoFuturo = 0
 
-    (allPaidSales || []).forEach(sale => {
+    filteredSalesByProduct.forEach(sale => {
       if (sale.release_date) {
         const releaseDate = new Date(sale.release_date)
         releaseDate.setHours(0, 0, 0, 0)
@@ -224,7 +245,7 @@ Deno.serve(async (req) => {
     }))
 
     // 8. MILESTONE DATA
-    const totalRevenue = (allPaidSales || []).reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0)
+    const totalRevenue = filteredSalesByProduct.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0)
     const milestones = [1000000, 10000000, 100000000] // 10K, 100K, 1M
     
     let currentMilestone = milestones[0]
