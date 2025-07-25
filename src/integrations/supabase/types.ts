@@ -95,56 +95,50 @@ export type Database = {
       platform_settings: {
         Row: {
           created_at: string
-          default_anticipation_fee_percent: number | null
-          default_boleto_fee_percent: number | null
-          default_boleto_release_days: number | null
-          default_card_installments_fees: Json | null
-          default_card_release_days: number | null
-          default_fees_json: Json
+          default_anticipation_fee_percent: number
+          default_boleto_fee_percent: number
+          default_boleto_release_days: number
+          default_card_installments_fees: Json
+          default_card_release_days: number
           default_fixed_fee_cents: number
-          default_pix_fee_percent: number | null
-          default_pix_release_days: number | null
-          default_release_rules_json: Json
+          default_pix_fee_percent: number
+          default_pix_release_days: number
           default_security_reserve_days: number
-          default_security_reserve_percent: number | null
+          default_security_reserve_percent: number
           default_withdrawal_fee_cents: number
-          id: string
+          id: number
           updated_at: string
         }
         Insert: {
           created_at?: string
-          default_anticipation_fee_percent?: number | null
-          default_boleto_fee_percent?: number | null
-          default_boleto_release_days?: number | null
-          default_card_installments_fees?: Json | null
-          default_card_release_days?: number | null
-          default_fees_json?: Json
+          default_anticipation_fee_percent: number
+          default_boleto_fee_percent: number
+          default_boleto_release_days: number
+          default_card_installments_fees: Json
+          default_card_release_days: number
           default_fixed_fee_cents?: number
-          default_pix_fee_percent?: number | null
-          default_pix_release_days?: number | null
-          default_release_rules_json?: Json
-          default_security_reserve_days?: number
-          default_security_reserve_percent?: number | null
+          default_pix_fee_percent: number
+          default_pix_release_days: number
+          default_security_reserve_days: number
+          default_security_reserve_percent: number
           default_withdrawal_fee_cents?: number
-          id?: string
+          id?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
-          default_anticipation_fee_percent?: number | null
-          default_boleto_fee_percent?: number | null
-          default_boleto_release_days?: number | null
-          default_card_installments_fees?: Json | null
-          default_card_release_days?: number | null
-          default_fees_json?: Json
+          default_anticipation_fee_percent?: number
+          default_boleto_fee_percent?: number
+          default_boleto_release_days?: number
+          default_card_installments_fees?: Json
+          default_card_release_days?: number
           default_fixed_fee_cents?: number
-          default_pix_fee_percent?: number | null
-          default_pix_release_days?: number | null
-          default_release_rules_json?: Json
+          default_pix_fee_percent?: number
+          default_pix_release_days?: number
           default_security_reserve_days?: number
-          default_security_reserve_percent?: number | null
+          default_security_reserve_percent?: number
           default_withdrawal_fee_cents?: number
-          id?: string
+          id?: number
           updated_at?: string
         }
         Relationships: []

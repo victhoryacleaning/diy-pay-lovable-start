@@ -106,11 +106,11 @@ Deno.serve(async (req) => {
 
     console.log('Updating platform settings with:', updateData)
 
-    // Get the first (and only) platform settings record
+    // Get the platform settings record (id = 1)
     const { data: currentSettings, error: currentError } = await supabase
       .from('platform_settings')
       .select('id')
-      .limit(1)
+      .eq('id', 1)
       .single()
 
     if (currentError || !currentSettings) {
