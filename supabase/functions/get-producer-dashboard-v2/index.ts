@@ -164,12 +164,13 @@ Deno.serve(async (req) => {
     }))
 
     // 5. Recent Transactions (last 5, can filter by product)
-    const { data: recentSales, error: recentError } = await supabaseClient
+    const { data: recentSalesWithShare, error: recentShareError } = await supabaseClient
       .from('sales')
       .select(`
         id,
         buyer_email,
         amount_total_cents,
+        producer_share_cents,
         created_at,
         status,
         products!inner(name)
@@ -179,11 +180,11 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(5)
 
-    const recentTransactions = recentSales?.map(sale => ({
+    const recentTransactions = recentSalesWithShare?.map(sale => ({
       id: sale.id,
       buyer_email: sale.buyer_email,
       product_name: (sale.products as any)?.name || 'Produto',
-      amount: sale.amount_total_cents,
+      amount: sale.producer_share_cents || sale.amount_total_cents, // Usar valor líquido quando disponível
       created_at: sale.created_at || '',
       status: sale.status
     })) || []
@@ -192,27 +193,52 @@ Deno.serve(async (req) => {
     
     const today = new Date().toISOString().split('T')[0]
 
-    // Saldo Disponível
-    const { data: availableBalanceData, error: availableError } = await supabaseClient
+    // Get security reserve percentage from producer settings or platform defaults
+    const { data: producerSettings } = await supabaseClient
+      .from('producer_settings')
+      .select('custom_security_reserve_percent')
+      .eq('producer_id', user.id)
+      .single()
+
+    const { data: platformSettings } = await supabaseClient
+      .from('platform_settings')
+      .select('default_security_reserve_percent')
+      .single()
+
+    const securityReservePercent = (
+      producerSettings?.custom_security_reserve_percent ?? 
+      platformSettings?.default_security_reserve_percent ?? 
+      0
+    ) / 100
+
+    // Calcular Total Liberado (vendas pagas com release_date <= hoje)
+    const { data: releasedSalesData, error: releasedError } = await supabaseClient
       .from('sales')
       .select('producer_share_cents')
       .in('product_id', productIds)
-      .eq('payout_status', 'pending')
+      .eq('status', 'paid')
       .lte('release_date', today)
       .not('producer_share_cents', 'is', null)
 
-    const saldoDisponivel = availableBalanceData?.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0) || 0
+    const totalLiberado = releasedSalesData?.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0) || 0
 
-    // Saldo Pendente
-    const { data: pendingBalanceData, error: pendingError } = await supabaseClient
+    // Calcular Saldo Futuro (vendas pagas com release_date > hoje)
+    const { data: futureSalesData, error: futureError } = await supabaseClient
       .from('sales')
       .select('producer_share_cents')
       .in('product_id', productIds)
-      .eq('payout_status', 'pending')
+      .eq('status', 'paid')
       .gt('release_date', today)
       .not('producer_share_cents', 'is', null)
 
-    const saldoPendente = pendingBalanceData?.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0) || 0
+    const saldoFuturo = futureSalesData?.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0) || 0
+
+    // Calcular Reserva de Segurança
+    const reservaDeSeguranca = Math.round(totalLiberado * securityReservePercent)
+
+    // Calcular Saldos Finais
+    const saldoDisponivel = totalLiberado - reservaDeSeguranca
+    const saldoPendente = saldoFuturo + reservaDeSeguranca
 
     // Calculate milestone data for progress bar
     const getTotalRevenue = async () => {
