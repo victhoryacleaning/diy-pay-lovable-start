@@ -103,14 +103,14 @@ Deno.serve(async (req) => {
       // Calculate security reserve amount
       const securityReserveCents = Math.round(sale.amount_total_cents * (securityReservePercent / 100));
       
-      // Recalculate producer share: amount_total - platform_fee - security_reserve
-      const recalculatedProducerShare = sale.amount_total_cents - sale.platform_fee_cents - securityReserveCents;
+      // Calculate producer share correctly: amount_total - platform_fee - security_reserve
+      const producerShareCents = sale.amount_total_cents - sale.platform_fee_cents - securityReserveCents;
 
       // Calculate release date based on payment date
       const releaseDate = new Date(paidAt.getTime() + (securityReserveDays * 24 * 60 * 60 * 1000));
 
       console.log(`[SECURITY_RESERVE] Security reserve: ${securityReserveCents} cents (${securityReservePercent}%)`);
-      console.log(`[PRODUCER_SHARE] Recalculated producer share: ${recalculatedProducerShare} cents`);
+      console.log(`[PRODUCER_SHARE] Producer share: ${producerShareCents} cents`);
 
       const updatePayload = {
         status: 'paid',
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
         payout_status: 'pending',
         gateway_status: payment.status,
         security_reserve_cents: securityReserveCents,
-        producer_share_cents: recalculatedProducerShare,
+        producer_share_cents: producerShareCents,
         release_date: releaseDate.toISOString().split('T')[0] // Store as date only
       };
       
@@ -132,17 +132,17 @@ Deno.serve(async (req) => {
       }
       
       // Add only the available amount (producer_share without security reserve) to producer balance
-      if (recalculatedProducerShare > 0) {
+      if (producerShareCents > 0) {
         const { error: balanceError } = await supabaseAdmin.rpc('upsert_producer_balance', {
           p_producer_id: product.producer_id,
-          amount_to_add: recalculatedProducerShare
+          amount_to_add: producerShareCents
         });
 
         if (balanceError) {
           console.error(`[BALANCE_ERROR] Failed to update producer balance: ${balanceError.message}`);
           // Don't throw here to avoid marking the payment as failed
         } else {
-          console.log(`[BALANCE_UPDATED] Added ${recalculatedProducerShare} cents to producer ${product.producer_id} balance`);
+          console.log(`[BALANCE_UPDATED] Added ${producerShareCents} cents to producer ${product.producer_id} balance`);
         }
       }
       
