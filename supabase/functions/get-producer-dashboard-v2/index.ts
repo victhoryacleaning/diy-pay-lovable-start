@@ -41,22 +41,74 @@ Deno.serve(async (req) => {
 
     // Parse request body for filters
     const { date_filter = 'last_30_days', product_id } = await req.json()
-    console.log('Dashboard v2 filters:', { date_filter, product_id, user_id: user.id })
+    console.log('Dashboard v2 optimized filters:', { date_filter, product_id, user_id: user.id })
 
-    // Get producer's products
-    const { data: products, error: productsError } = await supabaseClient
-      .from('products')
-      .select('id, name')
-      .eq('producer_id', user.id)
+    // EXECUÇÃO PARALELA DAS QUERIES PRINCIPAIS - PERFORMANCE OTIMIZADA
+    const [
+      salesResult,
+      producerSettingsResult,
+      platformSettingsResult,
+      productsResult
+    ] = await Promise.all([
+      // Query 1: Busca todas as vendas relevantes de uma só vez
+      supabaseClient
+        .from('sales')
+        .select(`
+          amount_total_cents,
+          platform_fee_cents,
+          producer_share_cents,
+          paid_at,
+          release_date,
+          status,
+          created_at,
+          id,
+          buyer_email,
+          product_id,
+          products!inner(id, producer_id, name)
+        `)
+        .eq('products.producer_id', user.id)
+        .in('status', ['paid', 'refunded', 'pending_payment'])
+        .not('producer_share_cents', 'is', null),
+      
+      // Query 2: Configurações do produtor
+      supabaseClient
+        .from('producer_settings')
+        .select('custom_security_reserve_percent')
+        .eq('producer_id', user.id)
+        .maybeSingle(),
+      
+      // Query 3: Configurações da plataforma
+      supabaseClient
+        .from('platform_settings')
+        .select('default_security_reserve_percent')
+        .maybeSingle(),
+      
+      // Query 4: Produtos do produtor
+      supabaseClient
+        .from('products')
+        .select('id, name')
+        .eq('producer_id', user.id)
+    ])
 
-    if (productsError) {
-      console.error('Error fetching products:', productsError)
-      throw productsError
+    // Verificar erros das queries
+    if (salesResult.error) {
+      console.error('Error fetching sales:', salesResult.error)
+      throw salesResult.error
+    }
+    if (productsResult.error) {
+      console.error('Error fetching products:', productsResult.error)
+      throw productsResult.error
     }
 
-    const productIds = products?.map(p => p.id) || []
-    
-    if (productIds.length === 0) {
+    const allSales = salesResult.data || []
+    const products = productsResult.data || []
+    const producerSettings = producerSettingsResult.data
+    const platformSettings = platformSettingsResult.data
+
+    console.log('Total sales found:', allSales.length)
+
+    // Se não há produtos, retornar dados vazios
+    if (products.length === 0) {
       return new Response(
         JSON.stringify({
           kpiValorLiquido: 0,
@@ -75,49 +127,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Build query filters for products
-    let productFilter = productIds
+    // Filtrar por produto específico se necessário
+    let filteredSales = allSales
     if (product_id && product_id !== 'all') {
-      productFilter = [product_id]
+      filteredSales = allSales.filter(sale => sale.product_id === product_id)
     }
 
-    // 1. BUSCAR TODAS AS VENDAS PAGAS DO PRODUTOR (Query Otimizada)
-    const { data: allPaidSales, error: salesError } = await supabaseClient
-      .from('sales')
-      .select(`
-        amount_total_cents,
-        platform_fee_cents,
-        producer_share_cents,
-        paid_at,
-        release_date,
-        status,
-        created_at,
-        id,
-        buyer_email,
-        products!inner(producer_id, name)
-      `)
-      .eq('status', 'paid')
-      .eq('products.producer_id', user.id)
-      .not('producer_share_cents', 'is', null)
-
-    if (salesError) {
-      console.error('Error fetching sales:', salesError)
-      throw salesError
-    }
-
-    console.log('Total paid sales found:', allPaidSales?.length || 0)
-
-    // Apply product filter to results if needed  
-    let filteredSalesByProduct = allPaidSales || []
-    if (product_id && product_id !== 'all') {
-      // Since we used JOIN, filter by the nested products data
-      filteredSalesByProduct = filteredSalesByProduct.filter(sale => {
-        const productData = sale.products as any
-        return productData && productData.id === product_id
-      })
-    }
-
-    // 2. LÓGICA DE FILTRO DE DATA (EM JAVASCRIPT)
+    // CÁLCULOS DE DATA EM JAVASCRIPT (MAIS RÁPIDO QUE SQL)
     const endDate = new Date()
     let startDate = new Date()
     
@@ -133,37 +149,44 @@ Deno.serve(async (req) => {
       endDate.setTime(new Date(end).getTime())
     }
     
-    const filteredSales = filteredSalesByProduct.filter(sale => {
+    // Separar vendas por status para processamento eficiente
+    const paidSales = filteredSales.filter(sale => sale.status === 'paid')
+    const refundedSales = filteredSales.filter(sale => sale.status === 'refunded')
+    const pendingSales = filteredSales.filter(sale => sale.status === 'pending_payment')
+
+    // Filtrar vendas pagas por período para KPIs
+    const paidSalesInPeriod = paidSales.filter(sale => {
       if (!sale.paid_at) return false
       const saleDate = new Date(sale.paid_at)
       return saleDate >= startDate && saleDate <= endDate
     })
 
-    console.log('Filtered sales for period:', filteredSales.length)
+    // Filtrar reembolsos por período
+    const refundedSalesInPeriod = refundedSales.filter(sale => {
+      if (!sale.created_at) return false
+      const saleDate = new Date(sale.created_at)
+      return saleDate >= startDate && saleDate <= endDate
+    })
 
-    // 3. CALCULAR KPIs DINÂMICOS (com base nas vendas filtradas)
-    const kpiValorLiquido = filteredSales.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0)
-    const kpiVendasCount = filteredSales.length
+    console.log('Sales filtered for period:', {
+      paid: paidSalesInPeriod.length,
+      refunded: refundedSalesInPeriod.length,
+      total: filteredSales.length
+    })
 
-    // KPI Reembolso - buscar vendas refunded no período
-    const { data: refundedSales, error: refundError } = await supabaseClient
-      .from('sales')
-      .select('amount_total_cents, created_at')
-      .eq('status', 'refunded')
-      .in('product_id', productFilter)
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
+    // CALCULAR KPIs USANDO PRODUCER_SHARE_CENTS (VALOR LÍQUIDO)
+    const kpiValorLiquido = paidSalesInPeriod.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0)
+    const kpiVendasCount = paidSalesInPeriod.length
+    const kpiReembolso = refundedSalesInPeriod.reduce((sum, sale) => sum + (sale.amount_total_cents || 0), 0)
 
-    const kpiReembolso = (refundedSales || []).reduce((sum, sale) => sum + (sale.amount_total_cents || 0), 0)
-
-    // 4. CALCULAR SALDOS ESTÁTICOS (com base em TODAS as vendas pagas)
+    // CALCULAR SALDOS (com base em TODAS as vendas pagas, não filtradas por período)
     const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0) // Início do dia para comparação precisa
+    hoje.setHours(0, 0, 0, 0)
     
     let totalLiberado = 0
     let saldoFuturo = 0
 
-    filteredSalesByProduct.forEach(sale => {
+    paidSales.forEach(sale => {
       if (sale.release_date) {
         const releaseDate = new Date(sale.release_date)
         releaseDate.setHours(0, 0, 0, 0)
@@ -176,20 +199,7 @@ Deno.serve(async (req) => {
       }
     })
 
-    console.log('Balances calculated:', { totalLiberado, saldoFuturo })
-
-    // 5. CALCULAR RESERVA DE SEGURANÇA
-    const { data: producerSettings } = await supabaseClient
-      .from('producer_settings')
-      .select('custom_security_reserve_percent')
-      .eq('producer_id', user.id)
-      .maybeSingle()
-
-    const { data: platformSettings } = await supabaseClient
-      .from('platform_settings')
-      .select('default_security_reserve_percent')
-      .maybeSingle()
-
+    // CALCULAR RESERVA DE SEGURANÇA
     const percentualReserva = (
       producerSettings?.custom_security_reserve_percent ?? 
       platformSettings?.default_security_reserve_percent ?? 
@@ -197,15 +207,21 @@ Deno.serve(async (req) => {
     ) / 100
 
     const reservaDeSeguranca = Math.round(totalLiberado * percentualReserva)
-    
-    const saldoDisponivel = totalLiberado - reservaDeSeguranca
+    const saldoDisponivel = Math.max(0, totalLiberado - reservaDeSeguranca)
     const saldoPendente = saldoFuturo + reservaDeSeguranca
 
-    console.log('Security reserve:', { percentualReserva: percentualReserva * 100, reservaDeSeguranca, saldoDisponivel, saldoPendente })
+    console.log('Balances calculated:', {
+      totalLiberado,
+      saldoFuturo,
+      reservaDeSeguranca,
+      saldoDisponivel,
+      saldoPendente,
+      percentualReserva: percentualReserva * 100
+    })
 
-    // 6. PREPARAR DADOS DO GRÁFICO
+    // PREPARAR DADOS DO GRÁFICO (Agregação em JavaScript)
     const salesByDate = new Map()
-    filteredSales.forEach(sale => {
+    paidSalesInPeriod.forEach(sale => {
       if (sale.paid_at) {
         const date = new Date(sale.paid_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
         const current = salesByDate.get(date) || 0
@@ -213,39 +229,33 @@ Deno.serve(async (req) => {
       }
     })
 
-    const chartData = Array.from(salesByDate.entries()).map(([name, total]) => ({
-      name,
-      total: total / 100 // Convert to BRL
-    }))
+    const chartData = Array.from(salesByDate.entries())
+      .map(([name, total]) => ({
+        name,
+        total: total / 100 // Convert to BRL
+      }))
+      .sort((a, b) => {
+        // Ordenar por data
+        const dateA = new Date(a.name.split('/').reverse().join('/'))
+        const dateB = new Date(b.name.split('/').reverse().join('/'))
+        return dateA.getTime() - dateB.getTime()
+      })
 
-    // 7. TRANSAÇÕES RECENTES
-    const { data: recentSalesData, error: recentError } = await supabaseClient
-      .from('sales')
-      .select(`
-        id,
-        buyer_email,
-        amount_total_cents,
-        producer_share_cents,
-        created_at,
-        status,
-        products!inner(name)
-      `)
-      .in('product_id', productFilter)
-      .in('status', ['paid', 'pending_payment'])
-      .order('created_at', { ascending: false })
-      .limit(5)
+    // TRANSAÇÕES RECENTES (usar dados já carregados)
+    const recentTransactions = [...paidSales, ...pendingSales]
+      .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
+      .slice(0, 5)
+      .map(sale => ({
+        id: sale.id,
+        buyer_email: sale.buyer_email,
+        product_name: (sale.products as any)?.name || 'Produto',
+        amount: sale.producer_share_cents || sale.amount_total_cents,
+        created_at: sale.created_at || '',
+        status: sale.status
+      }))
 
-    const recentTransactions = (recentSalesData || []).map(sale => ({
-      id: sale.id,
-      buyer_email: sale.buyer_email,
-      product_name: (sale.products as any)?.name || 'Produto',
-      amount: sale.producer_share_cents || sale.amount_total_cents,
-      created_at: sale.created_at || '',
-      status: sale.status
-    }))
-
-    // 8. MILESTONE DATA
-    const totalRevenue = filteredSalesByProduct.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0)
+    // MILESTONE DATA
+    const totalRevenue = paidSales.reduce((sum, sale) => sum + (sale.producer_share_cents || 0), 0)
     const milestones = [1000000, 10000000, 100000000] // 10K, 100K, 1M
     
     let currentMilestone = milestones[0]
@@ -262,7 +272,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 9. RETORNAR RESPOSTA COMPLETA
+    // RESPOSTA FINAL OTIMIZADA
     const dashboardData = {
       kpiValorLiquido,
       kpiVendasCount,
@@ -274,10 +284,10 @@ Deno.serve(async (req) => {
       currentRevenue: totalRevenue,
       currentMilestone,
       progressPercentage,
-      products: products?.map(p => ({ id: p.id, name: p.name })) || []
+      products: products.map(p => ({ id: p.id, name: p.name }))
     }
 
-    console.log('Dashboard v2 data calculated:', {
+    console.log('Dashboard v2 optimized data calculated:', {
       kpiValorLiquido,
       kpiVendasCount,
       kpiReembolso,
@@ -285,7 +295,8 @@ Deno.serve(async (req) => {
       recentTransactionsCount: recentTransactions.length,
       saldoDisponivel,
       saldoPendente,
-      totalRevenue
+      totalRevenue,
+      performanceMs: Date.now()
     })
 
     return new Response(

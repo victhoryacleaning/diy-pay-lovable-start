@@ -27,6 +27,7 @@ import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { formatUserName } from '@/lib/utils';
@@ -179,100 +180,88 @@ const ProducerDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                {/* Main Content - Left Column */}
-                <div className="xl:col-span-3 space-y-6">
-                  {/* Top KPI Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Valor Líquido Card */}
-                    <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-purple-100">Valor líquido</CardTitle>
-                        <CreditCard className="h-5 w-5 text-purple-200" />
-                      </CardHeader>
-                      <CardContent>
-                        {isLoading ? (
-                          <Skeleton className="h-8 w-32 bg-purple-400" />
-                        ) : (
+              {isLoading ? (
+                <DashboardSkeleton />
+              ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                  {/* Main Content - Left Column */}
+                  <div className="xl:col-span-3 space-y-6">
+                    {/* Top KPI Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Valor Líquido Card */}
+                      <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium text-purple-100">Valor líquido</CardTitle>
+                          <CreditCard className="h-5 w-5 text-purple-200" />
+                        </CardHeader>
+                        <CardContent>
                           <div className="text-2xl font-bold">
                             {formatCurrency(data?.kpiValorLiquido || 0)}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
 
-                    {/* Vendas Card */}
-                    <Card className="bg-white border-0 shadow-lg">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Vendas</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-green-500" />
-                      </CardHeader>
-                      <CardContent>
-                        {isLoading ? (
-                          <Skeleton className="h-8 w-16" />
-                        ) : (
+                      {/* Vendas Card */}
+                      <Card className="bg-white border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium text-slate-600">Vendas</CardTitle>
+                          <TrendingUp className="h-5 w-5 text-green-500" />
+                        </CardHeader>
+                        <CardContent>
                           <div className="text-2xl font-bold text-green-500">{data?.kpiVendasCount || 0}</div>
-                        )}
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
 
-                    {/* Reembolso Card */}
-                    <Card className="bg-white border-0 shadow-lg">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-600">Reembolso</CardTitle>
-                        <RotateCcw className="h-5 w-5 text-orange-500" />
-                      </CardHeader>
-                      <CardContent>
-                        {isLoading ? (
-                          <Skeleton className="h-8 w-32" />
-                        ) : (
+                      {/* Reembolso Card */}
+                      <Card className="bg-white border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium text-slate-600">Reembolso</CardTitle>
+                          <RotateCcw className="h-5 w-5 text-orange-500" />
+                        </CardHeader>
+                        <CardContent>
                           <div className="text-2xl font-bold text-orange-500">
                             {formatCurrency(data?.kpiReembolso || 0)}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                  {/* Filters */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5" />
-                        Desempenho de vendas
-                      </CardTitle>
-                      <div className="flex gap-4">
-                        <Select value={dateFilter} onValueChange={setDateFilter}>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Período" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
-                            <SelectItem value="last_30_days">Últimos 30 dias</SelectItem>
-                            <SelectItem value="this_year">Este ano</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    {/* Filters */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5" />
+                          Desempenho de vendas
+                        </CardTitle>
+                        <div className="flex gap-4">
+                          <Select value={dateFilter} onValueChange={setDateFilter}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Período" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
+                              <SelectItem value="last_30_days">Últimos 30 dias</SelectItem>
+                              <SelectItem value="this_year">Este ano</SelectItem>
+                            </SelectContent>
+                          </Select>
 
-                        <Select value={productFilter} onValueChange={setProductFilter}>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Produto" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todos os produtos</SelectItem>
-                            {data?.products?.map((product: any) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        {isLoading ? (
-                          <Skeleton className="h-full w-full" />
-                        ) : (
+                          <Select value={productFilter} onValueChange={setProductFilter}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Produto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos os produtos</SelectItem>
+                              {data?.products?.map((product: any) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data?.chartData || []}>
                               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -306,162 +295,144 @@ const ProducerDashboard = () => {
                               />
                             </LineChart>
                           </ResponsiveContainer>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Recent Transactions */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Transações Recentes</CardTitle>
-                      <div className="flex justify-end">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to="/sales">Acessar todas as transações</Link>
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b text-left">
-                              <th className="pb-3 text-sm font-semibold text-slate-600">Data</th>
-                              <th className="pb-3 text-sm font-semibold text-slate-600">Produto</th>
-                              <th className="pb-3 text-sm font-semibold text-slate-600">Cliente</th>
-                              <th className="pb-3 text-sm font-semibold text-slate-600">Status</th>
-                              <th className="pb-3 text-sm font-semibold text-slate-600 text-right">Valor Líquido</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {isLoading ? (
-                              Array.from({ length: 3 }).map((_, i) => (
-                                <tr key={i} className="border-b">
-                                  <td className="py-3"><Skeleton className="h-4 w-20" /></td>
-                                  <td className="py-3"><Skeleton className="h-4 w-24" /></td>
-                                  <td className="py-3"><Skeleton className="h-4 w-32" /></td>
-                                  <td className="py-3"><Skeleton className="h-6 w-16" /></td>
-                                  <td className="py-3"><Skeleton className="h-4 w-20 ml-auto" /></td>
-                                </tr>
-                              ))
-                            ) : data?.recentTransactions?.length > 0 ? (
-                              data.recentTransactions.map((transaction: any) => (
-                                <tr key={transaction.id} className="border-b hover:bg-slate-50">
-                                  <td className="py-3 text-sm text-slate-600">
-                                    {formatDate(transaction.created_at).split(' ')[0]}
-                                  </td>
-                                  <td className="py-3 text-sm font-medium">{transaction.product_name}</td>
-                                  <td className="py-3 text-sm text-slate-600">{transaction.buyer_email}</td>
-                                  <td className="py-3">{getStatusBadge(transaction.status)}</td>
-                                  <td className="py-3 text-sm font-semibold text-right">
-                                    {formatCurrency(transaction.amount)}
-                                  </td>
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td colSpan={5} className="py-8 text-center text-slate-500">
-                                  Nenhuma transação encontrada
-                                </td>
+                    {/* Recent Transactions */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Transações Recentes</CardTitle>
+                        <div className="flex justify-end">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to="/sales">Acessar todas as transações</Link>
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b text-left">
+                                <th className="pb-3 text-sm font-semibold text-slate-600">Data</th>
+                                <th className="pb-3 text-sm font-semibold text-slate-600">Produto</th>
+                                <th className="pb-3 text-sm font-semibold text-slate-600">Cliente</th>
+                                <th className="pb-3 text-sm font-semibold text-slate-600">Status</th>
+                                <th className="pb-3 text-sm font-semibold text-slate-600 text-right">Valor Líquido</th>
                               </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                            </thead>
+                            <tbody>
+                              {data?.recentTransactions?.length > 0 ? (
+                                data.recentTransactions.map((transaction: any) => (
+                                  <tr key={transaction.id} className="border-b hover:bg-slate-50">
+                                    <td className="py-3 text-sm text-slate-600">
+                                      {formatDate(transaction.created_at).split(' ')[0]}
+                                    </td>
+                                    <td className="py-3 text-sm font-medium">{transaction.product_name}</td>
+                                    <td className="py-3 text-sm text-slate-600">{transaction.buyer_email}</td>
+                                    <td className="py-3">{getStatusBadge(transaction.status)}</td>
+                                    <td className="py-3 text-sm font-semibold text-right">
+                                      {formatCurrency(transaction.amount)}
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                                    Nenhuma transação encontrada
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                {/* Right Sidebar */}
-                <div className="space-y-6">
-                  {/* Saldo Disponível */}
-                  <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-white font-semibold">Saldo Disponível</CardTitle>
-                      <CardDescription className="text-purple-100">Disponível para saque</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <Skeleton className="h-10 w-32 bg-purple-400" />
-                      ) : (
+                  {/* Right Sidebar */}
+                  <div className="space-y-6">
+                    {/* Saldo Disponível */}
+                    <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
+                      <CardHeader>
+                        <CardTitle className="text-white font-semibold">Saldo Disponível</CardTitle>
+                        <CardDescription className="text-purple-100">Disponível para saque</CardDescription>
+                      </CardHeader>
+                      <CardContent>
                         <div className="text-3xl font-bold mb-4">
                           {formatCurrency(data?.saldoDisponivel || 0)}
                         </div>
-                      )}
-                      <Button 
-                        className="w-full bg-white text-purple-700 hover:bg-purple-50 font-semibold"
-                        asChild
-                      >
-                        <Link to="/financials">Solicitar Saque</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
+                        <Button 
+                          className="w-full bg-white text-purple-700 hover:bg-purple-50 font-semibold"
+                          asChild
+                        >
+                          <Link to="/financials">Solicitar Saque</Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
 
-                  {/* Saldo Pendente */}
-                  <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white border-0 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-white font-semibold">Saldo Pendente</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <Skeleton className="h-10 w-32 bg-orange-400" />
-                      ) : (
+                    {/* Saldo Pendente */}
+                    <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white border-0 shadow-lg">
+                      <CardHeader>
+                        <CardTitle className="text-white font-semibold">Saldo Pendente</CardTitle>
+                      </CardHeader>
+                      <CardContent>
                         <div className="text-3xl font-bold">
                           {formatCurrency(data?.saldoPendente || 0)}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
 
-                  {/* Central Financeira */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-slate-800">Central Financeira</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button variant="outline" className="w-full justify-start" asChild>
-                        <Link to="/financials">
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Ver Extrato
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" asChild>
-                        <Link to="/sales">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Histórico de Vendas
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    {/* Central Financeira */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-slate-800">Central Financeira</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button variant="outline" className="w-full justify-start" asChild>
+                          <Link to="/financials">
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Ver Extrato
+                          </Link>
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start" asChild>
+                          <Link to="/sales">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Histórico de Vendas
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
 
-                  {/* Ações Rápidas */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-slate-800">Ações Rápidas</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button className="w-full bg-purple-600 hover:bg-purple-700 font-semibold" asChild>
-                        <Link to="/products/new">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Criar Novo Produto
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" asChild>
-                        <Link to="/products">
-                          <Package className="mr-2 h-4 w-4" />
-                          Gerenciar Produtos
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" asChild>
-                        <Link to="/complete-producer-profile">
-                          <Settings className="mr-2 h-4 w-4" />
-                          Configurações
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    {/* Ações Rápidas */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-slate-800">Ações Rápidas</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button className="w-full bg-purple-600 hover:bg-purple-700 font-semibold" asChild>
+                          <Link to="/products/new">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Criar Novo Produto
+                          </Link>
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start" asChild>
+                          <Link to="/products">
+                            <Package className="mr-2 h-4 w-4" />
+                            Gerenciar Produtos
+                          </Link>
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start" asChild>
+                          <Link to="/complete-producer-profile">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Configurações
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </SidebarInset>
