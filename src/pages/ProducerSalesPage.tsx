@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { CalendarIcon, Download, Search, TrendingUp, DollarSign } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { useAuth } from "@/hooks/useAuth"
 import { supabase } from "@/integrations/supabase/client"
+import { useProducerReport } from '@/hooks/useProducerReport'
 import { ProducerLayout } from "@/components/ProducerLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,13 +22,14 @@ interface Sale {
   buyer_email: string
   amount_total_cents: number
   producer_share_cents: number
-  platform_fee_cents: number
+  platform_fee_cents?: number
   payment_method_used: string
   status: string
   created_at: string
   paid_at?: string
   installments_chosen: number
-  products: {
+  product_name: string
+  products?: {
     id: string
     name: string
     type: string
@@ -84,42 +85,64 @@ const ProducerSalesPage = () => {
     fetchProducts()
   }, [session])
 
-  // Fetch sales data with filters
-  const { data: salesData, isLoading, error } = useQuery<SalesData>({
-    queryKey: ['producer-sales', { 
-      searchTerm, 
-      productFilter, 
-      statusFilter, 
-      paymentMethodFilter, 
-      dateRange, 
-      page 
-    }],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-producer-sales-data', {
-        body: {
-          search_term: searchTerm || null,
-          product_id: productFilter !== 'all' ? productFilter : null,
-          status: statusFilter !== 'all' ? statusFilter : null,
-          payment_method: paymentMethodFilter !== 'all' ? paymentMethodFilter : null,
-          date_range: {
-            from: dateRange.from?.toISOString(),
-            to: dateRange.to?.toISOString()
-          },
-          page,
-          limit: 12
-        }
-      })
-
-      if (error) {
-        console.error('Error fetching sales data:', error)
-        throw new Error(error.message || 'Erro ao carregar dados de vendas')
-      }
-
-      return data
+  // Fetch sales data using unified hook
+  const { data: reportData, loading: isLoading, error } = useProducerReport({});
+  
+  // Transform data for the sales page
+  const salesData: SalesData = {
+    kpis: {
+      valorLiquidoTotal: reportData?.kpis?.valorLiquido || 0,
+      totalVendas: reportData?.kpis?.vendasCount || 0
     },
-    enabled: !!session,
-    retry: 1
-  })
+    salesHistory: (reportData?.salesHistory || []).map(sale => ({
+      ...sale,
+      platform_fee_cents: 0, // Default value since it's not provided by the report
+      products: sale.product_name !== 'Produto Removido' ? {
+        id: '',
+        name: sale.product_name,
+        type: ''
+      } : undefined
+    })),
+    hasMore: false // Since we're getting all data at once
+  };
+
+  // Filter sales data based on current filters
+  const filteredSalesHistory = salesData.salesHistory.filter(sale => {
+    // Search term filter
+    if (searchTerm && !sale.buyer_email.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    
+    // Product filter
+    if (productFilter !== 'all' && sale.products?.id !== productFilter) {
+      return false;
+    }
+    
+    // Status filter
+    if (statusFilter !== 'all' && sale.status !== statusFilter) {
+      return false;
+    }
+    
+    // Payment method filter
+    if (paymentMethodFilter !== 'all' && sale.payment_method_used !== paymentMethodFilter) {
+      return false;
+    }
+    
+    // Date range filter
+    if (dateRange.from || dateRange.to) {
+      const saleDate = new Date(sale.created_at);
+      if (dateRange.from && saleDate < dateRange.from) return false;
+      if (dateRange.to && saleDate > dateRange.to) return false;
+    }
+    
+    return true;
+  });
+
+  // Update sales data with filtered results
+  const finalSalesData = {
+    ...salesData,
+    salesHistory: filteredSalesHistory
+  };
 
   // Reset page when filters change
   useEffect(() => {
@@ -184,9 +207,9 @@ const ProducerSalesPage = () => {
           <Card>
             <CardContent className="p-6">
               <div className="text-center">
-                <p className="text-muted-foreground mb-4">
-                  Erro ao carregar dados: {error.message}
-                </p>
+                 <p className="text-muted-foreground mb-4">
+                   Erro ao carregar dados: {error}
+                 </p>
                 <Button onClick={() => window.location.reload()}>
                   Tentar Novamente
                 </Button>
@@ -221,7 +244,7 @@ const ProducerSalesPage = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? 'Carregando...' : formatCurrency(salesData?.kpis?.valorLiquidoTotal || 0)}
+                {isLoading ? 'Carregando...' : formatCurrency(finalSalesData?.kpis?.valorLiquidoTotal || 0)}
               </div>
               <p className="text-xs text-primary-foreground/70">
                 Receita após taxas da plataforma
@@ -239,7 +262,7 @@ const ProducerSalesPage = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-accent">
-                {isLoading ? 'Carregando...' : (salesData?.kpis?.totalVendas || 0)}
+                {isLoading ? 'Carregando...' : (finalSalesData?.kpis?.totalVendas || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Número total de transações
@@ -406,7 +429,7 @@ const ProducerSalesPage = () => {
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Carregando vendas...</p>
               </div>
-            ) : !salesData?.salesHistory?.length ? (
+            ) : !finalSalesData?.salesHistory?.length ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
                   Nenhuma venda encontrada com os filtros aplicados.
@@ -428,13 +451,13 @@ const ProducerSalesPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {salesData.salesHistory.map((sale) => (
+                      {finalSalesData.salesHistory.map((sale) => (
                         <TableRow key={sale.id}>
                           <TableCell className="font-medium">
                             {sale.buyer_email}
                           </TableCell>
                           <TableCell>
-                            {sale.products?.name || 'Produto Removido'}
+                            {sale.product_name || 'Produto Removido'}
                           </TableCell>
                           <TableCell>
                             {formatCurrency(sale.amount_total_cents)}
