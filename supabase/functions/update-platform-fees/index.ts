@@ -86,6 +86,9 @@ Deno.serve(async (req) => {
     if (payload.default_security_reserve_percent !== undefined) {
       updateData.default_security_reserve_percent = parseFloat(payload.default_security_reserve_percent)
     }
+    if (payload.default_security_reserve_days !== undefined) {
+      updateData.default_security_reserve_days = parseInt(payload.default_security_reserve_days)
+    }
     if (payload.default_anticipation_fee_percent !== undefined) {
       updateData.default_anticipation_fee_percent = parseFloat(payload.default_anticipation_fee_percent)
     }
@@ -93,13 +96,7 @@ Deno.serve(async (req) => {
       updateData.default_withdrawal_fee_cents = parseInt(payload.default_withdrawal_fee_cents)
     }
 
-    // Handle JSON fields
-    if (payload.default_fees_json !== undefined) {
-      updateData.default_fees_json = payload.default_fees_json
-    }
-    if (payload.default_release_rules_json !== undefined) {
-      updateData.default_release_rules_json = payload.default_release_rules_json
-    }
+    // Handle JSON field for card installments
     if (payload.default_card_installments_fees !== undefined) {
       updateData.default_card_installments_fees = payload.default_card_installments_fees
     }
