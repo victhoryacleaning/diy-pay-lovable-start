@@ -31,13 +31,16 @@ const ProducerSubscriptionsPage = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'canceled'>('all');
 
   const { data: subscriptionsData, isLoading, error } = useQuery({
-    queryKey: ['all-subscriptions'],
+    queryKey: ['producer-subscriptions'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-producer-subscriptions', {
         body: {} // No productId means get all subscriptions
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscriptions:', error);
+        throw new Error('Falha ao carregar assinaturas');
+      }
       return data;
     },
     enabled: !!user,

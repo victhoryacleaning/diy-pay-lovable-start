@@ -322,9 +322,9 @@ const ProducerDashboard = () => {
                                     <td className="py-3 text-sm font-medium">{transaction.product_name}</td>
                                     <td className="py-3 text-sm text-slate-600">{transaction.buyer_email}</td>
                                     <td className="py-3">{getStatusBadge(transaction.status)}</td>
-                                    <td className="py-3 text-sm font-semibold text-right">
-                                      {formatCurrency(transaction.valor_liquido || transaction.producer_share_cents || transaction.amount)}
-                                    </td>
+                                     <td className="py-3 text-sm font-semibold text-right">
+                                       {formatCurrency(transaction.producer_share_cents)}
+                                     </td>
                                   </tr>
                                 ))
                               ) : (

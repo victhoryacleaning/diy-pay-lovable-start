@@ -96,9 +96,9 @@ const ProducerSalesPage = () => {
     },
     salesHistory: (reportData?.salesHistory || []).map(sale => ({
       ...sale,
-      platform_fee_cents: 0, // Default value since it's not provided by the report
+      platform_fee_cents: (sale as any).platform_fee_cents || 0,
       products: sale.product_name !== 'Produto Removido' ? {
-        id: '',
+        id: (sale as any).product_id || '',
         name: sale.product_name,
         type: ''
       } : undefined
