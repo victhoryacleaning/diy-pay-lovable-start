@@ -104,8 +104,8 @@ Deno.serve(async (req) => {
       // Calculate security reserve amount
       const securityReserveCents = Math.round(sale.amount_total_cents * (securityReservePercent / 100));
       
-      // Calculate producer share correctly: amount_total - platform_fee - security_reserve
-      const producerShareCents = sale.amount_total_cents - sale.platform_fee_cents - securityReserveCents;
+      // Calculate producer share correctly: amount_total - platform_fee (security reserve is tracked separately)
+      const producerShareCents = sale.amount_total_cents - sale.platform_fee_cents;
 
       // Calculate release date based on payment date
       const releaseDate = new Date(paidAt.getTime() + (securityReserveDays * 24 * 60 * 60 * 1000));
