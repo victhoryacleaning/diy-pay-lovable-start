@@ -36,10 +36,25 @@ interface FinancialTransaction {
   buyer_email: string;
 }
 
+interface EffectiveSettings {
+  pix_fee_percent: number;
+  boleto_fee_percent: number;
+  card_installments_fees: Record<string, number>;
+  fixed_fee_cents: number;
+  pix_release_days: number;
+  boleto_release_days: number;
+  card_release_days: number;
+  security_reserve_percent: number;
+  security_reserve_days: number;
+  withdrawal_fee_cents: number;
+  is_custom: boolean;
+}
+
 interface FinancialData {
   availableBalance: number;
   pendingBalance: number;
   transactions: FinancialTransaction[];
+  effectiveSettings?: EffectiveSettings;
   identity_status?: string;
 }
 
@@ -486,32 +501,51 @@ const ProducerFinancialsPage = () => {
                         </CardTitle>
                         <CardDescription>
                           Informações sobre as taxas aplicadas às suas vendas
+                          {financialData?.effectiveSettings?.is_custom && (
+                            <span className="text-[#4d0782] font-medium ml-1">(configuração personalizada)</span>
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-2">Taxa do Produtor</h4>
                           <p className="text-gray-700">
-                            {producerSettings?.custom_fees_json 
-                              ? `Taxa personalizada: 5% + R$ ${(producerSettings.custom_fixed_fee_cents || 100) / 100}` 
-                              : "5% + R$ 1,00 por venda (taxa padrão)"
-                            }
+                            PIX: {financialData?.effectiveSettings?.pix_fee_percent || 0}% + R$ {((financialData?.effectiveSettings?.fixed_fee_cents || 100) / 100).toFixed(2)}
                           </p>
+                          <p className="text-gray-700">
+                            Boleto: {financialData?.effectiveSettings?.boleto_fee_percent || 0}% + R$ {((financialData?.effectiveSettings?.fixed_fee_cents || 100) / 100).toFixed(2)}
+                          </p>
+                          <p className="text-gray-700">
+                            Cartão: varia por parcela + R$ {((financialData?.effectiveSettings?.fixed_fee_cents || 100) / 100).toFixed(2)}
+                          </p>
+                          {financialData?.effectiveSettings?.is_custom && (
+                            <p className="text-xs text-[#4d0782] mt-1">Taxa personalizada aplicada</p>
+                          )}
                         </div>
                         
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-2">Prazo de Recebimento</h4>
                           <div className="text-gray-700 space-y-1">
-                            <p>• Cartão de crédito: 15 dias</p>
-                            <p>• Boleto bancário: 2 dias</p>
-                            <p>• PIX: 2 dias</p>
+                            <p>• Cartão de crédito: {financialData?.effectiveSettings?.card_release_days || 15} dias</p>
+                            <p>• Boleto bancário: {financialData?.effectiveSettings?.boleto_release_days || 2} dias</p>
+                            <p>• PIX: {financialData?.effectiveSettings?.pix_release_days || 2} dias</p>
                           </div>
                         </div>
                         
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-2">Reserva de Segurança</h4>
                           <p className="text-gray-700">
-                            Não aplicável por 30 dias
+                            {financialData?.effectiveSettings?.security_reserve_percent || 0}% por {financialData?.effectiveSettings?.security_reserve_days || 30} dias
+                          </p>
+                          {financialData?.effectiveSettings?.security_reserve_percent === 0 && (
+                            <p className="text-xs text-green-600 mt-1">Reserva de segurança não aplicável</p>
+                          )}
+                        </div>
+
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-2">Taxa de Saque</h4>
+                          <p className="text-gray-700">
+                            R$ {((financialData?.effectiveSettings?.withdrawal_fee_cents || 367) / 100).toFixed(2)} por saque
                           </p>
                         </div>
                       </CardContent>
