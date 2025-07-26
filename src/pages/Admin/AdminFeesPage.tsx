@@ -152,19 +152,7 @@ const AdminFeesPage = () => {
         default_security_reserve_percent: data.default_security_reserve_percent,
         default_security_reserve_days: data.default_security_reserve_days,
         default_withdrawal_fee_cents: Math.round(data.default_withdrawal_fee_cents * 100), // Convert to cents
-        default_fees_json: {
-          pix_fee_percent: data.default_pix_fee_percent,
-          bank_slip_fee_percent: data.default_boleto_fee_percent,
-          credit_card_fees: creditCardFees,
-        },
-        default_release_rules_json: {
-          release_days: {
-            pix: data.default_pix_release_days,
-            bank_slip: data.default_boleto_release_days,
-            credit_card: data.default_card_release_days,
-          },
-          security_reserve_days: data.default_security_reserve_days,
-        },
+        default_card_installments_fees: creditCardFees,
       };
 
       const { data: result, error } = await supabase.functions.invoke('update-platform-fees', {
@@ -257,7 +245,7 @@ const AdminFeesPage = () => {
   useEffect(() => {
     if (platformSettings?.data) {
       const settings = platformSettings.data;
-      const creditCardFees = settings.default_fees_json?.credit_card_fees || {};
+      const creditCardFees = settings.default_card_installments_fees || settings.default_fees_json?.credit_card_fees || {};
       
       platformForm.reset({
         default_pix_fee_percent: settings.default_pix_fee_percent || settings.default_fees_json?.pix_fee_percent || 0,
