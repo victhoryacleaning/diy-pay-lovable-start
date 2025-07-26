@@ -5,12 +5,76 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'content-type',
 }
 
-// Função auxiliar para garantir que a resposta seja sempre um JSON válido
+// Helper function to ensure response is always valid JSON
 function createJsonResponse(body: object, status: number) {
   return new Response(JSON.stringify(body, null, 2), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     status: status,
   });
+}
+
+// Helper function to get financial settings for calculations
+async function getFinancialSettings(supabase: any, producerId: string) {
+  const [platformResult, producerResult] = await Promise.all([
+    supabase.from('platform_settings').select('*').single(),
+    supabase.from('producer_settings').select('*').eq('producer_id', producerId).maybeSingle()
+  ]);
+
+  const platform = platformResult.data;
+  const producer = producerResult.data;
+
+  return {
+    // Security reserve settings
+    security_reserve_percent: producer?.custom_security_reserve_percent ?? platform?.default_security_reserve_percent ?? 4.0,
+    security_reserve_days: producer?.custom_security_reserve_days ?? platform?.default_security_reserve_days ?? 30,
+    
+    // Fee settings
+    fixed_fee_cents: producer?.custom_fixed_fee_cents ?? platform?.default_fixed_fee_cents ?? 100,
+    withdrawal_fee_cents: producer?.custom_withdrawal_fee_cents ?? platform?.default_withdrawal_fee_cents ?? 367,
+    
+    // Payment method fees
+    pix_fee_percent: platform?.default_pix_fee_percent ?? 3.0,
+    boleto_fee_percent: platform?.default_boleto_fee_percent ?? 3.5,
+    card_installments_fees: platform?.default_card_installments_fees ?? {},
+    
+    // Release days
+    pix_release_days: platform?.default_pix_release_days ?? 1,
+    boleto_release_days: platform?.default_boleto_release_days ?? 1,
+    card_release_days: platform?.default_card_release_days ?? 30,
+  };
+}
+
+// Helper function to calculate platform fee based on payment method and installments
+function calculatePlatformFee(settings: any, paymentMethod: string, installments: number, amountCents: number) {
+  let feePercent = 0;
+  
+  if (paymentMethod === 'pix') {
+    feePercent = settings.pix_fee_percent;
+  } else if (paymentMethod === 'bank_slip') {
+    feePercent = settings.boleto_fee_percent;
+  } else if (paymentMethod === 'credit_card') {
+    // For credit card, check installment-specific fees
+    const installmentFees = settings.card_installments_fees || {};
+    feePercent = installmentFees[installments] || installmentFees['1'] || 3.5;
+  }
+  
+  // Platform Fee = (Amount * Fee %) + Fixed Fee
+  const percentageFee = Math.round(amountCents * (feePercent / 100));
+  return percentageFee + settings.fixed_fee_cents;
+}
+
+// Helper function to calculate release date based on payment method
+function calculateReleaseDate(settings: any, paymentMethod: string, paidAtDate: Date) {
+  let releaseDays = settings.card_release_days; // default
+  
+  if (paymentMethod === 'pix') {
+    releaseDays = settings.pix_release_days;
+  } else if (paymentMethod === 'bank_slip') {
+    releaseDays = settings.boleto_release_days;
+  }
+  
+  const releaseDate = new Date(paidAtDate.getTime() + (releaseDays * 24 * 60 * 60 * 1000));
+  return releaseDate.toISOString().split('T')[0]; // Return as date string
 }
 
 Deno.serve(async (req) => {
@@ -71,56 +135,65 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch product ${sale.product_id}: ${productError.message}`);
       }
 
-      // Get payment date from Asaas payload
-      const paymentDateString = payment.paymentDate; // ex: "2025-07-24"
+      // --- START OF CORRECTED CALCULATION LOGIC ---
       
-      if (!paymentDateString) {
-        throw new Error("Webhook do Asaas não contém 'paymentDate'.");
+      // 1. Get the payment date from the webhook payload.
+      const paidAtString = payment.paymentDate; // Format "YYYY-MM-DD"
+      if (!paidAtString) {
+        throw new Error("Webhook payload is missing 'paymentDate'.");
       }
+      const paidAtDate = new Date(`${paidAtString}T12:00:00Z`); // Use noon UTC for safety
       
-      // Convert "YYYY-MM-DD" to Date object safely with noon UTC to avoid timezone issues
-      const paidAt = new Date(`${paymentDateString}T12:00:00Z`);
-      
-      if (isNaN(paidAt.getTime())) {
-        throw new Error(`Data de pagamento inválida: ${paymentDateString}`);
+      if (isNaN(paidAtDate.getTime())) {
+        throw new Error(`Invalid payment date: ${paidAtString}`);
       }
 
-      // Get platform settings and producer settings for security reserve
-      const [platformResult, producerResult] = await Promise.all([
-        supabaseAdmin.from('platform_settings').select('default_security_reserve_percent, default_security_reserve_days').single(),
-        supabaseAdmin.from('producer_settings').select('custom_security_reserve_percent, custom_security_reserve_days').eq('producer_id', product.producer_id).maybeSingle()
-      ]);
+      // 2. Fetch the financial settings using the new helper function
+      const settings = await getFinancialSettings(supabaseAdmin, product.producer_id);
 
-      const defaultSecurityReservePercent = platformResult.data?.default_security_reserve_percent || 4.0;
-      const defaultSecurityReserveDays = platformResult.data?.default_security_reserve_days || 30;
-      
-      const customSecurityReservePercent = producerResult.data?.custom_security_reserve_percent;
-      const customSecurityReserveDays = producerResult.data?.custom_security_reserve_days;
-      
-      const securityReservePercent = customSecurityReservePercent !== null ? customSecurityReservePercent : defaultSecurityReservePercent;
-      const securityReserveDays = customSecurityReserveDays !== null ? customSecurityReserveDays : defaultSecurityReserveDays;
+      // 3. Calculate all fees and values based on the business rules.
+      const amountTotalCents = sale.amount_total_cents;
 
-      // Calculate security reserve amount
-      const securityReserveCents = Math.round(sale.amount_total_cents * (securityReservePercent / 100));
-      
-      // Recalculate producer share: amount_total - platform_fee - security_reserve
-      const recalculatedProducerShare = sale.amount_total_cents - sale.platform_fee_cents - securityReserveCents;
+      // Platform Fee = (Gross Amount * Fee %) + Fixed Fee
+      const platformFeeCents = calculatePlatformFee(
+        settings, 
+        sale.payment_method_used, 
+        sale.installments_chosen || 1, 
+        amountTotalCents
+      );
 
-      // Calculate release date based on payment date
-      const releaseDate = new Date(paidAt.getTime() + (securityReserveDays * 24 * 60 * 60 * 1000));
+      // Security Reserve = Gross Amount * Security Reserve %
+      const securityReservePercent = settings.security_reserve_percent || 0;
+      const securityReserveCents = Math.round(amountTotalCents * (securityReservePercent / 100));
 
-      console.log(`[SECURITY_RESERVE] Security reserve: ${securityReserveCents} cents (${securityReservePercent}%)`);
-      console.log(`[PRODUCER_SHARE] Recalculated producer share: ${recalculatedProducerShare} cents`);
+      // CORRECTED FORMULA: Producer's net share = Gross Amount - Platform Fee.
+      // The reserve is NOT deducted from the share itself; it is held from the available balance.
+      const producerShareCents = amountTotalCents - platformFeeCents;
 
+      // Calculate the release date based on the payment method.
+      const releaseDate = calculateReleaseDate(settings, sale.payment_method_used, paidAtDate);
+
+      console.log(`[FINAL_CALCULATION] Amount Total: ${amountTotalCents} cents`);
+      console.log(`[FINAL_CALCULATION] Platform Fee: ${platformFeeCents} cents`);
+      console.log(`[FINAL_CALCULATION] Security Reserve: ${securityReserveCents} cents (${securityReservePercent}%)`);
+      console.log(`[FINAL_CALCULATION] Producer Share: ${producerShareCents} cents`);
+      console.log(`[FINAL_CALCULATION] Release Date: ${releaseDate}`);
+
+      // 4. Assemble the final, correct payload to save to the database.
       const updatePayload = {
         status: 'paid',
-        paid_at: paidAt.toISOString(),
+        paid_at: paidAtDate.toISOString(),
         payout_status: 'pending',
-        gateway_status: payment.status,
-        security_reserve_cents: securityReserveCents,
-        producer_share_cents: recalculatedProducerShare,
-        release_date: releaseDate.toISOString().split('T')[0] // Store as date only
+        release_date: releaseDate,
+        platform_fee_cents: platformFeeCents,
+        producer_share_cents: producerShareCents,    // Saves the correct net value
+        security_reserve_cents: securityReserveCents,  // Saves the reserve amount
+        gateway_status: payment.status
       };
+
+      console.log('[FINAL_CALCULATION] Data to be saved:', updatePayload);
+      
+      // --- END OF CORRECTED CALCULATION LOGIC ---
       
       const { error: updateError } = await supabaseAdmin
         .from('sales')
@@ -132,21 +205,21 @@ Deno.serve(async (req) => {
       }
       
       // Add only the available amount (producer_share without security reserve) to producer balance
-      if (recalculatedProducerShare > 0) {
+      if (producerShareCents > 0) {
         const { error: balanceError } = await supabaseAdmin.rpc('upsert_producer_balance', {
           p_producer_id: product.producer_id,
-          amount_to_add: recalculatedProducerShare
+          amount_to_add: producerShareCents
         });
 
         if (balanceError) {
           console.error(`[BALANCE_ERROR] Failed to update producer balance: ${balanceError.message}`);
           // Don't throw here to avoid marking the payment as failed
         } else {
-          console.log(`[BALANCE_UPDATED] Added ${recalculatedProducerShare} cents to producer ${product.producer_id} balance`);
+          console.log(`[BALANCE_UPDATED] Added ${producerShareCents} cents to producer ${product.producer_id} balance`);
         }
       }
       
-      console.log(`[SALE_UPDATED] Venda ${sale.id} atualizada para 'paid' com reserva de segurança de ${securityReserveCents} cents.`);
+      console.log(`[SALE_UPDATED] Sale ${sale.id} updated to 'paid' with security reserve of ${securityReserveCents} cents.`);
     } else {
       console.log(`[EVENT_IGNORED] Evento "${event}" não requer ação.`);
     }
