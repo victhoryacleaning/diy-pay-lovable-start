@@ -1,3 +1,4 @@
+// Forcing redeploy at 2025-07-26 15:30:00
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
