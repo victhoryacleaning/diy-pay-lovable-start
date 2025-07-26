@@ -6,111 +6,55 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
 
-    // Get the authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('No authorization header')
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError) throw userError;
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
-    
-    if (userError || !user) {
-      console.error('Invalid token:', userError)
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
+    const { date_filter = 'last_30_days' } = await req.json();
 
-    console.log('User authenticated:', user.id)
-
-    // Parse request body for filters
-    const { date_filter = 'last_30_days', product_id } = await req.json()
-    console.log('Producer report filters:', { date_filter, product_id, user_id: user.id })
-
-    // Calculate date range
-    const endDate = new Date()
-    let startDate = new Date()
-    
+    const endDate = new Date();
+    let startDate = new Date();
     if (date_filter === 'last_7_days') {
-      startDate.setDate(startDate.getDate() - 7)
-    } else if (date_filter === 'last_30_days') {
-      startDate.setDate(startDate.getDate() - 30)
-    } else if (date_filter === 'this_year') {
-      startDate = new Date(startDate.getFullYear(), 0, 1)
-    } else if (date_filter && date_filter.includes('to')) {
-      const [start, end] = date_filter.split(' to ')
-      startDate = new Date(start)
-      endDate.setTime(new Date(end).getTime())
+      startDate.setDate(endDate.getDate() - 7);
+    } else {
+      startDate.setDate(endDate.getDate() - 30);
     }
 
-    console.log('Date range calculated:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() })
+    console.log(`[GET_REPORT] Calling RPC for user ${user.id} with filter ${date_filter}`);
 
-    // Call the PostgreSQL function
-    const { data: reportData, error: reportError } = await supabaseClient
-      .rpc('get_producer_financial_report', {
-        p_producer_id: user.id,
-        p_start_date: startDate.toISOString(),
-        p_end_date: endDate.toISOString()
-      })
+    const { data, error } = await supabaseClient.rpc('get_producer_financial_report', {
+      p_producer_id: user.id,
+      p_start_date: startDate.toISOString(),
+      p_end_date: endDate.toISOString(),
+    });
 
-    if (reportError) {
-      console.error('Error calling get_producer_financial_report:', reportError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch producer report' }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    if (error) {
+      console.error("Error calling RPC 'get_producer_financial_report':", error);
+      throw error;
     }
 
-    console.log('Producer report data fetched successfully:', {
-      kpis: reportData?.kpis || {},
-      balances: reportData?.balances || {},
-      chartDataPoints: reportData?.chartData?.length || 0,
-      recentTransactionsCount: reportData?.recentTransactions?.length || 0,
-      salesHistoryCount: reportData?.salesHistory?.length || 0
-    })
-
+    console.log("[GET_REPORT] RPC data received successfully.");
+    
     return new Response(
-      JSON.stringify(reportData),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
+      JSON.stringify(data),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    );
 
   } catch (error) {
-    console.error('Error in get-producer-report function:', error)
+    console.error('[CRITICAL_ERROR] in get-producer-report:', error.message);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
-})
+});
