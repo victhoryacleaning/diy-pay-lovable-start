@@ -507,46 +507,99 @@ const ProducerFinancialsPage = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {/* Card 1 - Taxas por Método de Pagamento */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
-                          <h4 className="font-medium text-gray-900 mb-2">Taxa do Produtor</h4>
-                          <p className="text-gray-700">
-                            PIX: {financialData?.effectiveSettings?.pix_fee_percent || 0}% + R$ {((financialData?.effectiveSettings?.fixed_fee_cents || 100) / 100).toFixed(2)}
-                          </p>
-                          <p className="text-gray-700">
-                            Boleto: {financialData?.effectiveSettings?.boleto_fee_percent || 0}% + R$ {((financialData?.effectiveSettings?.fixed_fee_cents || 100) / 100).toFixed(2)}
-                          </p>
-                          <p className="text-gray-700">
-                            Cartão: varia por parcela + R$ {((financialData?.effectiveSettings?.fixed_fee_cents || 100) / 100).toFixed(2)}
-                          </p>
-                          {financialData?.effectiveSettings?.is_custom && (
-                            <p className="text-xs text-[#4d0782] mt-1">Taxa personalizada aplicada</p>
-                          )}
-                        </div>
-                        
-                        <div className="p-4 bg-white rounded-lg shadow-sm border">
-                          <h4 className="font-medium text-gray-900 mb-2">Prazo de Recebimento</h4>
-                          <div className="text-gray-700 space-y-1">
-                            <p>• Cartão de crédito: {financialData?.effectiveSettings?.card_release_days || 15} dias</p>
-                            <p>• Boleto bancário: {financialData?.effectiveSettings?.boleto_release_days || 2} dias</p>
-                            <p>• PIX: {financialData?.effectiveSettings?.pix_release_days || 2} dias</p>
+                          <h4 className="font-medium text-gray-900 mb-3">Taxas por Método de Pagamento</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">PIX:</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.pix_fee_percent ?? 0}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Boleto:</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.boleto_fee_percent ?? 0}%</span>
+                            </div>
+                            <div className="border-t pt-2">
+                              <p className="text-gray-700 text-sm mb-2">Cartão de Crédito (por parcela):</p>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {Object.entries(financialData?.effectiveSettings?.card_installments_fees || {}).map(([installment, fee]) => (
+                                  <div key={installment} className="flex justify-between">
+                                    <span className="text-gray-600">{installment}x:</span>
+                                    <span className="font-medium">{fee}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="p-4 bg-white rounded-lg shadow-sm border">
-                          <h4 className="font-medium text-gray-900 mb-2">Reserva de Segurança</h4>
-                          <p className="text-gray-700">
-                            {financialData?.effectiveSettings?.security_reserve_percent || 0}% por {financialData?.effectiveSettings?.security_reserve_days || 30} dias
-                          </p>
-                          {financialData?.effectiveSettings?.security_reserve_percent === 0 && (
-                            <p className="text-xs text-green-600 mt-1">Reserva de segurança não aplicável</p>
+                          {financialData?.effectiveSettings?.is_custom && (
+                            <p className="text-xs text-[#4d0782] mt-3 bg-purple-50 p-2 rounded">
+                              ✨ Taxas personalizadas aplicadas
+                            </p>
                           )}
                         </div>
 
+                        {/* Card 2 - Taxas Fixas */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
-                          <h4 className="font-medium text-gray-900 mb-2">Taxa de Saque</h4>
-                          <p className="text-gray-700">
-                            R$ {((financialData?.effectiveSettings?.withdrawal_fee_cents || 367) / 100).toFixed(2)} por saque
-                          </p>
+                          <h4 className="font-medium text-gray-900 mb-3">Taxas Fixas</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Taxa por venda aprovada:</span>
+                              <span className="font-medium">R$ {((financialData?.effectiveSettings?.fixed_fee_cents ?? 100) / 100).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Taxa de saque:</span>
+                              <span className="font-medium">R$ {((financialData?.effectiveSettings?.withdrawal_fee_cents ?? 367) / 100).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card 3 - Prazo de Recebimento */}
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-3">Prazo de Recebimento</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Cartão de crédito:</span>
+                              <span className="font-medium">
+                                {financialData?.effectiveSettings?.card_release_days === 0 
+                                  ? "Liberação imediata" 
+                                  : `${financialData?.effectiveSettings?.card_release_days ?? 15} dias`}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Boleto bancário:</span>
+                              <span className="font-medium">
+                                {financialData?.effectiveSettings?.boleto_release_days === 0 
+                                  ? "Liberação imediata" 
+                                  : `${financialData?.effectiveSettings?.boleto_release_days ?? 2} dias`}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">PIX:</span>
+                              <span className="font-medium">
+                                {financialData?.effectiveSettings?.pix_release_days === 0 
+                                  ? "Liberação imediata" 
+                                  : `${financialData?.effectiveSettings?.pix_release_days ?? 2} dias`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card 4 - Reserva de Segurança */}
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-3">Reserva de Segurança</h4>
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Percentual retido:</span>
+                            <span className="font-medium">{financialData?.effectiveSettings?.security_reserve_percent ?? 0}%</span>
+                          </div>
+                          <div className="flex justify-between mt-2">
+                            <span className="text-gray-700">Prazo de liberação:</span>
+                            <span className="font-medium">{financialData?.effectiveSettings?.security_reserve_days ?? 30} dias</span>
+                          </div>
+                          {(financialData?.effectiveSettings?.security_reserve_percent ?? 0) === 0 && (
+                            <p className="text-xs text-green-600 mt-2 bg-green-50 p-2 rounded">
+                              ✅ Reserva de segurança não aplicável
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
