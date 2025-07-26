@@ -251,43 +251,43 @@ const ProducerDashboard = () => {
                           </Select>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={data?.chartData || []}>
-                              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                              <XAxis 
-                                dataKey="name" 
-                                className="text-sm text-slate-600"
-                                tick={{ fontSize: 12 }}
-                              />
-                              <YAxis 
-                                className="text-sm text-slate-600"
-                                tick={{ fontSize: 12 }}
-                                tickFormatter={(value) => `R$ ${value}`}
-                              />
-                              <Tooltip 
-                                formatter={(value) => [`R$ ${value}`, 'Vendas']}
-                                labelFormatter={(label) => `Data: ${label}`}
-                                contentStyle={{
-                                  backgroundColor: 'white',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                }}
-                              />
-                              <Line 
-                                type="monotone" 
-                                dataKey="total" 
-                                stroke="#8b5cf6" 
-                                strokeWidth={3}
-                                dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                                activeDot={{ r: 6, fill: '#7c3aed' }}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </CardContent>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={data?.chartData || []}>
+                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                            <XAxis 
+                              dataKey="name" 
+                              className="text-sm text-slate-600"
+                              tick={{ fontSize: 12 }}
+                            />
+                            <YAxis 
+                              className="text-sm text-slate-600"
+                              tick={{ fontSize: 12 }}
+                              tickFormatter={(value) => `R$ ${Number(value).toFixed(2)}`}
+                            />
+                            <Tooltip 
+                              formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Vendas']}
+                              labelFormatter={(label) => `Data: ${label}`}
+                              contentStyle={{
+                                backgroundColor: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="total" 
+                              stroke="#8b5cf6" 
+                              strokeWidth={3}
+                              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, fill: '#7c3aed' }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
                     </Card>
 
                     {/* Recent Transactions */}
@@ -323,7 +323,7 @@ const ProducerDashboard = () => {
                                     <td className="py-3 text-sm text-slate-600">{transaction.buyer_email}</td>
                                     <td className="py-3">{getStatusBadge(transaction.status)}</td>
                                     <td className="py-3 text-sm font-semibold text-right">
-                                      {formatCurrency(transaction.producer_share_cents || transaction.amount)}
+                                      {formatCurrency(transaction.valor_liquido || transaction.producer_share_cents || transaction.amount)}
                                     </td>
                                   </tr>
                                 ))
