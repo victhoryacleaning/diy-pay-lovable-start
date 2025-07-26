@@ -88,7 +88,7 @@ serve(async (req) => {
         producer_share_cents,
         status,
         iugu_subscription_id,
-        products(
+        products!inner(
           id,
           name,
           producer_id

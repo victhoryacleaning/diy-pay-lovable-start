@@ -24,8 +24,10 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ProducerSidebar } from "@/components/ProducerSidebar";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
-import { useProducerReport } from '@/hooks/useProducerReport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { formatUserName } from '@/lib/utils';
@@ -58,9 +60,18 @@ const ProducerDashboard = () => {
     sessionStorage.setItem('welcomePopupShown', 'true');
   };
 
-  const { data, loading: isLoading, error } = useProducerReport({ 
-    dateFilter,
-    productId: productFilter === "all" ? undefined : productFilter
+  const { data, isLoading } = useQuery({
+    queryKey: ['producerDashboard', dateFilter, productFilter],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
+        body: { 
+          date_filter: dateFilter,
+          product_id: productFilter === "all" ? null : productFilter
+        }
+      });
+      if (error) throw error;
+      return data;
+    }
   });
 
   const formatCurrency = (cents: number) => {
@@ -122,11 +133,11 @@ const ProducerDashboard = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2 p-2">
                       <Avatar className="w-8 h-8">
-                         <AvatarFallback className="bg-purple-100 text-purple-800 text-sm font-semibold">
-                           {(profile?.full_name || 'P').charAt(0).toUpperCase()}
-                         </AvatarFallback>
-                       </Avatar>
-                       <span className="text-sm font-medium">{profile?.full_name ? formatUserName(profile.full_name) : 'Usuário'}</span>
+                        <AvatarFallback className="bg-purple-100 text-purple-800 text-sm font-semibold">
+                          {(data?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{data?.userName ? formatUserName(data.userName) : (profile?.full_name ? formatUserName(profile.full_name) : 'Usuário')}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -154,9 +165,9 @@ const ProducerDashboard = () => {
               {/* Welcome Message */}
               <div className="mb-8">
                 <div className="flex items-center gap-3">
-                   <h2 className="text-2xl font-semibold text-slate-900">
-                     Bem vindo, {profile?.full_name ? formatUserName(profile.full_name) : 'Produtor'}!
-                   </h2>
+                  <h2 className="text-2xl font-semibold text-slate-900">
+                    Bem vindo, {data?.userName ? formatUserName(data.userName) : (profile?.full_name ? formatUserName(profile.full_name) : 'Produtor')}!
+                  </h2>
                   {(profile?.verification_status === 'pending_submission' || profile?.verification_status === 'rejected') && (
                     <Link 
                       to="/settings/account" 
@@ -171,12 +182,6 @@ const ProducerDashboard = () => {
 
               {isLoading ? (
                 <DashboardSkeleton />
-              ) : error ? (
-                <div className="text-center py-8">
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                    <p className="text-destructive">{error}</p>
-                  </div>
-                </div>
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
                   {/* Main Content - Left Column */}
@@ -191,7 +196,7 @@ const ProducerDashboard = () => {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold">
-                            {formatCurrency(data?.kpis?.valorLiquido || 0)}
+                            {formatCurrency(data?.kpiValorLiquido || 0)}
                           </div>
                         </CardContent>
                       </Card>
@@ -203,7 +208,7 @@ const ProducerDashboard = () => {
                           <TrendingUp className="h-5 w-5 text-green-500" />
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-green-500">{data?.kpis?.vendasCount || 0}</div>
+                          <div className="text-2xl font-bold text-green-500">{data?.kpiVendasCount || 0}</div>
                         </CardContent>
                       </Card>
 
@@ -215,7 +220,7 @@ const ProducerDashboard = () => {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold text-orange-500">
-                            {formatCurrency(data?.kpis?.reembolso || 0)}
+                            {formatCurrency(data?.kpiReembolso || 0)}
                           </div>
                         </CardContent>
                       </Card>
@@ -246,48 +251,52 @@ const ProducerDashboard = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Todos os produtos</SelectItem>
-                              {/* Note: Products filter removed for simplicity - can be re-added if needed */}
+                              {data?.products?.map((product: any) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                       </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={data?.chartData || []}>
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                            <XAxis 
-                              dataKey="name" 
-                              className="text-sm text-slate-600"
-                              tick={{ fontSize: 12 }}
-                            />
-                            <YAxis 
-                              className="text-sm text-slate-600"
-                              tick={{ fontSize: 12 }}
-                              tickFormatter={(value) => `R$ ${Number(value).toFixed(2)}`}
-                            />
-                            <Tooltip 
-                              formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Vendas']}
-                              labelFormatter={(label) => `Data: ${label}`}
-                              contentStyle={{
-                                backgroundColor: 'white',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                              }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="total" 
-                              stroke="#8b5cf6" 
-                              strokeWidth={3}
-                              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                              activeDot={{ r: 6, fill: '#7c3aed' }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={data?.chartData || []}>
+                              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                              <XAxis 
+                                dataKey="name" 
+                                className="text-sm text-slate-600"
+                                tick={{ fontSize: 12 }}
+                              />
+                              <YAxis 
+                                className="text-sm text-slate-600"
+                                tick={{ fontSize: 12 }}
+                                tickFormatter={(value) => `R$ ${value}`}
+                              />
+                              <Tooltip 
+                                formatter={(value) => [`R$ ${value}`, 'Vendas']}
+                                labelFormatter={(label) => `Data: ${label}`}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="total" 
+                                stroke="#8b5cf6" 
+                                strokeWidth={3}
+                                dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                                activeDot={{ r: 6, fill: '#7c3aed' }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
                     </Card>
 
                     {/* Recent Transactions */}
@@ -322,9 +331,9 @@ const ProducerDashboard = () => {
                                     <td className="py-3 text-sm font-medium">{transaction.product_name}</td>
                                     <td className="py-3 text-sm text-slate-600">{transaction.buyer_email}</td>
                                     <td className="py-3">{getStatusBadge(transaction.status)}</td>
-                                     <td className="py-3 text-sm font-semibold text-right">
-                                       {formatCurrency(transaction.producer_share_cents)}
-                                     </td>
+                                    <td className="py-3 text-sm font-semibold text-right">
+                                      {formatCurrency(transaction.amount)}
+                                    </td>
                                   </tr>
                                 ))
                               ) : (
@@ -351,7 +360,7 @@ const ProducerDashboard = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-3xl font-bold mb-4">
-                          {formatCurrency(data?.balances?.disponivel || 0)}
+                          {formatCurrency(data?.saldoDisponivel || 0)}
                         </div>
                         <Button 
                           className="w-full bg-white text-purple-700 hover:bg-purple-50 font-semibold"
@@ -368,9 +377,9 @@ const ProducerDashboard = () => {
                         <CardTitle className="text-white font-semibold">Saldo Pendente</CardTitle>
                       </CardHeader>
                       <CardContent>
-                         <div className="text-3xl font-bold">
-                           {formatCurrency(data?.balances?.pendente || 0)}
-                         </div>
+                        <div className="text-3xl font-bold">
+                          {formatCurrency(data?.saldoPendente || 0)}
+                        </div>
                       </CardContent>
                     </Card>
 

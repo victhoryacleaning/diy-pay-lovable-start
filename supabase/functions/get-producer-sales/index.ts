@@ -88,7 +88,7 @@ serve(async (req) => {
         created_at,
         paid_at,
         updated_at,
-        products(
+        products!inner (
           name,
           price_cents,
           type,

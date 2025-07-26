@@ -14,7 +14,7 @@ export const useProducerFinancialsStore = create<FinancialState>((set) => ({
   fetchFinancialData: async () => {
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase.functions.invoke('get-producer-report', {
+      const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
         body: { 
           date_filter: "last_30_days",
           product_id: null

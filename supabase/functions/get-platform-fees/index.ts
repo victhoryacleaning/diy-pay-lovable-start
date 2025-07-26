@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
     const { data: platformSettings, error: settingsError } = await supabase
       .from('platform_settings')
       .select('*')
-      .eq('id', 1)
       .single()
 
     if (settingsError) {

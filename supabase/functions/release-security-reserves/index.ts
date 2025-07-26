@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
         security_reserve_cents,
         paid_at,
         product_id,
-        products(producer_id)
+        products!inner(producer_id)
       `)
       .eq('status', 'paid')
       .not('security_reserve_cents', 'is', null)

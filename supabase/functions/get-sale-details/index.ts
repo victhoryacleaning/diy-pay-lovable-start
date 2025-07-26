@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       .from('sales')
       .select(`
         *,
-        products(name, price_cents)
+        products!inner(name, price_cents)
       `)
       .eq('id', saleId)
       .single();
