@@ -558,6 +558,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_producer_balances_simple: {
+        Args: { p_producer_id: string }
+        Returns: {
+          available_balance: number
+          pending_balance: number
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
