@@ -39,7 +39,6 @@ interface FinancialTransaction {
 interface EffectiveSettings {
   pix_fee_percent: number;
   boleto_fee_percent: number;
-  card_fee_percent: number;
   card_installments_fees: Record<string, number>;
   fixed_fee_cents: number;
   pix_release_days: number;
@@ -48,7 +47,6 @@ interface EffectiveSettings {
   security_reserve_percent: number;
   security_reserve_days: number;
   withdrawal_fee_cents: number;
-  card_installment_interest_rate: number;
   is_custom: boolean;
 }
 
@@ -515,15 +513,22 @@ const ProducerFinancialsPage = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between">
                               <span className="text-gray-700">PIX:</span>
-                              <span className="font-medium">{financialData?.effectiveSettings?.pix_fee_percent ?? 5}%</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.pix_fee_percent ?? 0}%</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-700">Boleto:</span>
-                              <span className="font-medium">{financialData?.effectiveSettings?.boleto_fee_percent ?? 5}%</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.boleto_fee_percent ?? 0}%</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">Cartão de Crédito:</span>
-                              <span className="font-medium">{financialData?.effectiveSettings?.card_fee_percent ?? 5}%</span>
+                            <div className="border-t pt-2">
+                              <p className="text-gray-700 text-sm mb-2">Cartão de Crédito (por parcela):</p>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {Object.entries(financialData?.effectiveSettings?.card_installments_fees || {}).map(([installment, fee]) => (
+                                  <div key={installment} className="flex justify-between">
+                                    <span className="text-gray-600">{installment}x:</span>
+                                    <span className="font-medium">{fee}%</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                           {financialData?.effectiveSettings?.is_custom && (
@@ -533,18 +538,7 @@ const ProducerFinancialsPage = () => {
                           )}
                         </div>
 
-                        {/* Card 2 - Taxa de Parcelamento */}
-                        <div className="p-4 bg-white rounded-lg shadow-sm border">
-                          <h4 className="font-medium text-gray-900 mb-3">Taxa de Parcelamento</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">Taxa de Juros de Parcelamento:</span>
-                              <span className="font-medium">{financialData?.effectiveSettings?.card_installment_interest_rate ?? 3.5}% ao mês</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Card 3 - Taxas Fixas */}
+                        {/* Card 2 - Taxas Fixas */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-3">Taxas Fixas</h4>
                           <div className="space-y-2">
@@ -559,7 +553,7 @@ const ProducerFinancialsPage = () => {
                           </div>
                         </div>
                         
-                        {/* Card 4 - Prazo de Recebimento */}
+                        {/* Card 3 - Prazo de Recebimento */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-3">Prazo de Recebimento</h4>
                           <div className="space-y-2">
@@ -590,7 +584,7 @@ const ProducerFinancialsPage = () => {
                           </div>
                         </div>
                         
-                        {/* Card 5 - Reserva de Segurança */}
+                        {/* Card 4 - Reserva de Segurança */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-3">Reserva de Segurança</h4>
                           <div className="flex justify-between">

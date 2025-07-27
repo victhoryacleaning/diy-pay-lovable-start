@@ -197,26 +197,22 @@ const AdminFeesPage = () => {
   useEffect(() => {
     if (platformSettings?.data) {
       const settings = platformSettings.data;
-      console.log("Preenchendo formulário com as configurações:", settings);
       
-      const formData = {
-        default_pix_fee_percent: settings.default_pix_fee_percent ?? 5.0,
-        default_boleto_fee_percent: settings.default_boleto_fee_percent ?? 5.0,
-        default_card_fee_percent: settings.default_card_fee_percent ?? 5.0,
-        default_fixed_fee_cents: (settings.default_fixed_fee_cents ?? 100) / 100, // Convert from cents
-        default_pix_release_days: settings.default_pix_release_days ?? 2,
-        default_boleto_release_days: settings.default_boleto_release_days ?? 2,
-        default_card_release_days: settings.default_card_release_days ?? 15,
-        default_security_reserve_percent: settings.default_security_reserve_percent ?? 0,
-        default_security_reserve_days: settings.default_security_reserve_days ?? 30,
-        default_withdrawal_fee_cents: (settings.default_withdrawal_fee_cents ?? 367) / 100, // Convert from cents
-        card_installment_interest_rate: settings.card_installment_interest_rate ?? 3.5,
-      };
-      
-      console.log("Dados do formulário que serão aplicados:", formData);
-      platformForm.reset(formData);
+      platformForm.reset({
+        default_pix_fee_percent: settings.default_pix_fee_percent || settings.default_fees_json?.pix_fee_percent || 0,
+        default_boleto_fee_percent: settings.default_boleto_fee_percent || settings.default_fees_json?.bank_slip_fee_percent || 0,
+        default_card_fee_percent: settings.default_card_fee_percent || settings.default_fees_json?.card_fee_percent || 0,
+        default_fixed_fee_cents: (settings.default_fixed_fee_cents || 0) / 100, // Convert from cents
+        default_pix_release_days: settings.default_pix_release_days || settings.default_release_rules_json?.release_days?.pix || 0,
+        default_boleto_release_days: settings.default_boleto_release_days || settings.default_release_rules_json?.release_days?.bank_slip || 0,
+        default_card_release_days: settings.default_card_release_days || settings.default_release_rules_json?.release_days?.credit_card || 0,
+        default_security_reserve_percent: settings.default_security_reserve_percent || 4.0,
+        default_security_reserve_days: settings.default_security_reserve_days || settings.default_release_rules_json?.security_reserve_days || 30,
+        default_withdrawal_fee_cents: (settings.default_withdrawal_fee_cents || 0) / 100, // Convert from cents
+        card_installment_interest_rate: settings.card_installment_interest_rate || 3.5,
+      });
     }
-  }, [platformSettings]);
+  }, [platformSettings, platformForm]);
 
   // Set producer form values when producer settings are loaded
   useEffect(() => {
@@ -244,7 +240,6 @@ const AdminFeesPage = () => {
   }, [producerSettings, selectedProducer, producerForm]);
 
   const onPlatformSubmit = (data: PlatformFeesForm) => {
-    console.log('Form data being submitted:', data);
     updatePlatformFeesMutation.mutate(data);
   };
 
@@ -328,10 +323,8 @@ const AdminFeesPage = () => {
                               min="0"
                               max="100"
                               placeholder="5.0"
-                              className="bg-background text-foreground border-input"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              value={field.value || ''}
                             />
                           </FormControl>
                           <FormMessage />
@@ -346,64 +339,58 @@ const AdminFeesPage = () => {
                         <FormItem>
                           <FormLabel>Taxa Boleto (%)</FormLabel>
                           <FormControl>
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               max="100"
-                               placeholder="5.0"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="5.0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                     <FormField
-                       control={platformForm.control}
-                       name="default_card_fee_percent"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Taxa Cartão de Crédito (%)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               max="100"
-                               placeholder="5.0"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                    <FormField
+                      control={platformForm.control}
+                      name="default_card_fee_percent"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Taxa Cartão de Crédito (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="5.0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                     <FormField
-                       control={platformForm.control}
-                       name="default_fixed_fee_cents"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Taxa Fixa por Transação (R$)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               placeholder="1.00"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
+                    <FormField
+                      control={platformForm.control}
+                      name="default_fixed_fee_cents"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Taxa Fixa por Transação (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="1.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -421,17 +408,15 @@ const AdminFeesPage = () => {
                         <FormItem>
                           <FormLabel>Taxa de Juros de Parcelamento (% ao mês)</FormLabel>
                           <FormControl>
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               max="100"
-                               placeholder="3.50"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="3.50"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -449,132 +434,120 @@ const AdminFeesPage = () => {
                         <FormItem>
                           <FormLabel>Reserva de Segurança (%)</FormLabel>
                           <FormControl>
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               max="100"
-                               placeholder="4.0"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="4.0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                     <FormField
-                       control={platformForm.control}
-                       name="default_security_reserve_days"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Prazo da Reserva (dias)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               min="0"
-                               placeholder="30"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                    <FormField
+                      control={platformForm.control}
+                      name="default_security_reserve_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prazo da Reserva (dias)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="30"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                     <FormField
-                       control={platformForm.control}
-                       name="default_withdrawal_fee_cents"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Taxa de Saque (R$)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               placeholder="3.67"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
-                   </div>
+                    <FormField
+                      control={platformForm.control}
+                      name="default_withdrawal_fee_cents"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Taxa de Saque (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="3.67"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                   <Separator />
+                  <Separator />
 
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <FormField
-                       control={platformForm.control}
-                       name="default_pix_release_days"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Prazo Liberação PIX (dias)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               min="0"
-                               placeholder="2"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={platformForm.control}
+                      name="default_pix_release_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prazo Liberação PIX (dias)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="2"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                     <FormField
-                       control={platformForm.control}
-                       name="default_boleto_release_days"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Prazo Liberação Boleto (dias)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               min="0"
-                               placeholder="2"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                    <FormField
+                      control={platformForm.control}
+                      name="default_boleto_release_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prazo Liberação Boleto (dias)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="2"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                     <FormField
-                       control={platformForm.control}
-                       name="default_card_release_days"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Prazo Liberação Cartão (dias)</FormLabel>
-                           <FormControl>
-                             <Input
-                               type="number"
-                               min="0"
-                               placeholder="15"
-                               className="bg-background text-foreground border-input"
-                               {...field}
-                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                               value={field.value || ''}
-                             />
+                    <FormField
+                      control={platformForm.control}
+                      name="default_card_release_days"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prazo Liberação Cartão (dias)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="15"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
