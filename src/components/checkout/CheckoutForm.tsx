@@ -120,8 +120,25 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
   const [eventQuantity, setEventQuantity] = useState<number>(1);
   const [activeGateway, setActiveGateway] = useState<string | null>(null);
-  const [installmentInterestRate, setInstallmentInterestRate] = useState<number>(3.5);
+  const [installmentInterestRate, setInstallmentInterestRate] = useState<number>(0);
   const [selectedInstallments, setSelectedInstallments] = useState<number>(1);
+
+  // Fetch installment interest rate from platform settings
+  useEffect(() => {
+    const fetchInstallmentRate = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-platform-fees');
+        if (error) throw error;
+        
+        setInstallmentInterestRate(data?.card_installment_interest_rate || 0);
+      } catch (error) {
+        console.error('Error fetching installment rate:', error);
+        setInstallmentInterestRate(0); // Fallback to 0%
+      }
+    };
+
+    fetchInstallmentRate();
+  }, []);
   
   const isDonation = product.product_type === 'donation';
   const isEvent = product.product_type === 'event';
@@ -408,31 +425,20 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     return product.price_cents;
   }, [isDonation, isEvent, product.price_cents, eventQuantity, form]);
 
-  // Fetch active gateway and platform settings on component mount
+  // Fetch active gateway on component mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchActiveGateway = async () => {
       try {
-        // Fetch active gateway
         const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('get-active-gateway');
         if (!gatewayError && gatewayData.success) {
           setActiveGateway(gatewayData.gateway.gateway_identifier);
         }
-        
-        // Fetch platform settings for installment interest rate
-        const { data: settings, error: settingsError } = await supabase
-          .from('platform_settings')
-          .select('card_installment_interest_rate')
-          .single();
-        
-        if (!settingsError && settings) {
-          setInstallmentInterestRate(settings.card_installment_interest_rate || 3.5);
-        }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching active gateway:', error);
       }
     };
     
-    fetchData();
+    fetchActiveGateway();
   }, []);
 
   // Calculate installment amount with or without interest

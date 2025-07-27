@@ -1,90 +1,81 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface PlatformSettings {
+  card_installment_interest_rate: number;
+  default_card_fee_percent: number;
+  default_pix_fee_percent: number;
+  default_boleto_fee_percent: number;
+  default_fixed_fee_cents: number;
+  default_pix_release_days: number;
+  default_boleto_release_days: number;
+  default_card_release_days: number;
+  default_security_reserve_percent: number;
+  default_security_reserve_days: number;
+  default_withdrawal_fee_cents: number;
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    // Get the Authorization header
-    const authHeader = req.headers.get('Authorization')
-    
-    if (!authHeader) {
-      console.error('Missing Authorization header')
-      return new Response(
-        JSON.stringify({ error: 'Missing Authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log('Fetching platform fees...');
 
-    // Set the auth context
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (authError || !user) {
-      console.error('Authentication error:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Check if user is admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || profile?.role !== 'admin') {
-      console.error('Authorization error: User is not admin')
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get platform settings
-    const { data: platformSettings, error: settingsError } = await supabase
+    // Fetch platform settings
+    const { data: settings, error } = await supabaseClient
       .from('platform_settings')
       .select('*')
-      .single()
+      .eq('id', 1)
+      .single();
 
-    if (settingsError) {
-      console.error('Error fetching platform settings:', settingsError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch platform settings' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (error) {
+      console.error('Error fetching platform settings:', error);
+      throw error;
     }
 
-    console.log('Platform settings fetched successfully')
+    if (!settings) {
+      throw new Error('Platform settings not found');
+    }
+
+    console.log('Platform fees fetched successfully:', settings);
 
     return new Response(
-      JSON.stringify({ data: platformSettings }),
+      JSON.stringify(settings),
       { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
       }
-    )
+    );
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('Error in get-platform-fees:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Failed to fetch platform fees'
+      }),
+      { 
+        status: 500,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
   }
-})
+});

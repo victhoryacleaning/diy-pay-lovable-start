@@ -33,6 +33,7 @@ interface ProductFormData {
   checkout_background_color: string;
   is_email_optional: boolean;
   require_email_confirmation: boolean;
+  producer_assumes_installments: boolean;
 }
 
 interface ProductFormProps {
@@ -77,7 +78,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     checkout_image_url: '',
     checkout_background_color: '#F3F4F6',
     is_email_optional: false,
-    require_email_confirmation: true
+    require_email_confirmation: true,
+    producer_assumes_installments: false
   });
 
   // Update active tab when URL parameter changes
@@ -134,7 +136,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         checkout_image_url: product.checkout_image_url || '',
         checkout_background_color: product.checkout_background_color || '#F3F4F6',
         is_email_optional: product.is_email_optional || false,
-        require_email_confirmation: product.require_email_confirmation ?? true
+        require_email_confirmation: product.require_email_confirmation ?? true,
+        producer_assumes_installments: product.producer_assumes_installments || false
       });
     }
   }, [product, mode]);
@@ -179,7 +182,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         checkout_image_url: data.checkout_image_url || null,
         checkout_background_color: data.checkout_background_color || null,
         is_email_optional: data.is_email_optional,
-        require_email_confirmation: data.require_email_confirmation
+        require_email_confirmation: data.require_email_confirmation,
+        producer_assumes_installments: data.producer_assumes_installments
       };
 
       if (mode === 'create') {

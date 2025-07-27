@@ -136,13 +136,9 @@ export const CreditCardForm = ({
           label: `1x de ${formatPrice(productPriceCents)} (à vista)`
         });
       } else {
-        const totalLabel = totalAmount !== productPriceCents 
-          ? ` (Total: ${formatPrice(totalAmount)})`
-          : '';
-        
         options.push({
           value: i,
-          label: `${i}x de ${formatPrice(installmentValue)}${totalLabel}`
+          label: `${i}x de ${formatPrice(installmentValue)}`
         });
       }
     }

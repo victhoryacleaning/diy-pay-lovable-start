@@ -30,7 +30,7 @@ export const PaymentMethodTabs = ({
   maxInstallments,
   productPriceCents,
   product,
-  installmentInterestRate = 3.5,
+  installmentInterestRate = 0,
   onInstallmentChange
 }: PaymentMethodTabsProps) => {
   // Para assinaturas, forçar apenas cartão de crédito
