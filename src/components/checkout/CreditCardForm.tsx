@@ -104,14 +104,20 @@ export const CreditCardForm = ({
   };
 
   const calculateInstallmentAmount = (installments: number): number => {
+    console.log('[CC_FORM] Calculating installment for:', { installments, producerAssumesInstallments, installmentInterestRate, productPriceCents });
+    
     if (installments === 1 || producerAssumesInstallments) {
       // No interest - simple division
-      return productPriceCents / installments;
+      const result = productPriceCents / installments;
+      console.log('[CC_FORM] No interest calculation - result:', result);
+      return result;
     } else {
       // Apply compound interest: FV = PV * (1 + i)^n
       const monthlyRate = installmentInterestRate / 100;
       const finalAmount = productPriceCents * Math.pow(1 + monthlyRate, installments);
-      return finalAmount / installments;
+      const installmentAmount = finalAmount / installments;
+      console.log('[CC_FORM] With interest calculation - monthly rate:', monthlyRate, 'final amount:', finalAmount, 'installment:', installmentAmount);
+      return installmentAmount;
     }
   };
 

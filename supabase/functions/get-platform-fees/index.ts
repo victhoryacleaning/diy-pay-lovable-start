@@ -27,6 +27,7 @@ serve(async (req) => {
   }
 
   try {
+    // Use service role key to bypass RLS for platform settings
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -34,10 +35,22 @@ serve(async (req) => {
 
     console.log('Fetching platform fees...');
 
-    // Fetch platform settings
+    // Fetch platform settings - using service role to bypass RLS
     const { data: settings, error } = await supabaseClient
       .from('platform_settings')
-      .select('*')
+      .select(`
+        card_installment_interest_rate,
+        default_card_fee_percent,
+        default_pix_fee_percent,
+        default_boleto_fee_percent,
+        default_fixed_fee_cents,
+        default_pix_release_days,
+        default_boleto_release_days,
+        default_card_release_days,
+        default_security_reserve_percent,
+        default_security_reserve_days,
+        default_withdrawal_fee_cents
+      `)
       .eq('id', 1)
       .single();
 

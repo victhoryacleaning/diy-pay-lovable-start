@@ -128,12 +128,21 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     const fetchInstallmentRate = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('get-platform-fees');
-        if (error) throw error;
+        if (error) {
+          console.error('Error calling get-platform-fees function:', error);
+          throw error;
+        }
         
-        setInstallmentInterestRate(data?.card_installment_interest_rate || 0);
+        console.log('[INSTALLMENT_RATE] Platform fees response:', data);
+        
+        // Convert percentage to decimal if needed
+        const rateValue = data?.card_installment_interest_rate || 0;
+        setInstallmentInterestRate(rateValue);
+        
+        console.log('[INSTALLMENT_RATE] Set interest rate to:', rateValue, '%');
       } catch (error) {
         console.error('Error fetching installment rate:', error);
-        setInstallmentInterestRate(0); // Fallback to 0%
+        setInstallmentInterestRate(3.5); // Fallback to default 3.5%
       }
     };
 
@@ -443,24 +452,35 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
 
   // Calculate installment amount with or without interest
   const calculateInstallmentAmount = (priceCents: number, installments: number): number => {
+    console.log('[CALCULATE_INSTALLMENT] Input:', { priceCents, installments, producerAssumes: product.producer_assumes_installments, interestRate: installmentInterestRate });
+    
     if (installments === 1 || product.producer_assumes_installments) {
       // No interest - simple division
-      return priceCents / installments;
+      const result = priceCents / installments;
+      console.log('[CALCULATE_INSTALLMENT] No interest - result:', result);
+      return result;
     } else {
       // Apply compound interest: FV = PV * (1 + i)^n
       const monthlyRate = installmentInterestRate / 100;
       const finalAmount = priceCents * Math.pow(1 + monthlyRate, installments);
-      return finalAmount / installments;
+      const installmentAmount = finalAmount / installments;
+      console.log('[CALCULATE_INSTALLMENT] With interest - monthly rate:', monthlyRate, 'final amount:', finalAmount, 'installment:', installmentAmount);
+      return installmentAmount;
     }
   };
 
   // Calculate total amount with interest if applicable
   const calculateTotalWithInterest = (priceCents: number, installments: number): number => {
+    console.log('[CALCULATE_TOTAL] Input:', { priceCents, installments, producerAssumes: product.producer_assumes_installments, interestRate: installmentInterestRate });
+    
     if (installments === 1 || product.producer_assumes_installments) {
+      console.log('[CALCULATE_TOTAL] No interest - returning original price:', priceCents);
       return priceCents;
     } else {
       const monthlyRate = installmentInterestRate / 100;
-      return priceCents * Math.pow(1 + monthlyRate, installments);
+      const totalWithInterest = priceCents * Math.pow(1 + monthlyRate, installments);
+      console.log('[CALCULATE_TOTAL] With interest - monthly rate:', monthlyRate, 'total with interest:', totalWithInterest);
+      return totalWithInterest;
     }
   };
 

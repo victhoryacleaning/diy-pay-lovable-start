@@ -170,9 +170,40 @@ Deno.serve(async (req) => {
       const securityReservePercent = settings.security_reserve_percent || 0;
       const securityReserveCents = Math.round(originalPriceCents * (securityReservePercent / 100));
 
-      // Producer's net share = Original Product Price - Platform Fee
-      // This ensures producer gets fair share regardless of who pays installment interest
-      const producerShareCents = originalPriceCents - platformFeeCents;
+      // Calculate producer's net share based on who assumes installment costs
+      let producerShareCents;
+      
+      // Check if producer assumes installments (from product settings)
+      const { data: productSettings, error: productSettingsError } = await supabaseAdmin
+        .from('products')
+        .select('producer_assumes_installments')
+        .eq('id', sale.product_id)
+        .single();
+      
+      const producerAssumesInstallments = productSettings?.producer_assumes_installments || false;
+      
+      if (producerAssumesInstallments && sale.installments_chosen > 1) {
+        // Producer assumes installment costs - deduct interest from producer share
+        // Get interest rate from platform settings
+        const { data: platformSettings } = await supabaseAdmin
+          .from('platform_settings')
+          .select('card_installment_interest_rate')
+          .eq('id', 1)
+          .single();
+        
+        const interestRate = (platformSettings?.card_installment_interest_rate || 3.5) / 100;
+        const originalCustomerAmount = amountTotalCents / Math.pow(1 + interestRate, sale.installments_chosen);
+        
+        // Producer gets the original amount minus platform fee, but loses the interest difference
+        producerShareCents = Math.round(originalCustomerAmount - platformFeeCents);
+        
+        console.log(`[PRODUCER_ASSUMES_INTEREST] Interest rate: ${interestRate * 100}%, Original customer amount: ${originalCustomerAmount}, Producer share: ${producerShareCents}`);
+      } else {
+        // Customer pays interest OR it's a single payment - producer gets full share
+        producerShareCents = originalPriceCents - platformFeeCents;
+        
+        console.log(`[CUSTOMER_PAYS_INTEREST] Producer gets full share: ${producerShareCents}`);
+      }
 
       // Calculate the release date based on the payment method.
       const releaseDate = calculateReleaseDate(settings, sale.payment_method_used, paidAtDate);
