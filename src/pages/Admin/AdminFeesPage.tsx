@@ -197,8 +197,9 @@ const AdminFeesPage = () => {
   useEffect(() => {
     if (platformSettings?.data) {
       const settings = platformSettings.data;
+      console.log("Preenchendo formulário com as configurações:", settings);
       
-      platformForm.reset({
+      const formData = {
         default_pix_fee_percent: settings.default_pix_fee_percent ?? 5.0,
         default_boleto_fee_percent: settings.default_boleto_fee_percent ?? 5.0,
         default_card_fee_percent: settings.default_card_fee_percent ?? 5.0,
@@ -210,9 +211,12 @@ const AdminFeesPage = () => {
         default_security_reserve_days: settings.default_security_reserve_days ?? 30,
         default_withdrawal_fee_cents: (settings.default_withdrawal_fee_cents ?? 367) / 100, // Convert from cents
         card_installment_interest_rate: settings.card_installment_interest_rate ?? 3.5,
-      });
+      };
+      
+      console.log("Dados do formulário que serão aplicados:", formData);
+      platformForm.reset(formData);
     }
-  }, [platformSettings, platformForm]);
+  }, [platformSettings]);
 
   // Set producer form values when producer settings are loaded
   useEffect(() => {
