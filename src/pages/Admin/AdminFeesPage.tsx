@@ -331,6 +331,7 @@ const AdminFeesPage = () => {
                               className="bg-background text-foreground border-input"
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              value={field.value || ''}
                             />
                           </FormControl>
                           <FormMessage />
@@ -354,6 +355,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -377,6 +379,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -399,6 +402,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                           </FormControl>
                           <FormMessage />
@@ -426,6 +430,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                           </FormControl>
                           <FormMessage />
@@ -453,6 +458,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -474,6 +480,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -496,6 +503,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -521,6 +529,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -542,6 +551,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                            </FormControl>
                            <FormMessage />
@@ -563,6 +573,7 @@ const AdminFeesPage = () => {
                                className="bg-background text-foreground border-input"
                                {...field}
                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                               value={field.value || ''}
                              />
                           </FormControl>
                           <FormMessage />
