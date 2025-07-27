@@ -64,42 +64,42 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString()
     }
 
-    // Handle numeric fields - convert to proper types
+    // Handle numeric fields - convert to proper types with safe fallbacks
     if (payload.default_pix_fee_percent !== undefined) {
-      updateData.default_pix_fee_percent = parseFloat(payload.default_pix_fee_percent)
+      updateData.default_pix_fee_percent = parseFloat(payload.default_pix_fee_percent) || 0
     }
     if (payload.default_boleto_fee_percent !== undefined) {
-      updateData.default_boleto_fee_percent = parseFloat(payload.default_boleto_fee_percent)
+      updateData.default_boleto_fee_percent = parseFloat(payload.default_boleto_fee_percent) || 0
     }
     if (payload.default_card_fee_percent !== undefined) {
-      updateData.default_card_fee_percent = parseFloat(payload.default_card_fee_percent)
+      updateData.default_card_fee_percent = parseFloat(payload.default_card_fee_percent) || 5
     }
     if (payload.default_fixed_fee_cents !== undefined) {
-      updateData.default_fixed_fee_cents = parseInt(payload.default_fixed_fee_cents)
+      updateData.default_fixed_fee_cents = parseInt(payload.default_fixed_fee_cents) || 100
     }
     if (payload.default_pix_release_days !== undefined) {
-      updateData.default_pix_release_days = parseInt(payload.default_pix_release_days)
+      updateData.default_pix_release_days = parseInt(payload.default_pix_release_days) || 0
     }
     if (payload.default_boleto_release_days !== undefined) {
-      updateData.default_boleto_release_days = parseInt(payload.default_boleto_release_days)
+      updateData.default_boleto_release_days = parseInt(payload.default_boleto_release_days) || 0
     }
     if (payload.default_card_release_days !== undefined) {
-      updateData.default_card_release_days = parseInt(payload.default_card_release_days)
+      updateData.default_card_release_days = parseInt(payload.default_card_release_days) || 15
     }
     if (payload.default_security_reserve_percent !== undefined) {
-      updateData.default_security_reserve_percent = parseFloat(payload.default_security_reserve_percent)
+      updateData.default_security_reserve_percent = parseFloat(payload.default_security_reserve_percent) || 0
     }
     if (payload.default_security_reserve_days !== undefined) {
-      updateData.default_security_reserve_days = parseInt(payload.default_security_reserve_days)
+      updateData.default_security_reserve_days = parseInt(payload.default_security_reserve_days) || 30
     }
     if (payload.default_anticipation_fee_percent !== undefined) {
-      updateData.default_anticipation_fee_percent = parseFloat(payload.default_anticipation_fee_percent)
+      updateData.default_anticipation_fee_percent = parseFloat(payload.default_anticipation_fee_percent) || 0
     }
     if (payload.default_withdrawal_fee_cents !== undefined) {
-      updateData.default_withdrawal_fee_cents = parseInt(payload.default_withdrawal_fee_cents)
+      updateData.default_withdrawal_fee_cents = parseInt(payload.default_withdrawal_fee_cents) || 367
     }
     if (payload.card_installment_interest_rate !== undefined) {
-      updateData.card_installment_interest_rate = parseFloat(payload.card_installment_interest_rate)
+      updateData.card_installment_interest_rate = parseFloat(payload.card_installment_interest_rate) || 3.5
     }
 
     console.log('Updating platform settings with:', updateData)

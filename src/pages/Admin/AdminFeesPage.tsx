@@ -199,17 +199,17 @@ const AdminFeesPage = () => {
       const settings = platformSettings.data;
       
       platformForm.reset({
-        default_pix_fee_percent: settings.default_pix_fee_percent || settings.default_fees_json?.pix_fee_percent || 0,
-        default_boleto_fee_percent: settings.default_boleto_fee_percent || settings.default_fees_json?.bank_slip_fee_percent || 0,
-        default_card_fee_percent: settings.default_card_fee_percent || settings.default_fees_json?.card_fee_percent || 0,
-        default_fixed_fee_cents: (settings.default_fixed_fee_cents || 0) / 100, // Convert from cents
-        default_pix_release_days: settings.default_pix_release_days || settings.default_release_rules_json?.release_days?.pix || 0,
-        default_boleto_release_days: settings.default_boleto_release_days || settings.default_release_rules_json?.release_days?.bank_slip || 0,
-        default_card_release_days: settings.default_card_release_days || settings.default_release_rules_json?.release_days?.credit_card || 0,
-        default_security_reserve_percent: settings.default_security_reserve_percent || 4.0,
-        default_security_reserve_days: settings.default_security_reserve_days || settings.default_release_rules_json?.security_reserve_days || 30,
-        default_withdrawal_fee_cents: (settings.default_withdrawal_fee_cents || 0) / 100, // Convert from cents
-        card_installment_interest_rate: settings.card_installment_interest_rate || 3.5,
+        default_pix_fee_percent: settings.default_pix_fee_percent ?? 5.0,
+        default_boleto_fee_percent: settings.default_boleto_fee_percent ?? 5.0,
+        default_card_fee_percent: settings.default_card_fee_percent ?? 5.0,
+        default_fixed_fee_cents: (settings.default_fixed_fee_cents ?? 100) / 100, // Convert from cents
+        default_pix_release_days: settings.default_pix_release_days ?? 2,
+        default_boleto_release_days: settings.default_boleto_release_days ?? 2,
+        default_card_release_days: settings.default_card_release_days ?? 15,
+        default_security_reserve_percent: settings.default_security_reserve_percent ?? 0,
+        default_security_reserve_days: settings.default_security_reserve_days ?? 30,
+        default_withdrawal_fee_cents: (settings.default_withdrawal_fee_cents ?? 367) / 100, // Convert from cents
+        card_installment_interest_rate: settings.card_installment_interest_rate ?? 3.5,
       });
     }
   }, [platformSettings, platformForm]);

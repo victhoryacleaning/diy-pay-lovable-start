@@ -515,11 +515,11 @@ const ProducerFinancialsPage = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between">
                               <span className="text-gray-700">PIX:</span>
-                              <span className="font-medium">{financialData?.effectiveSettings?.pix_fee_percent ?? 0}%</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.pix_fee_percent ?? 5}%</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-700">Boleto:</span>
-                              <span className="font-medium">{financialData?.effectiveSettings?.boleto_fee_percent ?? 0}%</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.boleto_fee_percent ?? 5}%</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-700">Cartão de Crédito:</span>
