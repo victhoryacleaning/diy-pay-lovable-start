@@ -542,9 +542,6 @@ const ProducerFinancialsPage = () => {
                               <span className="font-medium">{financialData?.effectiveSettings?.card_installment_interest_rate ?? 3.5}% ao mês</span>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">
-                            💡 Aplicada quando o cliente opta por parcelamento e o produtor não assume os juros
-                          </p>
                         </div>
 
                         {/* Card 3 - Taxas Fixas */}
