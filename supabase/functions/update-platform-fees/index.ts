@@ -71,6 +71,9 @@ Deno.serve(async (req) => {
     if (payload.default_boleto_fee_percent !== undefined) {
       updateData.default_boleto_fee_percent = parseFloat(payload.default_boleto_fee_percent)
     }
+    if (payload.default_card_fee_percent !== undefined) {
+      updateData.default_card_fee_percent = parseFloat(payload.default_card_fee_percent)
+    }
     if (payload.default_fixed_fee_cents !== undefined) {
       updateData.default_fixed_fee_cents = parseInt(payload.default_fixed_fee_cents)
     }
@@ -95,10 +98,8 @@ Deno.serve(async (req) => {
     if (payload.default_withdrawal_fee_cents !== undefined) {
       updateData.default_withdrawal_fee_cents = parseInt(payload.default_withdrawal_fee_cents)
     }
-
-    // Handle JSON field for card installments
-    if (payload.default_card_installments_fees !== undefined) {
-      updateData.default_card_installments_fees = payload.default_card_installments_fees
+    if (payload.card_installment_interest_rate !== undefined) {
+      updateData.card_installment_interest_rate = parseFloat(payload.card_installment_interest_rate)
     }
 
     console.log('Updating platform settings with:', updateData)

@@ -94,57 +94,54 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          card_installment_interest_rate: number | null
           created_at: string
-          default_anticipation_fee_percent: number | null
-          default_boleto_fee_percent: number | null
-          default_boleto_release_days: number | null
-          default_card_installments_fees: Json | null
-          default_card_release_days: number | null
-          default_fees_json: Json
+          default_anticipation_fee_percent: number
+          default_boleto_fee_percent: number
+          default_boleto_release_days: number
+          default_card_fee_percent: number | null
+          default_card_release_days: number
           default_fixed_fee_cents: number
-          default_pix_fee_percent: number | null
-          default_pix_release_days: number | null
-          default_release_rules_json: Json
+          default_pix_fee_percent: number
+          default_pix_release_days: number
           default_security_reserve_days: number
-          default_security_reserve_percent: number | null
+          default_security_reserve_percent: number
           default_withdrawal_fee_cents: number
-          id: string
+          id: number
           updated_at: string
         }
         Insert: {
+          card_installment_interest_rate?: number | null
           created_at?: string
-          default_anticipation_fee_percent?: number | null
-          default_boleto_fee_percent?: number | null
-          default_boleto_release_days?: number | null
-          default_card_installments_fees?: Json | null
-          default_card_release_days?: number | null
-          default_fees_json?: Json
+          default_anticipation_fee_percent: number
+          default_boleto_fee_percent: number
+          default_boleto_release_days: number
+          default_card_fee_percent?: number | null
+          default_card_release_days: number
           default_fixed_fee_cents?: number
-          default_pix_fee_percent?: number | null
-          default_pix_release_days?: number | null
-          default_release_rules_json?: Json
-          default_security_reserve_days?: number
-          default_security_reserve_percent?: number | null
+          default_pix_fee_percent: number
+          default_pix_release_days: number
+          default_security_reserve_days: number
+          default_security_reserve_percent: number
           default_withdrawal_fee_cents?: number
-          id?: string
+          id?: number
           updated_at?: string
         }
         Update: {
+          card_installment_interest_rate?: number | null
           created_at?: string
-          default_anticipation_fee_percent?: number | null
-          default_boleto_fee_percent?: number | null
-          default_boleto_release_days?: number | null
-          default_card_installments_fees?: Json | null
-          default_card_release_days?: number | null
-          default_fees_json?: Json
+          default_anticipation_fee_percent?: number
+          default_boleto_fee_percent?: number
+          default_boleto_release_days?: number
+          default_card_fee_percent?: number | null
+          default_card_release_days?: number
           default_fixed_fee_cents?: number
-          default_pix_fee_percent?: number | null
-          default_pix_release_days?: number | null
-          default_release_rules_json?: Json
+          default_pix_fee_percent?: number
+          default_pix_release_days?: number
           default_security_reserve_days?: number
-          default_security_reserve_percent?: number | null
+          default_security_reserve_percent?: number
           default_withdrawal_fee_cents?: number
-          id?: string
+          id?: number
           updated_at?: string
         }
         Relationships: []
@@ -257,6 +254,7 @@ export type Database = {
           max_installments_allowed: number | null
           name: string
           price_cents: number
+          producer_assumes_installments: boolean | null
           producer_id: string
           product_type: string
           require_email_confirmation: boolean
@@ -281,6 +279,7 @@ export type Database = {
           max_installments_allowed?: number | null
           name: string
           price_cents: number
+          producer_assumes_installments?: boolean | null
           producer_id: string
           product_type?: string
           require_email_confirmation?: boolean
@@ -305,6 +304,7 @@ export type Database = {
           max_installments_allowed?: number | null
           name?: string
           price_cents?: number
+          producer_assumes_installments?: boolean | null
           producer_id?: string
           product_type?: string
           require_email_confirmation?: boolean
@@ -571,6 +571,14 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_producer_financial_report: {
+        Args: {
+          p_producer_id: string
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: Json
       }
       upsert_producer_balance: {
         Args: { p_producer_id: string; amount_to_add: number }

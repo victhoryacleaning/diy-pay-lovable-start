@@ -66,6 +66,22 @@ const ConfigurationTab = ({ formData, onInputChange }: ConfigurationTabProps) =>
             onCheckedChange={(checked) => onInputChange('require_email_confirmation', checked)}
           />
         </div>
+
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label htmlFor="producer_assumes_installments" className="text-base font-medium">
+              Assumir Taxa do Cartão
+            </Label>
+            <p className="text-sm text-gray-500">
+              Quando ativo, você assume os juros de parcelamento, permitindo que o cliente parcele sem acréscimo
+            </p>
+          </div>
+          <Switch
+            id="producer_assumes_installments"
+            checked={formData.producer_assumes_installments}
+            onCheckedChange={(checked) => onInputChange('producer_assumes_installments', checked)}
+          />
+        </div>
       </div>
     </div>
   );
