@@ -17,7 +17,10 @@ interface PaymentMethodTabsProps {
   product: {
     allowed_payment_methods: string[];
     product_type: string;
+    producer_assumes_installments?: boolean;
   };
+  installmentInterestRate?: number;
+  onInstallmentChange?: (installments: number) => void;
 }
 
 export const PaymentMethodTabs = ({
@@ -27,6 +30,8 @@ export const PaymentMethodTabs = ({
   maxInstallments,
   productPriceCents,
   product,
+  installmentInterestRate = 3.5,
+  onInstallmentChange
 }: PaymentMethodTabsProps) => {
   // Para assinaturas, forçar apenas cartão de crédito
   const isSubscription = product.product_type === 'subscription';
@@ -98,6 +103,9 @@ export const PaymentMethodTabs = ({
             form={form}
             maxInstallments={isSubscription ? 1 : maxInstallments}
             productPriceCents={productPriceCents}
+            producerAssumesInstallments={product.producer_assumes_installments || false}
+            installmentInterestRate={installmentInterestRate}
+            onInstallmentChange={onInstallmentChange}
           />
         </TabsContent>
       );

@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
       donation_amount_cents,
       quantity,
       attendees,
+      amount_total_cents,
+      original_product_price_cents,
+      producer_assumes_installments,
     } = await req.json();
 
     // --- Validação dos Dados de Entrada ---
@@ -66,11 +69,14 @@ Deno.serve(async (req) => {
     if (productError) throw productError;
 
     // --- Determinar o Valor Total da Transação ---
-    let amount_total_cents = 0;
-    if (donation_amount_cents && donation_amount_cents > 0) {
-      amount_total_cents = donation_amount_cents;
-    } else {
-      amount_total_cents = product.price_cents * (quantity || 1);
+    let finalAmountCents = amount_total_cents;
+    if (!finalAmountCents) {
+      // Fallback to calculate from product price if not provided
+      if (donation_amount_cents && donation_amount_cents > 0) {
+        finalAmountCents = donation_amount_cents;
+      } else {
+        finalAmountCents = product.price_cents * (quantity || 1);
+      }
     }
 
     let gatewayResponse: any = null;
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
         items: [{
           description: product.name,
           quantity: quantity || 1,
-          price_cents: product.price_cents
+          price_cents: Math.round(finalAmountCents / (quantity || 1))
         }],
         payer: {
           cpf_cnpj: buyer_cpf_cnpj,
@@ -223,7 +229,7 @@ Deno.serve(async (req) => {
       const paymentPayload: any = {
         customer: asaasCustomerId,
         billingType: billingType,
-        value: amount_total_cents / 100, // Asaas espera valor em reais
+        value: finalAmountCents / 100, // Asaas espera valor em reais
         dueDate: dueDate.toISOString().split('T')[0],
         description: product.name,
         externalReference: product_id,
@@ -347,7 +353,7 @@ Deno.serve(async (req) => {
       gateway_pix_qrcode_text: gatewayResponse.pix_qr_code_text,
       gateway_pix_qrcode_base64: gatewayResponse.pix_qr_code_base64,
       gateway_bank_slip_barcode: gatewayResponse.bank_slip_barcode,
-      amount_total_cents,
+      amount_total_cents: Math.round(finalAmountCents),
       payment_method_used: payment_method_selected,
       installments_chosen: installments || 1,
       status: 'pending_payment',

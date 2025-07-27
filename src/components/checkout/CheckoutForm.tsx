@@ -25,6 +25,7 @@ interface Product {
   allowed_payment_methods: Json;
   is_email_optional?: boolean;
   require_email_confirmation?: boolean;
+  producer_assumes_installments?: boolean;
 }
 
 interface CheckoutFormProps {
@@ -119,6 +120,8 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix" | "bank_slip">("credit_card");
   const [eventQuantity, setEventQuantity] = useState<number>(1);
   const [activeGateway, setActiveGateway] = useState<string | null>(null);
+  const [installmentInterestRate, setInstallmentInterestRate] = useState<number>(3.5);
+  const [selectedInstallments, setSelectedInstallments] = useState<number>(1);
   
   const isDonation = product.product_type === 'donation';
   const isEvent = product.product_type === 'event';
@@ -321,6 +324,15 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
 
       const cardTokenResult = await createPaymentToken(data);
 
+      // Calculate final amount based on installments and interest
+      const baseAmount = isDonation ? convertToCents((data as any).donationAmount) : 
+                        isEvent ? product.price_cents * parseInt((data as any).quantity || "1") :
+                        product.price_cents;
+      
+      const finalAmountCents = data.paymentMethod === 'credit_card' ? 
+        calculateTotalWithInterest(baseAmount, data.installments) : 
+        baseAmount;
+
       const transactionPayload: any = {
         product_id: product.id,
         buyer_email: data.email || data.phone,
@@ -329,6 +341,9 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
         installments: data.installments,
         buyer_name: data.fullName,
         buyer_cpf_cnpj: data.cpfCnpj,
+        amount_total_cents: Math.round(finalAmountCents),
+        original_product_price_cents: baseAmount,
+        producer_assumes_installments: product.producer_assumes_installments || false,
       };
 
       // Adicionar dados do cartão baseado no gateway
@@ -393,21 +408,55 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
     return product.price_cents;
   }, [isDonation, isEvent, product.price_cents, eventQuantity, form]);
 
-  // Fetch active gateway on component mount
+  // Fetch active gateway and platform settings on component mount
   useEffect(() => {
-    const fetchActiveGateway = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-active-gateway');
-        if (!error && data.success) {
-          setActiveGateway(data.gateway.gateway_identifier);
+        // Fetch active gateway
+        const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('get-active-gateway');
+        if (!gatewayError && gatewayData.success) {
+          setActiveGateway(gatewayData.gateway.gateway_identifier);
+        }
+        
+        // Fetch platform settings for installment interest rate
+        const { data: settings, error: settingsError } = await supabase
+          .from('platform_settings')
+          .select('card_installment_interest_rate')
+          .single();
+        
+        if (!settingsError && settings) {
+          setInstallmentInterestRate(settings.card_installment_interest_rate || 3.5);
         }
       } catch (error) {
-        console.error('Error fetching active gateway:', error);
+        console.error('Error fetching data:', error);
       }
     };
     
-    fetchActiveGateway();
+    fetchData();
   }, []);
+
+  // Calculate installment amount with or without interest
+  const calculateInstallmentAmount = (priceCents: number, installments: number): number => {
+    if (installments === 1 || product.producer_assumes_installments) {
+      // No interest - simple division
+      return priceCents / installments;
+    } else {
+      // Apply compound interest: FV = PV * (1 + i)^n
+      const monthlyRate = installmentInterestRate / 100;
+      const finalAmount = priceCents * Math.pow(1 + monthlyRate, installments);
+      return finalAmount / installments;
+    }
+  };
+
+  // Calculate total amount with interest if applicable
+  const calculateTotalWithInterest = (priceCents: number, installments: number): number => {
+    if (installments === 1 || product.producer_assumes_installments) {
+      return priceCents;
+    } else {
+      const monthlyRate = installmentInterestRate / 100;
+      return priceCents * Math.pow(1 + monthlyRate, installments);
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -454,17 +503,20 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
 
               {/* Payment Methods Section */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 shadow-sm">
-                <PaymentMethodTabs
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  form={form}
-                  maxInstallments={product.max_installments_allowed}
-                  productPriceCents={getDisplayAmount()}
-                  product={{
-                    allowed_payment_methods: allowedPaymentMethods,
-                    product_type: product.product_type || 'single_payment'
-                  }}
-                />
+                  <PaymentMethodTabs
+                    paymentMethod={paymentMethod}
+                    setPaymentMethod={setPaymentMethod}
+                    form={form}
+                    maxInstallments={product.max_installments_allowed}
+                    productPriceCents={getDisplayAmount()}
+                    product={{
+                      allowed_payment_methods: allowedPaymentMethods,
+                      product_type: product.product_type || 'single_payment',
+                      producer_assumes_installments: product.producer_assumes_installments || false
+                    }}
+                    installmentInterestRate={installmentInterestRate}
+                    onInstallmentChange={setSelectedInstallments}
+                  />
               </div>
 
               {/* Checkout Button */}

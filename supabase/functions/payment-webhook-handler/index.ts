@@ -35,7 +35,7 @@ async function getFinancialSettings(supabase: any, producerId: string) {
     // Payment method fees
     pix_fee_percent: platform?.default_pix_fee_percent ?? 3.0,
     boleto_fee_percent: platform?.default_boleto_fee_percent ?? 3.5,
-    card_installments_fees: platform?.default_card_installments_fees ?? {},
+    card_fee_percent: platform?.default_card_fee_percent ?? 5.0,
     
     // Release days
     pix_release_days: platform?.default_pix_release_days ?? 1,
@@ -45,7 +45,7 @@ async function getFinancialSettings(supabase: any, producerId: string) {
 }
 
 // Helper function to calculate platform fee based on payment method and installments
-function calculatePlatformFee(settings: any, paymentMethod: string, installments: number, amountCents: number) {
+function calculatePlatformFee(settings: any, paymentMethod: string, installments: number, originalAmountCents: number) {
   let feePercent = 0;
   
   if (paymentMethod === 'pix') {
@@ -53,13 +53,13 @@ function calculatePlatformFee(settings: any, paymentMethod: string, installments
   } else if (paymentMethod === 'bank_slip') {
     feePercent = settings.boleto_fee_percent;
   } else if (paymentMethod === 'credit_card') {
-    // For credit card, check installment-specific fees
-    const installmentFees = settings.card_installments_fees || {};
-    feePercent = installmentFees[installments] || installmentFees['1'] || 3.5;
+    // For credit card, use the new base fee percentage
+    feePercent = settings.card_fee_percent || 5.0;
   }
   
-  // Platform Fee = (Amount * Fee %) + Fixed Fee
-  const percentageFee = Math.round(amountCents * (feePercent / 100));
+  // Platform Fee = (Original Product Amount * Fee %) + Fixed Fee
+  // IMPORTANT: Always calculate fees based on original product price, not final amount with interest
+  const percentageFee = Math.round(originalAmountCents * (feePercent / 100));
   return percentageFee + settings.fixed_fee_cents;
 }
 

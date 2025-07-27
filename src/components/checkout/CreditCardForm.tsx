@@ -10,9 +10,19 @@ interface CreditCardFormProps {
   form: UseFormReturn<any>;
   maxInstallments: number;
   productPriceCents: number;
+  producerAssumesInstallments?: boolean;
+  installmentInterestRate?: number;
+  onInstallmentChange?: (installments: number) => void;
 }
 
-export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: CreditCardFormProps) => {
+export const CreditCardForm = ({ 
+  form, 
+  maxInstallments, 
+  productPriceCents, 
+  producerAssumesInstallments = false,
+  installmentInterestRate = 3.5,
+  onInstallmentChange
+}: CreditCardFormProps) => {
   // Input validation and sanitization
   const validateCardNumber = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -93,16 +103,48 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
     }).format(cents / 100);
   };
 
+  const calculateInstallmentAmount = (installments: number): number => {
+    if (installments === 1 || producerAssumesInstallments) {
+      // No interest - simple division
+      return productPriceCents / installments;
+    } else {
+      // Apply compound interest: FV = PV * (1 + i)^n
+      const monthlyRate = installmentInterestRate / 100;
+      const finalAmount = productPriceCents * Math.pow(1 + monthlyRate, installments);
+      return finalAmount / installments;
+    }
+  };
+
+  const calculateTotalAmount = (installments: number): number => {
+    if (installments === 1 || producerAssumesInstallments) {
+      return productPriceCents;
+    } else {
+      const monthlyRate = installmentInterestRate / 100;
+      return productPriceCents * Math.pow(1 + monthlyRate, installments);
+    }
+  };
+
   const getInstallmentOptions = () => {
     const options = [];
     for (let i = 1; i <= maxInstallments; i++) {
-      const installmentValue = productPriceCents / i;
-      options.push({
-        value: i,
-        label: i === 1 
-          ? `1x de ${formatPrice(productPriceCents)} (à vista)` 
-          : `${i}x de ${formatPrice(installmentValue)}`,
-      });
+      const installmentValue = calculateInstallmentAmount(i);
+      const totalAmount = calculateTotalAmount(i);
+      
+      if (i === 1) {
+        options.push({
+          value: i,
+          label: `1x de ${formatPrice(productPriceCents)} (à vista)`
+        });
+      } else {
+        const totalLabel = totalAmount !== productPriceCents 
+          ? ` (Total: ${formatPrice(totalAmount)})`
+          : '';
+        
+        options.push({
+          value: i,
+          label: `${i}x de ${formatPrice(installmentValue)}${totalLabel}`
+        });
+      }
     }
     return options;
   };
@@ -280,7 +322,14 @@ export const CreditCardForm = ({ form, maxInstallments, productPriceCents }: Cre
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700">Parcelas</FormLabel>
-              <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+              <Select 
+                value={field.value?.toString()} 
+                onValueChange={(value) => {
+                  const installments = parseInt(value);
+                  field.onChange(installments);
+                  onInstallmentChange?.(installments);
+                }}
+              >
                 <FormControl>
                   <SelectTrigger className="h-8 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione o número de parcelas" />
