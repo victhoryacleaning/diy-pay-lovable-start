@@ -430,6 +430,7 @@ export type Database = {
           installments_chosen: number | null
           iugu_charge_id: string | null
           iugu_subscription_id: string | null
+          original_product_price_cents: number | null
           paid_at: string | null
           payment_method_used: string
           payout_status: string | null
@@ -460,6 +461,7 @@ export type Database = {
           installments_chosen?: number | null
           iugu_charge_id?: string | null
           iugu_subscription_id?: string | null
+          original_product_price_cents?: number | null
           paid_at?: string | null
           payment_method_used: string
           payout_status?: string | null
@@ -490,6 +492,7 @@ export type Database = {
           installments_chosen?: number | null
           iugu_charge_id?: string | null
           iugu_subscription_id?: string | null
+          original_product_price_cents?: number | null
           paid_at?: string | null
           payment_method_used?: string
           payout_status?: string | null

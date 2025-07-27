@@ -360,6 +360,7 @@ Deno.serve(async (req) => {
       platform_fee_cents: 0, // Será calculado posteriormente
       producer_share_cents: 0, // Será calculado posteriormente
       event_attendees: attendees,
+      original_product_price_cents: original_product_price_cents || (donation_amount_cents ? donation_amount_cents : product.price_cents * (quantity || 1)),
     };
     
     const { data: newSale, error: insertError } = await supabase

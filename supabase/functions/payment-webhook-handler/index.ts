@@ -153,29 +153,34 @@ Deno.serve(async (req) => {
 
       // 3. Calculate all fees and values based on the business rules.
       const amountTotalCents = sale.amount_total_cents;
+      
+      // Get original product price for fee calculation (fallback to amount_total_cents if not available)
+      const originalPriceCents = sale.original_product_price_cents || amountTotalCents;
 
-      // Platform Fee = (Gross Amount * Fee %) + Fixed Fee
+      // Platform Fee = (Original Product Price * Fee %) + Fixed Fee
+      // CRITICAL: Always calculate fees based on original product price, not final amount with interest
       const platformFeeCents = calculatePlatformFee(
         settings, 
         sale.payment_method_used, 
         sale.installments_chosen || 1, 
-        amountTotalCents
+        originalPriceCents
       );
 
-      // Security Reserve = Gross Amount * Security Reserve %
+      // Security Reserve = Original Product Price * Security Reserve %
       const securityReservePercent = settings.security_reserve_percent || 0;
-      const securityReserveCents = Math.round(amountTotalCents * (securityReservePercent / 100));
+      const securityReserveCents = Math.round(originalPriceCents * (securityReservePercent / 100));
 
-      // CORRECTED FORMULA: Producer's net share = Gross Amount - Platform Fee.
-      // The reserve is NOT deducted from the share itself; it is held from the available balance.
-      const producerShareCents = amountTotalCents - platformFeeCents;
+      // Producer's net share = Original Product Price - Platform Fee
+      // This ensures producer gets fair share regardless of who pays installment interest
+      const producerShareCents = originalPriceCents - platformFeeCents;
 
       // Calculate the release date based on the payment method.
       const releaseDate = calculateReleaseDate(settings, sale.payment_method_used, paidAtDate);
 
-      console.log(`[FINAL_CALCULATION] Amount Total: ${amountTotalCents} cents`);
-      console.log(`[FINAL_CALCULATION] Platform Fee: ${platformFeeCents} cents`);
-      console.log(`[FINAL_CALCULATION] Security Reserve: ${securityReserveCents} cents (${securityReservePercent}%)`);
+      console.log(`[FINAL_CALCULATION] Amount Total (with interest): ${amountTotalCents} cents`);
+      console.log(`[FINAL_CALCULATION] Original Product Price: ${originalPriceCents} cents`);
+      console.log(`[FINAL_CALCULATION] Platform Fee (on original): ${platformFeeCents} cents`);
+      console.log(`[FINAL_CALCULATION] Security Reserve (on original): ${securityReserveCents} cents (${securityReservePercent}%)`);
       console.log(`[FINAL_CALCULATION] Producer Share: ${producerShareCents} cents`);
       console.log(`[FINAL_CALCULATION] Release Date: ${releaseDate}`);
 
