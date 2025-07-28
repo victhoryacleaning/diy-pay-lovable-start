@@ -39,6 +39,8 @@ interface FinancialTransaction {
 interface EffectiveSettings {
   pix_fee_percent: number;
   boleto_fee_percent: number;
+  card_fee_percent: number;
+  card_installment_interest_rate: number;
   card_installments_fees: Record<string, number>;
   fixed_fee_cents: number;
   pix_release_days: number;
@@ -519,6 +521,10 @@ const ProducerFinancialsPage = () => {
                               <span className="text-gray-700">Boleto:</span>
                               <span className="font-medium">{financialData?.effectiveSettings?.boleto_fee_percent ?? 0}%</span>
                             </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Cartão de Crédito:</span>
+                              <span className="font-medium">{financialData?.effectiveSettings?.card_fee_percent ?? 0}%</span>
+                            </div>
                             <div className="border-t pt-2">
                               <p className="text-gray-700 text-sm mb-2">Cartão de Crédito (por parcela):</p>
                               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -538,7 +544,19 @@ const ProducerFinancialsPage = () => {
                           )}
                         </div>
 
-                        {/* Card 2 - Taxas Fixas */}
+                        {/* Card 2 - Taxa de Parcelamento */}
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <h4 className="font-medium text-gray-900 mb-3">Taxa de Parcelamento</h4>
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Taxa de Juros de Parcelamento:</span>
+                            <span className="font-medium">{financialData?.effectiveSettings?.card_installment_interest_rate ?? 0}% ao mês</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Taxa aplicada ao parcelamento de vendas no cartão de crédito
+                          </p>
+                        </div>
+
+                        {/* Card 3 - Taxas Fixas */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-3">Taxas Fixas</h4>
                           <div className="space-y-2">
@@ -553,7 +571,7 @@ const ProducerFinancialsPage = () => {
                           </div>
                         </div>
                         
-                        {/* Card 3 - Prazo de Recebimento */}
+                        {/* Card 4 - Prazo de Recebimento */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-3">Prazo de Recebimento</h4>
                           <div className="space-y-2">
@@ -584,7 +602,7 @@ const ProducerFinancialsPage = () => {
                           </div>
                         </div>
                         
-                        {/* Card 4 - Reserva de Segurança */}
+                        {/* Card 5 - Reserva de Segurança */}
                         <div className="p-4 bg-white rounded-lg shadow-sm border">
                           <h4 className="font-medium text-gray-900 mb-3">Reserva de Segurança</h4>
                           <div className="flex justify-between">
