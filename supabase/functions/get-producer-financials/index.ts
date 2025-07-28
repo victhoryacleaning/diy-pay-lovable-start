@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
     const effectiveSettings = {
       pix_fee_percent: producerSettings?.custom_fees_json?.pix_fee_percent ?? platformSettings?.default_pix_fee_percent ?? 0,
       boleto_fee_percent: producerSettings?.custom_fees_json?.bank_slip_fee_percent ?? platformSettings?.default_boleto_fee_percent ?? 0,
+      card_fee_percent: producerSettings?.custom_fees_json?.card_fee_percent ?? platformSettings?.default_card_fee_percent ?? 0,
+      card_installment_interest_rate: producerSettings?.custom_fees_json?.card_installment_interest_rate ?? platformSettings?.card_installment_interest_rate ?? 0,
       card_installments_fees: producerSettings?.custom_fees_json?.credit_card_fees ?? platformSettings?.default_card_installments_fees ?? {},
       fixed_fee_cents: producerSettings?.custom_fixed_fee_cents ?? platformSettings?.default_fixed_fee_cents ?? 100,
       pix_release_days: producerSettings?.custom_release_rules_json?.release_days?.pix ?? platformSettings?.default_pix_release_days ?? 2,

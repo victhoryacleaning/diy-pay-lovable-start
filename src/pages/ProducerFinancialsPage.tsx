@@ -525,17 +525,6 @@ const ProducerFinancialsPage = () => {
                               <span className="text-gray-700">Cartão de Crédito:</span>
                               <span className="font-medium">{financialData?.effectiveSettings?.card_fee_percent ?? 0}%</span>
                             </div>
-                            <div className="border-t pt-2">
-                              <p className="text-gray-700 text-sm mb-2">Cartão de Crédito (por parcela):</p>
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                {Object.entries(financialData?.effectiveSettings?.card_installments_fees || {}).map(([installment, fee]) => (
-                                  <div key={installment} className="flex justify-between">
-                                    <span className="text-gray-600">{installment}x:</span>
-                                    <span className="font-medium">{fee}%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
                           </div>
                           {financialData?.effectiveSettings?.is_custom && (
                             <p className="text-xs text-[#4d0782] mt-3 bg-purple-50 p-2 rounded">
