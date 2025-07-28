@@ -212,7 +212,7 @@ const AdminFeesPage = () => {
         card_installment_interest_rate: settings.card_installment_interest_rate || 3.5,
       });
     }
-  }, [platformSettings, platformForm]);
+  }, [platformSettings]);
 
   // Set producer form values when producer settings are loaded
   useEffect(() => {
