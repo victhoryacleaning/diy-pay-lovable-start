@@ -1,6 +1,9 @@
 
 project_id = "huakzwguwjulxhvcztuh"
 
+[functions.get-space-details]
+verify_jwt = true
+
 [functions.get-producer-sales-data]
 verify_jwt = true
 
