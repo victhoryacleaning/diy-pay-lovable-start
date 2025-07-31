@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
+  LayoutGrid,
   CreditCard,
   Settings,
   LogOut,
@@ -43,6 +44,11 @@ const menuItems = [
     title: "Vendas",
     url: "/sales", // Future implementation
     icon: ShoppingCart,
+  },
+  {
+    title: "Área de Membros",
+    url: "/members-area",
+    icon: LayoutGrid,
   },
   {
     title: "Assinaturas",

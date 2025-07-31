@@ -17,6 +17,7 @@ import EditProductPage from "./pages/EditProductPage";
 import ProducerSalesPage from "./pages/ProducerSalesPage";
 import ProducerSubscriptionsPage from "./pages/ProducerSubscriptionsPage";
 import ProducerFinancialsPage from "./pages/ProducerFinancialsPage";
+import MembersAreaOnboardingPage from "./pages/MembersAreaOnboardingPage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import AdminLayout from "./pages/Admin/AdminLayout";
@@ -103,6 +104,14 @@ const App = () => {
                 element={
                   <ProtectedRoute requiredRole="producer">
                     <ProducerSalesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/members-area" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <MembersAreaOnboardingPage />
                   </ProtectedRoute>
                 } 
               />
