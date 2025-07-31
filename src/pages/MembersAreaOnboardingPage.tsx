@@ -21,8 +21,7 @@ export default function MembersAreaOnboardingPage() {
           Organize seu conteúdo, personalize o visual e ofereça uma experiência de consumo incrível para seus alunos, no estilo Netflix.
         </p>
         <Button size="lg" className="bg-purple-600 hover:bg-purple-700">
-          {/* No futuro, este botão levará para a tela de criação do club. */}
-          <Link to="#">Criar minha Área de Membros</Link>
+          <Link to="/members-area/new">Criar minha Área de Membros</Link>
         </Button>
       </div>
     </ProducerLayout>

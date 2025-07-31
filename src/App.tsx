@@ -18,6 +18,7 @@ import ProducerSalesPage from "./pages/ProducerSalesPage";
 import ProducerSubscriptionsPage from "./pages/ProducerSubscriptionsPage";
 import ProducerFinancialsPage from "./pages/ProducerFinancialsPage";
 import MembersAreaOnboardingPage from "./pages/MembersAreaOnboardingPage";
+import CreateClubPage from "./pages/CreateClubPage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import AdminLayout from "./pages/Admin/AdminLayout";
@@ -116,7 +117,15 @@ const App = () => {
                 } 
               />
               <Route 
-                path="/producer/subscriptions" 
+                path="/members-area/new" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <CreateClubPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/producer/subscriptions"
                 element={
                   <ProtectedRoute requiredRole="producer">
                     <ProducerSubscriptionsPage />
