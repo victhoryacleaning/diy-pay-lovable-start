@@ -9,10 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 
 import { ProducerLayout } from '@/components/ProducerLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
+import { SpacePreview } from '@/components/core/SpacePreview';
 
 // Função para criar um slug a partir de um texto
 const slugify = (text: string) =>
@@ -38,8 +38,11 @@ export default function CreateSpacePage() {
   });
 
   const spaceName = form.watch('name');
+  const spaceSlug = form.watch('slug');
+  
   useEffect(() => {
-    if (spaceName) {
+    // Evita sobrescrever a digitação manual do usuário no slug
+    if (form.getValues('slug') === slugify(form.getValues('name').slice(0,-1))) {
       form.setValue('slug', slugify(spaceName), { shouldValidate: true });
     }
   }, [spaceName, form]);
@@ -54,7 +57,7 @@ export default function CreateSpacePage() {
     },
     onSuccess: (data) => {
       toast({ title: "Sucesso!", description: "Sua área de membros foi criada." });
-      navigate(`/spaces/edit/${data.id}`); // Redireciona para a futura página de edição
+      navigate(`/spaces/edit/${data.id}`);
     },
     onError: (error) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -67,13 +70,14 @@ export default function CreateSpacePage() {
 
   return (
     <ProducerLayout>
-      <div className="flex flex-col items-center justify-center h-full p-4">
-        <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <CardTitle className="text-2xl">Crie sua Área de Membros</CardTitle>
-            <CardDescription>Dê um nome e crie um link exclusivo para seu espaço. Você não poderá alterar o link depois.</CardDescription>
-          </CardHeader>
-          <CardContent>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full p-4 md:p-8">
+        {/* Coluna do Formulário (Esquerda) */}
+        <div className="flex flex-col justify-center">
+          <div>
+            <h1 className="text-3xl font-bold">Crie sua Área de Membros</h1>
+            <p className="text-muted-foreground mt-2">Dê um nome e crie um link exclusivo para seu espaço. O link não poderá ser alterado depois.</p>
+          </div>
+          <div className="mt-8">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -96,25 +100,31 @@ export default function CreateSpacePage() {
                     <FormItem>
                       <FormLabel>Link de Acesso</FormLabel>
                       <FormControl>
+                        {/* INPUT UNIFICADO */}
                         <div className="flex items-center">
-                          <span className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0">
-                            diypay.com/s/
+                          <span className="text-sm text-muted-foreground bg-muted pl-3 pr-2 py-2 rounded-l-md border border-r-0 h-10 flex items-center">
+                            diypay.com/members/
                           </span>
-                          <Input placeholder="financas-pessoais" {...field} className="rounded-l-none" />
+                          <Input placeholder="financas-pessoais" {...field} className="rounded-l-none focus:ring-0 focus:ring-offset-0" />
                         </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={createSpaceMutation.isPending}>
+                <Button type="submit" size="lg" className="w-full" disabled={createSpaceMutation.isPending}>
                   {createSpaceMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Avançar e Adicionar Produtos
                 </Button>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* Coluna da Pré-visualização (Direita) */}
+        <div className="hidden lg:flex items-center justify-center">
+          <SpacePreview name={spaceName} slug={spaceSlug} />
+        </div>
       </div>
     </ProducerLayout>
   );
