@@ -6,37 +6,31 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
   try {
-    const { spaceId } = await req.json();
-    if (!spaceId) throw new Error("ID do espaço é obrigatório.");
+    const { spaceId, productId, productType } = await req.json();
+    if (!spaceId || !productId || !productType) {
+      throw new Error("spaceId, productId, e productType são obrigatórios.");
+    }
 
-    // Usamos a chave de serviço para buscar dados, pois as RLS protegerão a edição.
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Busca o Space e seus produtos associados em uma única query
-    const { data: space, error } = await serviceClient
-      .from('spaces')
-      .select(`
-        id, 
-        name, 
-        slug,
-        space_products (
-          id,
-          product_type,
-          display_order,
-          product:products (id, name, checkout_image_url)
-        )
-      `)
-      .eq('id', spaceId)
+    const { data, error } = await serviceClient
+      .from('space_products')
+      .insert({
+        space_id: spaceId,
+        product_id: productId,
+        product_type: productType,
+      })
+      .select()
       .single();
 
     if (error) throw error;
 
-    return new Response(JSON.stringify(space), {
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      status: 201,
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
