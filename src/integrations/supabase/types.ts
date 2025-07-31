@@ -14,86 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      club_products: {
-        Row: {
-          club_id: string
-          container_title: string | null
-          created_at: string
-          display_order: number
-          id: string
-          product_id: string
-          product_type: string
-        }
-        Insert: {
-          club_id: string
-          container_title?: string | null
-          created_at?: string
-          display_order?: number
-          id?: string
-          product_id: string
-          product_type: string
-        }
-        Update: {
-          club_id?: string
-          container_title?: string | null
-          created_at?: string
-          display_order?: number
-          id?: string
-          product_id?: string
-          product_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "club_products_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "club_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      clubs: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          producer_id: string
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          producer_id: string
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          producer_id?: string
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clubs_producer_id_fkey"
-            columns: ["producer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       enrollments: {
         Row: {
           enrolled_at: string
@@ -740,6 +660,86 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_products: {
+        Row: {
+          container_title: string | null
+          created_at: string
+          display_order: number
+          id: string
+          product_id: string
+          product_type: string
+          space_id: string
+        }
+        Insert: {
+          container_title?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          product_id: string
+          product_type: string
+          space_id: string
+        }
+        Update: {
+          container_title?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          product_id?: string
+          product_type?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_products_club_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spaces: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          producer_id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          producer_id: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          producer_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubs_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

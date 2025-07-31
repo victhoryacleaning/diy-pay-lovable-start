@@ -21,32 +21,32 @@ const slugify = (text: string) =>
     .replace(/[^\w\-]+/g, '') // Remove todos os caracteres não-palavra
     .replace(/\-\-+/g, '-'); // Substitui múltiplos - por um único -
 
-const createClubSchema = z.object({
+const createSpaceSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter no mínimo 3 caracteres." }),
   slug: z.string().min(3, { message: "O link deve ter no mínimo 3 caracteres." }),
 });
 
-type CreateClubForm = z.infer<typeof createClubSchema>;
+type CreateSpaceForm = z.infer<typeof createSpaceSchema>;
 
-export default function CreateClubPage() {
+export default function CreateSpacePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const form = useForm<CreateClubForm>({
-    resolver: zodResolver(createClubSchema),
+  const form = useForm<CreateSpaceForm>({
+    resolver: zodResolver(createSpaceSchema),
     defaultValues: { name: '', slug: '' },
   });
 
-  const clubName = form.watch('name');
+  const spaceName = form.watch('name');
   useEffect(() => {
-    if (clubName) {
-      form.setValue('slug', slugify(clubName), { shouldValidate: true });
+    if (spaceName) {
+      form.setValue('slug', slugify(spaceName), { shouldValidate: true });
     }
-  }, [clubName, form]);
+  }, [spaceName, form]);
 
-  const createClubMutation = useMutation({
-    mutationFn: async (values: CreateClubForm) => {
-      const { data, error } = await supabase.functions.invoke('create-club', {
+  const createSpaceMutation = useMutation({
+    mutationFn: async (values: CreateSpaceForm) => {
+      const { data, error } = await supabase.functions.invoke('create-space', {
         body: values,
       });
       if (error) throw error;
@@ -54,15 +54,15 @@ export default function CreateClubPage() {
     },
     onSuccess: (data) => {
       toast({ title: "Sucesso!", description: "Sua área de membros foi criada." });
-      navigate(`/members-area/edit/${data.id}`); // Redireciona para a futura página de edição
+      navigate(`/spaces/edit/${data.id}`); // Redireciona para a futura página de edição
     },
     onError: (error) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     },
   });
 
-  const onSubmit = (values: CreateClubForm) => {
-    createClubMutation.mutate(values);
+  const onSubmit = (values: CreateSpaceForm) => {
+    createSpaceMutation.mutate(values);
   };
 
   return (
@@ -71,7 +71,7 @@ export default function CreateClubPage() {
         <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-2xl">Crie sua Área de Membros</CardTitle>
-            <CardDescription>Dê um nome e crie um link exclusivo para seu club. Você não poderá alterar o link depois.</CardDescription>
+            <CardDescription>Dê um nome e crie um link exclusivo para seu espaço. Você não poderá alterar o link depois.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -81,9 +81,9 @@ export default function CreateClubPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome do Club</FormLabel>
+                      <FormLabel>Nome da Área de Membros</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Clube do Adestramento Canino" {...field} />
+                        <Input placeholder="Ex: Curso de Finanças Pessoais" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -94,21 +94,21 @@ export default function CreateClubPage() {
                   name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Link do Club</FormLabel>
+                      <FormLabel>Link de Acesso</FormLabel>
                       <FormControl>
                         <div className="flex items-center">
                           <span className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0">
-                            diypay.com/club/
+                            diypay.com/s/
                           </span>
-                          <Input placeholder="adestramento-canino" {...field} className="rounded-l-none" />
+                          <Input placeholder="financas-pessoais" {...field} className="rounded-l-none" />
                         </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={createClubMutation.isPending}>
-                  {createClubMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" disabled={createSpaceMutation.isPending}>
+                  {createSpaceMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Avançar e Adicionar Produtos
                 </Button>
               </form>

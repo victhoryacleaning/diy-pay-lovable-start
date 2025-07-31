@@ -21,14 +21,14 @@ Deno.serve(async (req) => {
     const { name, slug } = await req.json();
     if (!name || !slug) throw new Error("Nome e slug são obrigatórios.");
 
-    // 3. Usar o cliente de serviço para criar o club
+    // 3. Usar o cliente de serviço para criar o space
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: newClub, error } = await serviceClient
-      .from('clubs')
+    const { data: newSpace, error } = await serviceClient
+      .from('spaces')
       .insert({
         producer_id: user.id,
         name: name,
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    return new Response(JSON.stringify(newClub), {
+    return new Response(JSON.stringify(newSpace), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 201,
     })
