@@ -15,7 +15,7 @@ export function SpacePreview({ name, slug }: SpacePreviewProps) {
         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
       </div>
       <div className="bg-gray-700 rounded-md p-2 text-xs text-gray-400 mb-4 truncate">
-        diypay.com/members/{slug || "..."}
+        diypay.com.br/members/{slug || "..."}
       </div>
 
       {/* Conteúdo da Vitrine Falsa */}

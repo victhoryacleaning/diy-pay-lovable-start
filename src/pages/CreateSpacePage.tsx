@@ -22,7 +22,9 @@ const slugify = (text: string) =>
 
 const createSpaceSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter no mínimo 3 caracteres." }),
-  slug: z.string().min(3, { message: "O link deve ter no mínimo 3 caracteres." }),
+  slug: z.string()
+    .min(3, { message: "O link deve ter no mínimo 3 caracteres." })
+    .regex(/^[a-z0-9-]+$/, { message: "O link pode conter apenas letras minúsculas, números e hifens." }),
 });
 
 type CreateSpaceForm = z.infer<typeof createSpaceSchema>;
@@ -132,9 +134,17 @@ export default function CreateSpacePage() {
                       <FormControl>
                         <div className="flex items-center">
                           <span className="text-sm text-muted-foreground bg-muted pl-3 pr-2 py-2 rounded-l-md border border-r-0 h-10 flex items-center">
-                            diypay.com/members/
+                            diypay.com.br/members/
                           </span>
-                          <Input placeholder="financas-pessoais" {...field} className="rounded-l-none focus:ring-0 focus:ring-offset-0" />
+                          <Input 
+                            placeholder="financas-pessoais" 
+                            {...field} 
+                            onChange={(e) => {
+                              const sanitizedValue = slugify(e.target.value);
+                              field.onChange(sanitizedValue);
+                            }}
+                            className="rounded-l-none focus:ring-0 focus:ring-offset-0" 
+                          />
                         </div>
                       </FormControl>
                       <FormDescription className="flex items-center mt-2 h-4">

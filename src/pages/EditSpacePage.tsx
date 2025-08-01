@@ -34,7 +34,7 @@ export default function EditSpacePage() {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold">Editando: {spaceData.name}</h1>
-            <p className="text-muted-foreground mt-2">URL: diypay.com/members/{spaceData.slug}</p>
+            <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData.slug}</p>
           </div>
           <Button onClick={() => setIsModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
