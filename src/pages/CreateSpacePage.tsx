@@ -87,7 +87,7 @@ export default function CreateSpacePage() {
     },
     onSuccess: (data) => {
       toast({ title: "Sucesso!", description: "Sua área de membros foi criada." });
-      navigate(`/spaces/edit/${data.id}`);
+      navigate(`/members-area`);
     },
     onError: (error) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });

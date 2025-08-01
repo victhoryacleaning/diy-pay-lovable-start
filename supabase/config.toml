@@ -48,3 +48,9 @@ verify_jwt = true
 
 [functions.update-user-profile]
 verify_jwt = true
+
+[functions.get-producer-spaces]
+verify_jwt = true
+
+[functions.create-space]
+verify_jwt = true

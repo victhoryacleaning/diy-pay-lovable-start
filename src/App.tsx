@@ -17,7 +17,7 @@ import EditProductPage from "./pages/EditProductPage";
 import ProducerSalesPage from "./pages/ProducerSalesPage";
 import ProducerSubscriptionsPage from "./pages/ProducerSubscriptionsPage";
 import ProducerFinancialsPage from "./pages/ProducerFinancialsPage";
-import MembersAreaOnboardingPage from "./pages/MembersAreaOnboardingPage";
+import SpacesListPage from "./pages/SpacesListPage";
 import CreateSpacePage from "./pages/CreateSpacePage";
 import EditSpacePage from "./pages/EditSpacePage";
 import Checkout from "./pages/Checkout";
@@ -113,7 +113,7 @@ const App = () => {
                 path="/members-area" 
                 element={
                   <ProtectedRoute requiredRole="producer">
-                    <MembersAreaOnboardingPage />
+                    <SpacesListPage />
                   </ProtectedRoute>
                 } 
               />
