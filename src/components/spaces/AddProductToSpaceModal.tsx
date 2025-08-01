@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from 'lucide-react';
 
 interface AddProductToSpaceModalProps {
@@ -21,7 +20,6 @@ export function AddProductToSpaceModal({ isOpen, onClose, spaceId }: AddProductT
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Busca os produtos do produtor
   const { data: productsData, isLoading } = useQuery({
     queryKey: ['producer-products-for-modal'],
     queryFn: async () => {
@@ -35,9 +33,7 @@ export function AddProductToSpaceModal({ isOpen, onClose, spaceId }: AddProductT
 
   const addProductMutation = useMutation({
     mutationFn: async ({ productId, productType }: { productId: string; productType: 'principal' | 'bonus' | 'locked' }) => {
-      const { error } = await supabase.functions.invoke('add-product-to-space', {
-        body: { spaceId, productId, productType },
-      });
+      const { error } = await supabase.functions.invoke('add-product-to-space', { body: { spaceId, productId, productType } });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -57,24 +53,45 @@ export function AddProductToSpaceModal({ isOpen, onClose, spaceId }: AddProductT
           <DialogTitle>Adicionar produto à sua Área de Membros</DialogTitle>
           <DialogDescription>Selecione um produto da sua lista para adicionar à vitrine do seu espaço.</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-96">
-          <div className="p-1">
-            {isLoading && <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin text-muted-foreground" />}
-            {productsData?.products?.map((product: any) => (
-              <div key={product.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted">
-                <div className="flex items-center gap-4">
-                  <img src={product.checkout_image_url || '/placeholder.svg'} alt={product.name} className="h-12 w-12 object-cover rounded-md" />
-                  <span className="font-semibold">{product.name}</span>
+        <TooltipProvider>
+          <ScrollArea className="h-96">
+            <div className="p-1">
+              {isLoading && <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin text-muted-foreground" />}
+              {productsData?.products?.map((product: any) => (
+                <div key={product.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted">
+                  <div className="flex items-center gap-4">
+                    <img src={product.checkout_image_url || '/placeholder.svg'} alt={product.name} className="h-12 w-12 object-cover rounded-md" />
+                    <span className="font-semibold">{product.name}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {/* O botão é envolvido por um span para que o Tooltip funcione mesmo quando desabilitado */}
+                        <span tabIndex={0}>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => addProductMutation.mutate({ productId: product.id, productType: 'principal' })}
+                            disabled={product.is_principal_in_a_space}
+                          >
+                            Principal
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {product.is_principal_in_a_space && (
+                        <TooltipContent>
+                          <p>Este produto já é o principal de outra Área de Membros.</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                    <Button size="sm" variant="outline" onClick={() => addProductMutation.mutate({ productId: product.id, productType: 'bonus' })}>Bônus</Button>
+                    <Button size="sm" variant="outline" onClick={() => addProductMutation.mutate({ productId: product.id, productType: 'locked' })}>Bloqueado</Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => addProductMutation.mutate({ productId: product.id, productType: 'principal' })}>Principal</Button>
-                  <Button size="sm" variant="outline" onClick={() => addProductMutation.mutate({ productId: product.id, productType: 'bonus' })}>Bônus</Button>
-                  <Button size="sm" variant="outline" onClick={() => addProductMutation.mutate({ productId: product.id, productType: 'locked' })}>Bloqueado</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+              ))}
+            </div>
+          </ScrollArea>
+        </TooltipProvider>
       </DialogContent>
     </Dialog>
   );
