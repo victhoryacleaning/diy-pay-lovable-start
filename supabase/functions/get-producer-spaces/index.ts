@@ -20,25 +20,27 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // ETAPA 1: CORREÇÃO DA QUERY
+    // Substituída a subquery manual pela sintaxe PostgREST para contagem.
     const { data, error } = await serviceClient
       .from('spaces')
-      .select(`
-        id, 
-        name, 
-        slug, 
-        created_at,
-        (
-          select count(*) 
-          from space_products 
-          where space_id = spaces.id
-        ) as product_count
-      `)
+      .select('id, name, slug, created_at, space_products(count)')
       .eq('producer_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return new Response(JSON.stringify(data), {
+    // ETAPA 2: FORMATAÇÃO DA RESPOSTA
+    // A nova query retorna a contagem aninhada. Formatamos para a estrutura que o frontend espera.
+    const formattedData = data.map(space => ({
+      id: space.id,
+      name: space.name,
+      slug: space.slug,
+      created_at: space.created_at,
+      product_count: space.space_products?.length || 0,
+    }));
+
+    return new Response(JSON.stringify(formattedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
