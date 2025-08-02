@@ -1,3 +1,4 @@
+// src/components/products/tabs/GeneralTab.tsx
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -15,26 +16,16 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
   const isDonation = formData.product_type === 'donation';
   const isSubscription = formData.product_type === 'subscription';
 
-  // Format currency for display
   const formatCurrency = (value: string) => {
-    // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '');
-    
-    // Converte para número e formata
     const amount = parseFloat(numbers) / 100;
-    
-    return amount.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const handlePriceChange = (value: string) => {
-    const formattedValue = formatCurrency(value);
-    onInputChange('price', formattedValue);
+    onInputChange('price', formatCurrency(value));
   };
 
-  // Get product type label for display
   const getProductTypeLabel = (type: string) => {
     switch (type) {
       case 'single_payment': return 'Pagamento Único';
@@ -47,24 +38,17 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Product type header */}
-      <div className="text-center p-4 bg-diypay-50 rounded-lg border border-diypay-200">
-        <h3 className="text-xl font-bold text-diypay-800">
+      <div className="text-center p-4 bg-muted rounded-lg border">
+        <h3 className="text-xl font-bold text-foreground">
           Criando um Novo {getProductTypeLabel(formData.product_type)}
         </h3>
       </div>
 
-      {/* Show subscription frequency field only for subscriptions */}
       {isSubscription && (
         <div className="space-y-2">
           <Label htmlFor="subscription_frequency">Frequência de Cobrança *</Label>
-          <Select 
-            value={formData.subscription_frequency} 
-            onValueChange={(value) => onInputChange('subscription_frequency', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a frequência" />
-            </SelectTrigger>
+          <Select value={formData.subscription_frequency} onValueChange={(value) => onInputChange('subscription_frequency', value)}>
+            <SelectTrigger><SelectValue placeholder="Selecione a frequência" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="weekly">Semanal</SelectItem>
               <SelectItem value="monthly">Mensal</SelectItem>
@@ -79,24 +63,12 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
 
       <div className="space-y-2">
         <Label htmlFor="name">Nome do Produto *</Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => onInputChange('name', e.target.value)}
-          placeholder="Ex: Curso de Marketing Digital"
-          required
-        />
+        <Input id="name" value={formData.name} onChange={(e) => onInputChange('name', e.target.value)} placeholder="Ex: Curso de Marketing Digital" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="description">Descrição do Produto</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => onInputChange('description', e.target.value)}
-          placeholder="Descreva seu produto..."
-          rows={4}
-        />
+        <Textarea id="description" value={formData.description} onChange={(e) => onInputChange('description', e.target.value)} placeholder="Descreva seu produto..." rows={4} />
       </div>
 
       <div className="space-y-2">
@@ -117,85 +89,7 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="price">
-            {isPriceDisabled ? 'Valor (Definido pelo Cliente)' : isSubscription ? 'Valor da Assinatura (R$) *' : 'Valor do Produto (R$) *'}
-          </Label>
-          {isPriceDisabled ? (
-            <Input
-              id="price"
-              type="text"
-              value="Valor livre"
-              disabled={true}
-              className="bg-gray-100"
-            />
-          ) : (
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
-              <Input
-                id="price"
-                placeholder="0,00"
-                value={formData.price}
-                onChange={(e) => handlePriceChange(e.target.value)}
-                className="pl-10 text-lg font-semibold"
-                required
-              />
-            </div>
-          )}
-          {isPriceDisabled && (
-            <p className="text-sm text-gray-500">
-              Para doações, o valor será definido pelo cliente no momento da compra
-            </p>
-          )}
-          {isSubscription && (
-            <p className="text-sm text-blue-600">
-              Este valor será cobrado de acordo com a frequência selecionada
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="installments">Parcelas Máximas</Label>
-          <Input
-            id="installments"
-            type="number"
-            min="1"
-            max="12"
-            value={formData.max_installments_allowed}
-            onChange={(e) => onInputChange('max_installments_allowed', parseInt(e.target.value))}
-            disabled={
-              isSubscription || 
-              (isSubscription && 
-              (formData.subscription_frequency === 'weekly' || formData.subscription_frequency === 'monthly'))
-            }
-          />
-          {isSubscription && (
-            <p className="text-sm text-gray-500">
-              Para assinaturas, o pagamento deve ser à vista
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="type">Tipo de Produto</Label>
-        <Select value={formData.type} onValueChange={(value) => onInputChange('type', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="digital_file">Arquivo Digital</SelectItem>
-            <SelectItem value="ebook">E-book</SelectItem>
-            <SelectItem value="course">Curso Online</SelectItem>
-            <SelectItem value="service">Serviço</SelectItem>
-            <SelectItem value="subscription">Assinatura</SelectItem>
-            <SelectItem value="other">Outro</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Seção "URL do Arquivo" agora só aparece se a entrega NÃO for Área de Membros interna */}
+      {/* Seção "URL de Acesso" agora só aparece se a entrega NÃO for Área de Membros interna */}
       {formData.delivery_type !== 'members_area' && (
         <div className="space-y-2">
           <Label htmlFor="file_url">URL de Acesso ou Informação de Entrega</Label>
@@ -211,52 +105,47 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </div>
       )}
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="price">{isPriceDisabled ? 'Valor (Definido pelo Cliente)' : isSubscription ? 'Valor da Assinatura (R$) *' : 'Valor do Produto (R$) *'}</Label>
+          {isPriceDisabled ? ( <Input id="price" type="text" value="Valor livre" disabled={true} className="bg-muted" /> ) : (
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">R$</span>
+              <Input id="price" placeholder="0,00" value={formData.price} onChange={(e) => handlePriceChange(e.target.value)} className="pl-10 text-lg font-semibold" required />
+            </div>
+          )}
+          {isPriceDisabled && (<p className="text-sm text-muted-foreground">Para doações, o valor será definido pelo cliente no momento da compra</p>)}
+          {isSubscription && (<p className="text-sm text-blue-600">Este valor será cobrado de acordo com a frequência selecionada</p>)}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="installments">Parcelas Máximas</Label>
+          <Input id="installments" type="number" min="1" max="12" value={formData.max_installments_allowed} onChange={(e) => onInputChange('max_installments_allowed', parseInt(e.target.value))} disabled={isSubscription} />
+          {isSubscription && (<p className="text-sm text-muted-foreground">Para assinaturas, o pagamento deve ser à vista</p>)}
+        </div>
+      </div>
+      
+      {/* O CAMPO ANTIGO "TIPO DE PRODUTO" FOI REMOVIDO */}
+
       <div className="flex items-center justify-between p-4 border rounded-lg">
         <div className="space-y-1">
-          <Label htmlFor="is_active" className="text-base font-medium">
-            Produto Ativo
-          </Label>
-          <p className="text-sm text-gray-500">
-            Produto disponível para venda
-          </p>
+          <Label htmlFor="is_active" className="text-base font-medium">Produto Ativo</Label>
+          <p className="text-sm text-muted-foreground">Produto disponível para venda</p>
         </div>
-        <Switch
-          id="is_active"
-          checked={formData.is_active}
-          onCheckedChange={(checked) => onInputChange('is_active', checked)}
-        />
+        <Switch id="is_active" checked={formData.is_active} onCheckedChange={(checked) => onInputChange('is_active', checked)} />
       </div>
 
-      {/* Donation customization section - only show for donations */}
       {isDonation && (
         <div className="space-y-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
           <h4 className="font-semibold text-blue-900">Personalização para Doações</h4>
-          
           <div className="space-y-2">
             <Label htmlFor="donation_title" className="text-blue-900">Título da Seção de Doação</Label>
-            <Input
-              id="donation_title"
-              value={formData.donation_title}
-              onChange={(e) => onInputChange('donation_title', e.target.value)}
-              placeholder="Ex: Apoie este Projeto"
-            />
-            <p className="text-xs text-blue-600">
-              Título personalizado para a seção onde o cliente define o valor
-            </p>
+            <Input id="donation_title" value={formData.donation_title} onChange={(e) => onInputChange('donation_title', e.target.value)} placeholder="Ex: Apoie este Projeto" />
+            <p className="text-xs text-blue-600">Título personalizado para a seção onde o cliente define o valor</p>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="donation_description" className="text-blue-900">Descrição da Doação</Label>
-            <Textarea
-              id="donation_description"
-              value={formData.donation_description}
-              onChange={(e) => onInputChange('donation_description', e.target.value)}
-              placeholder="Descreva como a doação será utilizada..."
-              rows={3}
-            />
-            <p className="text-xs text-blue-600">
-              Texto explicativo sobre o propósito da doação
-            </p>
+            <Textarea id="donation_description" value={formData.donation_description} onChange={(e) => onInputChange('donation_description', e.target.value)} placeholder="Descreva como a doação será utilizada..." rows={3} />
+            <p className="text-xs text-blue-600">Texto explicativo sobre o propósito da doação</p>
           </div>
         </div>
       )}
