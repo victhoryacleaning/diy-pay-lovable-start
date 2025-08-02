@@ -1,3 +1,5 @@
+// src/components/spaces/CreateLessonModal.tsx
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,15 +7,16 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill/dist/quill.snow.css'; // Estilos do editor
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from 'lucide-react';
+import '@/styles/quill-editor.css'; // Importando estilos customizados
 
 const lessonSchema = z.object({
   title: z.string().min(3, { message: "O título deve ter no mínimo 3 caracteres." }),
@@ -22,15 +25,16 @@ const lessonSchema = z.object({
   content_text: z.string().optional(),
   release_type: z.string().default('immediate'),
   release_days: z.coerce.number().optional(),
+  release_date: z.string().optional(), // Mantido como string para o input type="date"
 });
 
 type LessonFormValues = z.infer<typeof lessonSchema>;
 
 const quillModules = {
   toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
-    ['bold', 'italic', 'strike'],
-    [{'list': 'ordered'}, {'list': 'bullet'}],
+    [{ 'header': [1, 2, false] }, { 'font': [] }],
+    ['bold', 'italic', 'strike', 'blockquote'],
+    [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
     ['link', 'image'],
     [{ 'align': [] }],
     ['code-block'],
@@ -51,15 +55,14 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
 
   const form = useForm<LessonFormValues>({
     resolver: zodResolver(lessonSchema),
-    defaultValues: { title: '', content_url: '', content_text: '', release_type: 'immediate' },
+    defaultValues: { title: '', video_source: 'youtube', content_url: '', content_text: '', release_type: 'immediate' },
   });
 
   const createLessonMutation = useMutation({
     mutationFn: async (values: LessonFormValues) => {
-      // Define o content_type com base na seleção de vídeo
       const contentType = values.video_source ? 'video' : 'text';
       const { error } = await supabase.functions.invoke('create-lesson', {
-        body: { moduleId, ...values, contentType },
+        body: { moduleId, ...values, content_type: contentType },
       });
       if (error) throw error;
     },
@@ -77,13 +80,13 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px]">
         <DialogHeader><DialogTitle>Criar Nova Aula</DialogTitle></DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem>
-                <FormLabel>Título da Aula</FormLabel>
+                <FormLabel>Título da Aula *</FormLabel>
                 <FormControl><Input {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -94,11 +97,7 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
                 <FormItem>
                   <FormLabel>Fonte do Vídeo (Opcional)</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Nenhum" />
-                      </SelectTrigger>
-                    </FormControl>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="youtube">YouTube</SelectItem>
                       <SelectItem value="vimeo">Vimeo</SelectItem>
@@ -108,7 +107,6 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
                   <FormMessage />
                 </FormItem>
               )}/>
-              
               <FormField control={form.control} name="content_url" render={({ field }) => (
                 <FormItem>
                   <FormLabel>URL do Vídeo</FormLabel>
@@ -122,14 +120,8 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
               <FormItem>
                 <FormLabel>Conteúdo da Aula (Descrição, links, etc.)</FormLabel>
                 <FormControl>
-                  <div className="border rounded-md">
-                    <ReactQuill 
-                      theme="snow" 
-                      modules={quillModules} 
-                      value={field.value || ''}
-                      onChange={field.onChange}
-                      style={{ minHeight: '200px' }}
-                    />
+                  <div className="quill-container">
+                    <ReactQuill theme="snow" modules={quillModules} {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -141,14 +133,9 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
                 <FormLabel>Quando liberar o conteúdo?</FormLabel>
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center gap-6">
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl><RadioGroupItem value="immediate" /></FormControl>
-                      <FormLabel className="font-normal">Imediata</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl><RadioGroupItem value="days" /></FormControl>
-                      <FormLabel className="font-normal">Por dias</FormLabel>
-                    </FormItem>
+                    <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="immediate" /></FormControl><FormLabel className="font-normal">Imediata</FormLabel></FormItem>
+                    <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="days" /></FormControl><FormLabel className="font-normal">Por dias</FormLabel></FormItem>
+                    <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><RadioGroupItem value="date" /></FormControl><FormLabel className="font-normal">Por data</FormLabel></FormItem>
                   </RadioGroup>
                 </FormControl>
                 <FormMessage />
@@ -160,6 +147,16 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
                 <FormItem>
                   <FormLabel>Liberar em</FormLabel>
                   <FormControl><Input type="number" placeholder="dias após a compra" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}/>
+            )}
+
+            {form.watch('release_type') === 'date' && (
+              <FormField control={form.control} name="release_date" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Liberar em</FormLabel>
+                  <FormControl><Input type="date" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}/>
