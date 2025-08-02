@@ -17,27 +17,25 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token)
     if (!user) throw new Error('Unauthorized');
 
-    // --- CORREÇÃO AQUI: Lendo os dados exatamente como o frontend envia ---
-    const lessonDataFromFrontend = await req.json();
+    const lessonData = await req.json();
     const { 
       moduleId, 
       title, 
-      video_source, // <-- Lendo o campo que realmente vem do frontend
+      content_type, 
       content_url, 
       content_text, 
       release_type, 
       release_days, 
       release_date, 
       is_free_sample 
-    } = lessonDataFromFrontend;
+    } = lessonData;
 
-    if (!moduleId || !title) {
-      throw new Error("moduleId e title são obrigatórios.");
+    if (!moduleId || !title || !content_type) {
+      throw new Error("moduleId, title, e content_type são obrigatórios.");
     }
     
-    // --- LÓGICA DE NEGÓCIO NO BACKEND ---
-    // Calculamos o content_type aqui, com base no que o frontend enviou.
-    const content_type = video_source ? 'video' : 'text';
+    // Log dos dados recebidos para depuração
+    console.log('--- DADOS RECEBIDOS PARA CRIAR AULA ---', JSON.stringify(lessonData, null, 2));
 
     const { data, error } = await serviceClient
       .from('lessons')
@@ -55,14 +53,25 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Log do erro específico do Supabase
+      console.error('--- ERRO DO SUPABASE AO INSERIR ---', JSON.stringify(error, null, 2));
+      throw error;
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 201,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    // --- MUDANÇA CRÍTICA AQUI ---
+    // Logamos o erro completo e detalhado antes de retornar uma resposta.
+    console.error('--- ERRO DETALHADO NA FUNÇÃO CREATE-LESSON ---:', JSON.stringify(error, null, 2));
+    
+    return new Response(JSON.stringify({ 
+      error: 'Erro interno no servidor. Verifique os logs da função.',
+      detailed_error: error 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
