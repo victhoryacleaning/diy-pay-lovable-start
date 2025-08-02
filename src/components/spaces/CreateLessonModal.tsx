@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from 'lucide-react';
-import '@/index.css'; // <<< CORRIGIDO: Importando o CSS global corretamente
+import '@/index.css'; // Importando o CSS global
 
 const lessonSchema = z.object({
   title: z.string().min(3, { message: "O título deve ter no mínimo 3 caracteres." }),
@@ -120,7 +120,8 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
               <FormItem>
                 <FormLabel>Conteúdo da Aula (Descrição, links, etc.)</FormLabel>
                 <FormControl>
-                  <div className="quill-container">
+                  {/* --- MUDANÇA CRÍTICA AQUI --- */}
+                  <div className="quill-editor-container">
                     <ReactQuill theme="snow" modules={quillModules} {...field} />
                   </div>
                 </FormControl>
