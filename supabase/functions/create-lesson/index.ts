@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token)
     if (!user) throw new Error('Unauthorized');
 
+    // --- CORREÇÃO AQUI: Lendo apenas os dados que o frontend realmente envia ---
     const lessonData = await req.json();
     const { 
       moduleId, 
@@ -26,16 +27,13 @@ Deno.serve(async (req) => {
       content_text, 
       release_type, 
       release_days, 
-      release_date, 
-      is_free_sample 
+      release_date
+      // O campo "is_free_sample" foi removido daqui
     } = lessonData;
 
     if (!moduleId || !title || !content_type) {
       throw new Error("moduleId, title, e content_type são obrigatórios.");
     }
-    
-    // Log dos dados recebidos para depuração
-    console.log('--- DADOS RECEBIDOS PARA CRIAR AULA ---', JSON.stringify(lessonData, null, 2));
 
     const { data, error } = await serviceClient
       .from('lessons')
@@ -48,32 +46,23 @@ Deno.serve(async (req) => {
         release_type: release_type || 'immediate',
         release_days: release_days || null,
         release_date: release_date || null,
-        is_free_sample: is_free_sample || false,
+        // O campo "is_free_sample" foi removido daqui também.
+        // O banco de dados usará o valor padrão (false).
       })
       .select()
       .single();
 
-    if (error) {
-      // Log do erro específico do Supabase
-      console.error('--- ERRO DO SUPABASE AO INSERIR ---', JSON.stringify(error, null, 2));
-      throw error;
-    }
+    if (error) throw error;
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 201,
     })
   } catch (error) {
-    // --- MUDANÇA CRÍTICA AQUI ---
-    // Logamos o erro completo e detalhado antes de retornar uma resposta.
-    console.error('--- ERRO DETALHADO NA FUNÇÃO CREATE-LESSON ---:', JSON.stringify(error, null, 2));
-    
-    return new Response(JSON.stringify({ 
-      error: 'Erro interno no servidor. Verifique os logs da função.',
-      detailed_error: error 
-    }), {
+    console.error('ERRO DETALHADO EM CREATE-LESSON:', error) // Log para depuração
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
   }
-})
+})```
