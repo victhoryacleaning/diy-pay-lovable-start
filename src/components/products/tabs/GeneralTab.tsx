@@ -1,4 +1,4 @@
-// src/components/products/tabs/GeneralTab.tsx
+// --- FORÇANDO REBUILD - v1.1 ---
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -105,7 +105,7 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md-grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="price">{isPriceDisabled ? 'Valor (Definido pelo Cliente)' : isSubscription ? 'Valor da Assinatura (R$) *' : 'Valor do Produto (R$) *'}</Label>
           {isPriceDisabled ? ( <Input id="price" type="text" value="Valor livre" disabled={true} className="bg-muted" /> ) : (
@@ -124,8 +124,6 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </div>
       </div>
       
-      {/* O CAMPO ANTIGO "TIPO DE PRODUTO" FOI REMOVIDO */}
-
       <div className="flex items-center justify-between p-4 border rounded-lg">
         <div className="space-y-1">
           <Label htmlFor="is_active" className="text-base font-medium">Produto Ativo</Label>
