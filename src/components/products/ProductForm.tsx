@@ -34,6 +34,7 @@ interface ProductFormData {
   is_email_optional: boolean;
   require_email_confirmation: boolean;
   producer_assumes_installments: boolean;
+  delivery_type: string;
 }
 
 interface ProductFormProps {
@@ -79,7 +80,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     checkout_background_color: '#F3F4F6',
     is_email_optional: false,
     require_email_confirmation: true,
-    producer_assumes_installments: false
+    producer_assumes_installments: false,
+    delivery_type: 'members_area'
   });
 
   // Update active tab when URL parameter changes
@@ -137,7 +139,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         checkout_background_color: product.checkout_background_color || '#F3F4F6',
         is_email_optional: product.is_email_optional || false,
         require_email_confirmation: product.require_email_confirmation ?? true,
-        producer_assumes_installments: product.producer_assumes_installments || false
+        producer_assumes_installments: product.producer_assumes_installments || false,
+        delivery_type: (product as any).delivery_type || 'members_area'
       });
     }
   }, [product, mode]);
@@ -188,14 +191,13 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
       if (mode === 'create') {
         const slug = generateSlug(data.name);
-        const { data: result, error } = await supabase
-          .from('products')
-          .insert({
+        const { data: result, error } = await supabase.functions.invoke('create-product', {
+          body: {
             ...productData,
-            checkout_link_slug: slug
-          })
-          .select()
-          .single();
+            checkout_link_slug: slug,
+            delivery_type: data.delivery_type
+          }
+        });
 
         if (error) throw error;
         return result;

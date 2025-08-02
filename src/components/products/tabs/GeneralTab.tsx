@@ -99,6 +99,24 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="delivery_type">Forma de Entrega do Conteúdo</Label>
+        <Select value={formData.delivery_type} onValueChange={(value) => onInputChange('delivery_type', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione a forma de entrega" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="members_area">Área de Membros</SelectItem>
+            <SelectItem value="external_members_area">Área de Membros Externa</SelectItem>
+            <SelectItem value="in_person_event">Evento Presencial</SelectItem>
+            <SelectItem value="payment_only">Apenas Receber Pagamento</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-sm text-muted-foreground">
+          Escolha como seu cliente receberá o acesso ao conteúdo após a compra.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="price">
@@ -177,18 +195,21 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="file_url">URL do Arquivo ou Informação de Acesso</Label>
-        <Input
-          id="file_url"
-          value={formData.file_url_or_access_info}
-          onChange={(e) => onInputChange('file_url_or_access_info', e.target.value)}
-          placeholder="https://... ou instruções de acesso"
-        />
-        <p className="text-sm text-gray-500">
-          Link para download, acesso à plataforma ou instruções que serão enviadas ao cliente após a compra
-        </p>
-      </div>
+      {/* Seção "URL do Arquivo" agora só aparece se a entrega NÃO for Área de Membros interna */}
+      {formData.delivery_type !== 'members_area' && (
+        <div className="space-y-2">
+          <Label htmlFor="file_url">URL de Acesso ou Informação de Entrega</Label>
+          <Input
+            id="file_url"
+            value={formData.file_url_or_access_info}
+            onChange={(e) => onInputChange('file_url_or_access_info', e.target.value)}
+            placeholder="https://... ou instruções de acesso"
+          />
+          <p className="text-sm text-muted-foreground">
+            Insira o link da sua área de membros externa, informações do evento ou instruções para entrega manual.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between p-4 border rounded-lg">
         <div className="space-y-1">

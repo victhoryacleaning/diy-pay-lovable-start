@@ -54,3 +54,6 @@ verify_jwt = true
 
 [functions.create-space]
 verify_jwt = true
+
+[functions.create-product]
+verify_jwt = true
