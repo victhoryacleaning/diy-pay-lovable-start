@@ -17,12 +17,11 @@ import LinksTab from './tabs/LinksTab';
 import TicketsTab from './tabs/TicketsTab';
 import SubscriptionsTab from './tabs/SubscriptionsTab';
 
-// Interface de dados limpa, SEM o campo 'type' obsoleto
 interface ProductFormData {
   name: string;
   description: string;
   price: string;
-  file_url_or_access_info: string;
+  // file_url_or_access_info: string; <-- REMOVIDO
   max_installments_allowed: number;
   is_active: boolean;
   product_type: string;
@@ -61,12 +60,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     return ['credit_card', 'pix', 'bank_slip'];
   };
   
-  // Estado inicial limpo, SEM o campo 'type' obsoleto
-  const [formData, setFormData] = useState<ProductFormData>({
+  const [formData, setFormData] = useState<Omit<ProductFormData, 'file_url_or_access_info'>>({
     name: '',
     description: '',
     price: '',
-    file_url_or_access_info: '',
     max_installments_allowed: 1,
     is_active: true,
     product_type: productTypeFromUrl,
@@ -101,7 +98,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     enabled: mode === 'edit' && !!productId
   });
 
-  // Preenchimento do formulário limpo, SEM o campo 'type' obsoleto
   useEffect(() => {
     if (product && mode === 'edit') {
       const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
@@ -112,7 +108,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         name: product.name,
         description: product.description || '',
         price: (product.price_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
         is_active: product.is_active,
         product_type: product.product_type || 'single_payment',
@@ -138,16 +133,14 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   };
 
   const saveProductMutation = useMutation({
-    mutationFn: async (data: ProductFormData) => {
+    mutationFn: async (data: Omit<ProductFormData, 'file_url_or_access_info'>) => {
       const priceValue = data.product_type === 'donation' ? 0 : parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100;
       const priceCents = Math.round(priceValue);
       
-      // Objeto de dados limpo, SEM 'type' e com 'delivery_type'
       const productData = {
         name: data.name,
         description: data.description || null,
         price_cents: priceCents,
-        file_url_or_access_info: data.file_url_or_access_info || null,
         max_installments_allowed: data.max_installments_allowed,
         is_active: data.is_active,
         producer_id: user?.id,
@@ -162,7 +155,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         is_email_optional: data.is_email_optional,
         require_email_confirmation: data.require_email_confirmation,
         producer_assumes_installments: data.producer_assumes_installments,
-        delivery_type: data.delivery_type, // Garante que o tipo de entrega seja salvo
+        delivery_type: data.delivery_type,
       };
 
       if (mode === 'create') {
