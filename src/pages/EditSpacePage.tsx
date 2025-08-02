@@ -35,7 +35,7 @@ export default function EditSpacePage() {
   });
 
   const principalProduct = useMemo(() => {
-    return spaceData?.space_products?.find((sp: any) => sp.product_type === 'principal')?.product;
+    return spaceData?.principal_product;
   }, [spaceData]);
 
   const createModuleMutation = useMutation({

@@ -9,34 +9,58 @@ Deno.serve(async (req) => {
     const { spaceId } = await req.json();
     if (!spaceId) throw new Error("ID do espaço é obrigatório.");
 
-    // Usamos a chave de serviço para buscar dados, pois as RLS protegerão a edição.
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Query aprimorada para buscar as aulas dentro dos módulos
-    const { data: space, error } = await serviceClient
+    // ETAPA 1: Buscar os detalhes básicos do "Space"
+    const { data: spaceDetails, error: spaceError } = await serviceClient
       .from('spaces')
+      .select('id, name, slug')
+      .eq('id', spaceId)
+      .single();
+    if (spaceError) throw spaceError;
+
+    // ETAPA 2: Encontrar o ID do Produto Principal
+    const { data: principalSpaceProduct, error: principalError } = await serviceClient
+      .from('space_products')
+      .select('product_id')
+      .eq('space_id', spaceId)
+      .eq('product_type', 'principal')
+      .single();
+    
+    // Se não houver produto principal, retorna apenas os dados do space
+    if (!principalSpaceProduct) {
+      return new Response(JSON.stringify(spaceDetails), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // ETAPA 3: Buscar os detalhes completos do Produto Principal (incluindo Módulos e Aulas)
+    const { data: productDetails, error: productError } = await serviceClient
+      .from('products')
       .select(`
-        id, name, slug,
-        space_products (
-          product:products (
-            id, name,
-            modules (
-              id, title, display_order,
-              lessons (id, title, display_order, content_type)
-            )
-          )
+        id, name,
+        modules (
+          id, title, display_order,
+          lessons (id, title, display_order, content_type)
         )
       `)
-      .eq('id', spaceId)
-      .eq('space_products.product_type', 'principal') // Garante que estamos pegando o produto principal
+      .eq('id', principalSpaceProduct.product_id)
+      .order('display_order', { referencedTable: 'modules', ascending: true })
+      .order('display_order', { referencedTable: 'modules.lessons', ascending: true })
       .single();
+    if (productError) throw productError;
 
-    if (error) throw error;
+    // ETAPA 4: Combinar os resultados
+    const responseData = {
+      ...spaceDetails,
+      principal_product: productDetails,
+    };
 
-    return new Response(JSON.stringify(space), {
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
