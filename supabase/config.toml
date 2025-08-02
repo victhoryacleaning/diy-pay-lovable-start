@@ -60,3 +60,6 @@ verify_jwt = true
 
 [functions.create-product]
 verify_jwt = true
+
+[functions.create-lesson]
+verify_jwt = true

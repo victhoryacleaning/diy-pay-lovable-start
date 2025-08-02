@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, GripVertical } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CreateLessonModal } from '@/components/spaces/CreateLessonModal';
+import { PlusCircle, GripVertical, FileText, Video } from 'lucide-react';
 
 const fetchSpaceDetails = async (spaceId: string) => {
   const { data, error } = await supabase.functions.invoke('get-space-details', { body: { spaceId } });
@@ -23,6 +25,8 @@ export default function EditSpacePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newModuleTitle, setNewModuleTitle] = useState('');
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
 
   const { data: spaceData, isLoading, isError, error } = useQuery({
     queryKey: ['space', spaceId],
@@ -31,8 +35,7 @@ export default function EditSpacePage() {
   });
 
   const principalProduct = useMemo(() => {
-    const sp = spaceData?.space_products?.find((sp: any) => sp.product_type === 'principal');
-    return sp?.product;
+    return spaceData?.space_products?.find((sp: any) => sp.product_type === 'principal')?.product;
   }, [spaceData]);
 
   const createModuleMutation = useMutation({
@@ -48,15 +51,18 @@ export default function EditSpacePage() {
       setNewModuleTitle('');
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error) => {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    },
+    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   const handleAddModule = () => {
     if (newModuleTitle.trim()) {
       createModuleMutation.mutate(newModuleTitle.trim());
     }
+  };
+
+  const openCreateLessonModal = (moduleId: string) => {
+    setCurrentModuleId(moduleId);
+    setIsLessonModalOpen(true);
   };
 
   if (isLoading) return <ProducerLayout><div className="p-8"><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></div></ProducerLayout>;
@@ -78,23 +84,34 @@ export default function EditSpacePage() {
           <TabsContent value="content" className="mt-6">
             <Card>
               <CardContent className="p-6">
-                <div className="space-y-4">
+                <Accordion type="multiple" className="w-full space-y-4">
                   {principalProduct?.modules?.map((module: any) => (
-                    <div key={module.id} className="flex items-center gap-3 p-3 bg-muted rounded-md">
-                      <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                      <p className="font-semibold flex-grow">{module.title}</p>
-                      {/* Futuros botões de ação aqui */}
-                    </div>
+                    <AccordionItem value={module.id} key={module.id} className="border-none">
+                      <div className="flex items-center gap-3 p-3 bg-muted rounded-t-md border-b">
+                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                        <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">{module.title}</AccordionTrigger>
+                        <Button variant="ghost" size="sm" onClick={() => openCreateLessonModal(module.id)}>+ Adicionar Aula</Button>
+                      </div>
+                      <AccordionContent className="p-4 bg-muted rounded-b-md">
+                        {module.lessons?.length > 0 ? (
+                          <div className="space-y-2">
+                            {module.lessons.map((lesson: any) => (
+                              <div key={lesson.id} className="flex items-center gap-3 p-2 bg-background rounded">
+                                {lesson.content_type === 'video' ? <Video className="h-4 w-4 text-muted-foreground"/> : <FileText className="h-4 w-4 text-muted-foreground"/>}
+                                <span className="text-sm">{lesson.title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">Nenhuma aula neste módulo.</p>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
 
                 <div className="mt-6 flex gap-2">
-                  <Input 
-                    placeholder="Nome do novo módulo" 
-                    value={newModuleTitle}
-                    onChange={(e) => setNewModuleTitle(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}
-                  />
+                  <Input placeholder="Nome do novo módulo" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}/>
                   <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Adicionar Módulo
@@ -105,6 +122,15 @@ export default function EditSpacePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {isLessonModalOpen && currentModuleId && (
+        <CreateLessonModal
+          isOpen={isLessonModalOpen}
+          onClose={() => setIsLessonModalOpen(false)}
+          moduleId={currentModuleId}
+          spaceId={spaceId!}
+        />
+      )}
     </ProducerLayout>
   );
 }

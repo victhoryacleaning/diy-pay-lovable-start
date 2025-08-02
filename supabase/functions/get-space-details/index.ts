@@ -15,26 +15,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Query aprimorada para buscar os módulos do produto principal
+    // Query aprimorada para buscar as aulas dentro dos módulos
     const { data: space, error } = await serviceClient
       .from('spaces')
       .select(`
-        id, 
-        name, 
-        slug,
+        id, name, slug,
         space_products (
-          id,
-          product_type,
           product:products (
-            id, 
-            name, 
-            checkout_image_url,
-            modules (id, title, display_order)
+            id, name,
+            modules (
+              id, title, display_order,
+              lessons (id, title, display_order, content_type)
+            )
           )
         )
       `)
       .eq('id', spaceId)
-      .order('display_order', { referencedTable: 'space_products.product.modules', ascending: true })
+      .eq('space_products.product_type', 'principal') // Garante que estamos pegando o produto principal
       .single();
 
     if (error) throw error;
