@@ -12,13 +12,6 @@ interface GeneralTabProps {
 }
 
 const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
-  
-  // --- TESTE DE DIAGNÓSTICO DEFINITIVO v2 ---
-  console.log('--- EXECUTANDO CÓDIGO DO GENERAL_TAB CORRIGIDO ---', { 
-    deliveryType: formData.delivery_type 
-  });
-  // --- FIM DO TESTE ---
-
   const isPriceDisabled = formData.product_type === 'donation';
   const isDonation = formData.product_type === 'donation';
   const isSubscription = formData.product_type === 'subscription';
@@ -96,21 +89,7 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         </p>
       </div>
 
-      {/* Seção "URL de Acesso" agora só aparece se a entrega NÃO for Área de Membros interna */}
-      {formData.delivery_type !== 'members_area' && (
-        <div className="space-y-2">
-          <Label htmlFor="file_url">URL de Acesso ou Informação de Entrega</Label>
-          <Input
-            id="file_url"
-            value={formData.file_url_or_access_info}
-            onChange={(e) => onInputChange('file_url_or_access_info', e.target.value)}
-            placeholder="https://... ou instruções de acesso"
-          />
-          <p className="text-sm text-muted-foreground">
-            Insira o link da sua área de membros externa, informações do evento ou instruções para entrega manual.
-          </p>
-        </div>
-      )}
+      {/* A SEÇÃO "URL DE ACESSO" FOI COMPLETAMENTE REMOVIDA DAQUI */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
