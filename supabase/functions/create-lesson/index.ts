@@ -1,3 +1,5 @@
+// supabase/functions/create-lesson/index.ts
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
@@ -16,11 +18,22 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token)
     if (!user) throw new Error('Unauthorized');
 
+    // --- CORREÇÃO AQUI: Usando snake_case consistentemente ---
     const lessonData = await req.json();
-    const { moduleId, title, contentType, contentUrl, content_text, release_type, release_days, release_date, is_free_sample } = lessonData;
+    const { 
+      moduleId, 
+      title, 
+      content_type, 
+      content_url, 
+      content_text, 
+      release_type, 
+      release_days, 
+      release_date, 
+      is_free_sample 
+    } = lessonData;
 
-    if (!moduleId || !title || !contentType) {
-      throw new Error("moduleId, title, e contentType são obrigatórios.");
+    if (!moduleId || !title || !content_type) {
+      throw new Error("moduleId, title, e content_type são obrigatórios.");
     }
 
     const { data, error } = await serviceClient
@@ -28,8 +41,8 @@ Deno.serve(async (req) => {
       .insert({ 
         module_id: moduleId, 
         title: title,
-        content_type: contentType,
-        content_url: contentUrl || null,
+        content_type: content_type,
+        content_url: content_url || null,
         content_text: content_text || null,
         release_type: release_type || 'immediate',
         release_days: release_days || null,
