@@ -17,7 +17,7 @@ import LinksTab from './tabs/LinksTab';
 import TicketsTab from './tabs/TicketsTab';
 import SubscriptionsTab from './tabs/SubscriptionsTab';
 
-// Interface de dados limpa, sem o campo 'type'
+// Interface de dados limpa, SEM o campo 'type' obsoleto
 interface ProductFormData {
   name: string;
   description: string;
@@ -61,7 +61,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     return ['credit_card', 'pix', 'bank_slip'];
   };
   
-  // Estado inicial limpo, sem o campo 'type'
+  // Estado inicial limpo, SEM o campo 'type' obsoleto
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -101,7 +101,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     enabled: mode === 'edit' && !!productId
   });
 
-  // Preenchimento do formulário limpo, sem o campo 'type'
+  // Preenchimento do formulário limpo, SEM o campo 'type' obsoleto
   useEffect(() => {
     if (product && mode === 'edit') {
       const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
@@ -142,7 +142,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       const priceValue = data.product_type === 'donation' ? 0 : parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100;
       const priceCents = Math.round(priceValue);
       
-      // Objeto de dados limpo, sem 'type' e com 'delivery_type'
+      // Objeto de dados limpo, SEM 'type' e com 'delivery_type'
       const productData = {
         name: data.name,
         description: data.description || null,
