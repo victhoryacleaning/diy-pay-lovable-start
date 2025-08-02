@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Busca o Space e seus produtos associados em uma única query
+    // Query aprimorada para buscar os módulos do produto principal
     const { data: space, error } = await serviceClient
       .from('spaces')
       .select(`
@@ -25,11 +25,16 @@ Deno.serve(async (req) => {
         space_products (
           id,
           product_type,
-          display_order,
-          product:products (id, name, checkout_image_url)
+          product:products (
+            id, 
+            name, 
+            checkout_image_url,
+            modules (id, title, display_order)
+          )
         )
       `)
       .eq('id', spaceId)
+      .order('display_order', { referencedTable: 'space_products.product.modules', ascending: true })
       .single();
 
     if (error) throw error;
