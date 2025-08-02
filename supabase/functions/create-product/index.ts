@@ -14,13 +14,13 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token)
     if (!user) throw new Error('Unauthorized');
 
-    const productData = await req.json();
-    const { delivery_type, ...restOfProductData } = productData;
+    const productDataWithDelivery = await req.json();
+    const { delivery_type, ...productData } = productDataWithDelivery;
 
     // 1. Criar o produto
     const { data: newProduct, error: productError } = await serviceClient
       .from('products')
-      .insert({ ...restOfProductData, producer_id: user.id })
+      .insert({ ...productData, producer_id: user.id })
       .select()
       .single();
     if (productError) throw productError;

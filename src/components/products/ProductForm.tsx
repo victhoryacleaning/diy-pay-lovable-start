@@ -21,7 +21,7 @@ interface ProductFormData {
   name: string;
   description: string;
   price: string;
-  // file_url_or_access_info: string; <-- REMOVIDO
+  file_url_or_access_info: string;
   max_installments_allowed: number;
   is_active: boolean;
   product_type: string;
@@ -60,10 +60,11 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     return ['credit_card', 'pix', 'bank_slip'];
   };
   
-  const [formData, setFormData] = useState<Omit<ProductFormData, 'file_url_or_access_info'>>({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
     price: '',
+    file_url_or_access_info: '',
     max_installments_allowed: 1,
     is_active: true,
     product_type: productTypeFromUrl,
@@ -108,6 +109,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         name: product.name,
         description: product.description || '',
         price: (product.price_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
         is_active: product.is_active,
         product_type: product.product_type || 'single_payment',
@@ -133,7 +135,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   };
 
   const saveProductMutation = useMutation({
-    mutationFn: async (data: Omit<ProductFormData, 'file_url_or_access_info'>) => {
+    mutationFn: async (data: ProductFormData) => {
       const priceValue = data.product_type === 'donation' ? 0 : parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100;
       const priceCents = Math.round(priceValue);
       
@@ -141,6 +143,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         name: data.name,
         description: data.description || null,
         price_cents: priceCents,
+        file_url_or_access_info: data.file_url_or_access_info || null,
         max_installments_allowed: data.max_installments_allowed,
         is_active: data.is_active,
         producer_id: user?.id,

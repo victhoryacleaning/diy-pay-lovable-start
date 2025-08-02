@@ -74,22 +74,29 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
       <div className="space-y-2">
         <Label htmlFor="delivery_type">Forma de Entrega do Conteúdo</Label>
         <Select value={formData.delivery_type} onValueChange={(value) => onInputChange('delivery_type', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione a forma de entrega" />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="members_area">Área de Membros</SelectItem>
+            <SelectItem value="members_area">Área de Membros (Recomendado)</SelectItem>
             <SelectItem value="external_members_area">Área de Membros Externa</SelectItem>
             <SelectItem value="in_person_event">Evento Presencial</SelectItem>
             <SelectItem value="payment_only">Apenas Receber Pagamento</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-sm text-muted-foreground">
-          Escolha como seu cliente receberá o acesso ao conteúdo após a compra.
+          Escolha como seu cliente receberá o conteúdo após a compra.
         </p>
       </div>
 
-      {/* A SEÇÃO "URL DE ACESSO" FOI COMPLETAMENTE REMOVIDA DAQUI */}
+      {/* O campo de URL só aparece se a entrega NÃO for a área de membros interna */}
+      {formData.delivery_type !== 'members_area' && (
+        <div className="space-y-2">
+          <Label htmlFor="file_url">URL de Acesso ou Informação de Entrega</Label>
+          <Input id="file_url" value={formData.file_url_or_access_info} onChange={(e) => onInputChange('file_url_or_access_info', e.target.value)} placeholder="https://... ou instruções de acesso"/>
+          <p className="text-sm text-muted-foreground">
+            Insira o link, informações do evento ou instruções para entrega.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
