@@ -107,9 +107,9 @@
 
 /* src/index.css */
 
-/* Adicione este código no final do arquivo */
+/* SUBSTITUA a regra antiga por esta nova e corrigida */
 
-.quill-editor-container .ql-container {
-  min-height: 150px; /* Define a altura mínima do editor */
+.quill-editor-container .ql-editor {
+  min-height: 150px; /* Define a altura mínima da ÁREA DE DIGITAÇÃO */
   font-size: 1rem;
 }
