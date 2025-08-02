@@ -14,21 +14,22 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token)
     if (!user) throw new Error('Unauthorized');
 
-    const { items, type } = await req.json(); // 'type' pode ser 'modules' ou 'lessons'
+    const { items, type } = await req.json(); // 'type' é 'modules' ou 'lessons'
     if (!items || !Array.isArray(items) || !type) {
-      throw new Error("Payload inválido. 'items' (array) e 'type' são obrigatórios.");
+      throw new Error("Payload inválido.");
     }
 
-    // Mapeia as atualizações
-    const updates = items.map((item, index) => ({
+    // Mapeia os dados para o formato que a função SQL espera
+    const updatePayload = items.map((item, index) => ({
       id: item.id,
       display_order: index
     }));
-
-    // Executa as atualizações na tabela correta
-    const { error } = await serviceClient
-      .from(type) // Usa o 'type' para definir a tabela dinamicamente
-      .upsert(updates, { onConflict: 'id' });
+    
+    // Chama a função RPC no banco de dados
+    const { error } = await serviceClient.rpc('update_display_order', {
+      table_name: type,
+      items: updatePayload
+    });
 
     if (error) throw error;
 
@@ -37,6 +38,7 @@ Deno.serve(async (req) => {
       status: 200,
     })
   } catch (error) {
+    console.error('Erro em update-content-order:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

@@ -129,6 +129,7 @@ export type Database = {
       lessons: {
         Row: {
           attachments: Json | null
+          content_text: string | null
           content_type: string
           content_url: string | null
           created_at: string
@@ -144,6 +145,7 @@ export type Database = {
         }
         Insert: {
           attachments?: Json | null
+          content_text?: string | null
           content_type: string
           content_url?: string | null
           created_at?: string
@@ -159,6 +161,7 @@ export type Database = {
         }
         Update: {
           attachments?: Json | null
+          content_text?: string | null
           content_type?: string
           content_url?: string | null
           created_at?: string
@@ -820,6 +823,10 @@ export type Database = {
           p_end_date: string
         }
         Returns: Json
+      }
+      update_display_order: {
+        Args: { table_name: string; items: Json }
+        Returns: undefined
       }
       upsert_producer_balance: {
         Args: { p_producer_id: string; amount_to_add: number }
