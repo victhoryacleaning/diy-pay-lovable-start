@@ -17,10 +17,10 @@ Deno.serve(async (req) => {
     if (!user) throw new Error('Unauthorized');
 
     const lessonData = await req.json();
-    const { moduleId, title, content_type, content_url, content_text, release_type, release_days, release_date, is_free_sample } = lessonData;
+    const { moduleId, title, contentType, contentUrl, content_text, release_type, release_days, release_date, is_free_sample } = lessonData;
 
-    if (!moduleId || !title || !content_type) {
-      throw new Error("moduleId, title, e content_type são obrigatórios.");
+    if (!moduleId || !title || !contentType) {
+      throw new Error("moduleId, title, e contentType são obrigatórios.");
     }
 
     const { data, error } = await serviceClient
@@ -28,8 +28,9 @@ Deno.serve(async (req) => {
       .insert({ 
         module_id: moduleId, 
         title: title,
-        content_type: content_type,
-        content_url: content_url || null,
+        content_type: contentType,
+        content_url: contentUrl || null,
+        content_text: content_text || null,
         release_type: release_type || 'immediate',
         release_days: release_days || null,
         release_date: release_date || null,
