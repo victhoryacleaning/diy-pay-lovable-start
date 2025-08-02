@@ -128,32 +128,47 @@ export type Database = {
       }
       lessons: {
         Row: {
+          attachments: Json | null
           content_type: string
           content_url: string | null
           created_at: string
           display_order: number
           id: string
+          is_free_sample: boolean
           module_id: string
+          release_date: string | null
+          release_days: number | null
+          release_type: string
           title: string
           updated_at: string
         }
         Insert: {
+          attachments?: Json | null
           content_type: string
           content_url?: string | null
           created_at?: string
           display_order?: number
           id?: string
+          is_free_sample?: boolean
           module_id: string
+          release_date?: string | null
+          release_days?: number | null
+          release_type?: string
           title: string
           updated_at?: string
         }
         Update: {
+          attachments?: Json | null
           content_type?: string
           content_url?: string | null
           created_at?: string
           display_order?: number
           id?: string
+          is_free_sample?: boolean
           module_id?: string
+          release_date?: string | null
+          release_days?: number | null
+          release_type?: string
           title?: string
           updated_at?: string
         }
