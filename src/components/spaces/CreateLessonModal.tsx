@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from 'lucide-react';
-import '@/styles/quill-editor.css'; // Importando estilos customizados
+import '@/index.css'; // <<< CORRIGIDO: Importando o CSS global corretamente
 
 const lessonSchema = z.object({
   title: z.string().min(3, { message: "O título deve ter no mínimo 3 caracteres." }),
@@ -25,7 +25,7 @@ const lessonSchema = z.object({
   content_text: z.string().optional(),
   release_type: z.string().default('immediate'),
   release_days: z.coerce.number().optional(),
-  release_date: z.string().optional(), // Mantido como string para o input type="date"
+  release_date: z.string().optional(),
 });
 
 type LessonFormValues = z.infer<typeof lessonSchema>;
