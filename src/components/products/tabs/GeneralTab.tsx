@@ -1,4 +1,4 @@
-// --- CORRIGINDO ERRO CSS E FORÇANDO REBUILD - v2.0 ---
+// src/components/products/tabs/GeneralTab.tsx
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,13 @@ interface GeneralTabProps {
 }
 
 const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
+  
+  // --- TESTE DE DIAGNÓSTICO DEFINITIVO v2 ---
+  console.log('--- EXECUTANDO CÓDIGO DO GENERAL_TAB CORRIGIDO ---', { 
+    deliveryType: formData.delivery_type 
+  });
+  // --- FIM DO TESTE ---
+
   const isPriceDisabled = formData.product_type === 'donation';
   const isDonation = formData.product_type === 'donation';
   const isSubscription = formData.product_type === 'subscription';
