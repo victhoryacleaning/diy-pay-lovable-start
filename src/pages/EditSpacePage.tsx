@@ -15,6 +15,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LessonEditorModal } from '@/components/spaces/LessonEditorModal';
+import { ConfirmationModal } from '@/components/core/ConfirmationModal';
+import { RenameModuleModal } from '@/components/spaces/RenameModuleModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } from 'lucide-react';
 
@@ -23,10 +25,11 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 interface SortableLessonItemProps {
   lesson: any;
   onEditLesson: (lesson: any, moduleId: string) => void;
-  onDeleteLesson: (lessonId: string) => void;
+  setModalState: (state: any) => void;
+  modalState: any;
 }
 
-const SortableLessonItem: React.FC<SortableLessonItemProps> = ({ lesson, onEditLesson, onDeleteLesson }) => {
+const SortableLessonItem: React.FC<SortableLessonItemProps> = ({ lesson, onEditLesson, setModalState, modalState }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
     id: lesson.id,
     data: { type: 'lesson' }
@@ -51,7 +54,7 @@ const SortableLessonItem: React.FC<SortableLessonItemProps> = ({ lesson, onEditL
             <Edit className="h-4 w-4 mr-2" />
             Editar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDeleteLesson(lesson.id)} className="text-destructive">
+          <DropdownMenuItem onClick={() => setModalState({ ...modalState, deleteLesson: lesson })} className="text-destructive">
             <Trash className="h-4 w-4 mr-2" />
             Excluir
           </DropdownMenuItem>
@@ -64,19 +67,17 @@ const SortableLessonItem: React.FC<SortableLessonItemProps> = ({ lesson, onEditL
 interface SortableModuleItemProps {
   module: any;
   openCreateLessonModal: (moduleId: string) => void;
-  onRenameModule: (module: any) => void;
-  onDeleteModule: (moduleId: string) => void;
   onEditLesson: (lesson: any, moduleId: string) => void;
-  onDeleteLesson: (lessonId: string) => void;
+  setModalState: (state: any) => void;
+  modalState: any;
 }
 
 const SortableModuleItem: React.FC<SortableModuleItemProps> = ({ 
   module, 
   openCreateLessonModal, 
-  onRenameModule, 
-  onDeleteModule, 
   onEditLesson, 
-  onDeleteLesson 
+  setModalState,
+  modalState
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: module.id,
@@ -98,16 +99,16 @@ const SortableModuleItem: React.FC<SortableModuleItemProps> = ({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => onRenameModule(module)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Renomear
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDeleteModule(module.id)} className="text-destructive">
-                <Trash className="h-4 w-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setModalState({ ...modalState, rename: module })}>
+              <Edit className="h-4 w-4 mr-2" />
+              Renomear
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setModalState({ ...modalState, deleteModule: module })} className="text-destructive">
+              <Trash className="h-4 w-4 mr-2" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="ghost" size="sm" onClick={() => openCreateLessonModal(module.id)}>+ Adicionar Aula</Button>
         </div>
@@ -123,7 +124,8 @@ const SortableModuleItem: React.FC<SortableModuleItemProps> = ({
                     key={lesson.id} 
                     lesson={lesson} 
                     onEditLesson={onEditLesson}
-                    onDeleteLesson={onDeleteLesson}
+                    setModalState={setModalState}
+                    modalState={modalState}
                   />
                 ))}
               </div>
@@ -151,6 +153,11 @@ export default function EditSpacePage() {
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<any | null>(null);
+  const [modalState, setModalState] = useState<{
+    rename: any | null;
+    deleteModule: any | null;
+    deleteLesson: any | null;
+  }>({ rename: null, deleteModule: null, deleteLesson: null });
 
   const { data: spaceData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['space', spaceId],
@@ -258,22 +265,24 @@ export default function EditSpacePage() {
     setIsLessonModalOpen(true);
   };
 
-  const handleRenameModule = (module: any) => {
-    const newTitle = prompt("Novo nome do módulo:", module.title);
-    if (newTitle && newTitle.trim() !== module.title) {
-      updateModuleMutation.mutate({ moduleId: module.id, title: newTitle.trim() });
+  const handleRenameModule = (newTitle: string) => {
+    if (modalState.rename) {
+      updateModuleMutation.mutate({ moduleId: modalState.rename.id, title: newTitle });
+      setModalState({ ...modalState, rename: null });
     }
   };
 
-  const handleDeleteModule = (moduleId: string) => {
-    if (confirm("Tem certeza que deseja excluir este módulo? Todas as aulas serão removidas.")) {
-      deleteModuleMutation.mutate(moduleId);
+  const handleDeleteModule = () => {
+    if (modalState.deleteModule) {
+      deleteModuleMutation.mutate(modalState.deleteModule.id);
+      setModalState({ ...modalState, deleteModule: null });
     }
   };
 
-  const handleDeleteLesson = (lessonId: string) => {
-    if (confirm("Tem certeza que deseja excluir esta aula?")) {
-      deleteLessonMutation.mutate(lessonId);
+  const handleDeleteLesson = () => {
+    if (modalState.deleteLesson) {
+      deleteLessonMutation.mutate(modalState.deleteLesson.id);
+      setModalState({ ...modalState, deleteLesson: null });
     }
   };
 
@@ -344,10 +353,9 @@ export default function EditSpacePage() {
                           key={module.id} 
                           module={module} 
                           openCreateLessonModal={openCreateLessonModal}
-                          onRenameModule={handleRenameModule}
-                          onDeleteModule={handleDeleteModule}
                           onEditLesson={openLessonEditor}
-                          onDeleteLesson={handleDeleteLesson}
+                          setModalState={setModalState}
+                          modalState={modalState}
                         />
                       ))}
                     </Accordion>
@@ -376,6 +384,35 @@ export default function EditSpacePage() {
             moduleId={currentModuleId}
             spaceId={spaceId!}
             initialData={editingLesson}
+          />
+        )}
+
+        {modalState.rename && (
+          <RenameModuleModal
+            isOpen={!!modalState.rename}
+            onClose={() => setModalState({ ...modalState, rename: null })}
+            currentTitle={modalState.rename.title}
+            onConfirm={handleRenameModule}
+          />
+        )}
+
+        {modalState.deleteModule && (
+          <ConfirmationModal
+            isOpen={!!modalState.deleteModule}
+            onClose={() => setModalState({ ...modalState, deleteModule: null })}
+            onConfirm={handleDeleteModule}
+            title="Excluir Módulo?"
+            description="Tem certeza que deseja excluir este módulo? Todas as aulas dentro deste módulo também serão excluídas."
+          />
+        )}
+
+        {modalState.deleteLesson && (
+          <ConfirmationModal
+            isOpen={!!modalState.deleteLesson}
+            onClose={() => setModalState({ ...modalState, deleteLesson: null })}
+            onConfirm={handleDeleteLesson}
+            title="Excluir Aula?"
+            description="Tem certeza que deseja excluir esta aula? Esta ação não pode ser desfeita."
           />
         )}
       </DndContext>
