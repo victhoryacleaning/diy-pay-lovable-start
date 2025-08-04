@@ -1,5 +1,5 @@
 // src/pages/EditSpacePage.tsx
-// Madala
+
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -119,11 +119,7 @@ const SortableModuleItem = ({
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log('Add lesson button clicked for module:', module.id); // Debug
-              onAddLesson(module.id);
-            }}
+            onClick={() => onAddLesson(module.id)}
           >
             + Adicionar Aula
           </Button>
@@ -192,8 +188,7 @@ export default function EditSpacePage() {
   const sensors = useSensors(
     useSensor(PointerSensor, { 
       activationConstraint: { 
-        distance: 3,
-        delay: 100
+        distance: 8, // Aumenta a distância para iniciar o arraste, evitando cliques acidentais
       } 
     })
   );
@@ -201,39 +196,14 @@ export default function EditSpacePage() {
   // --- Mutações ---
   const updateOrderMutation = useMutation({
     mutationFn: async ({ items, type }: { items: any[], type: 'modules' | 'lessons' }) => {
-      console.log('updateOrderMutation called with:', { items, type });
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('update-content-order', { 
-          body: { items, type } 
-        });
-        
-        console.log('API response:', { data, error });
-        
-        if (error) {
-          console.error('API error:', error);
-          throw new Error(error.message || 'Erro na API');
-        }
-        
-        return data;
-      } catch (err) {
-        console.error('Caught error in updateOrderMutation:', err);
-        throw err;
-      }
+      const { error } = await supabase.functions.invoke('update-content-order', { body: { items, type } });
+      if (error) throw new Error(error.message);
     },
-    onSuccess: (data) => {
-      console.log('Order update successful:', data);
+    onSuccess: () => {
       toast({ title: "Sucesso!", description: "Ordem do conteúdo atualizada." });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error: any) => {
-      console.error('Order update failed:', error);
-      toast({ 
-        title: "Erro", 
-        description: `Erro ao atualizar ordem: ${error?.message || 'Erro desconhecido'}`, 
-        variant: "destructive" 
-      });
-    },
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   const createModuleMutation = useMutation({
@@ -294,7 +264,6 @@ export default function EditSpacePage() {
   };
 
   const openLessonEditor = (lesson: any | null, moduleId: string) => {
-    console.log('openLessonEditor called with:', { lesson, moduleId }); // Debug
     setEditingLesson(lesson);
     setCurrentModuleId(moduleId);
     setIsLessonEditorOpen(true);
@@ -323,94 +292,33 @@ export default function EditSpacePage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('Drag end:', { activeId: active.id, overId: over?.id });
+    if (!over || active.id === over.id) return;
     
-    if (!over || active.id === over.id) {
-      console.log('Drag cancelled or same position');
-      return;
-    }
-    
-    if (!principalProduct?.modules) {
-      console.log('No modules found');
-      return;
-    }
-    
-    const activeType = active.data?.current?.type;
-    const overType = over.data?.current?.type;
-    
-    console.log('Drag types:', { activeType, overType });
+    const activeType = active.data.current?.type;
+    const overType = over.data.current?.type;
 
-    // Reordenar módulos
-    if (activeType === 'module' && overType === 'module') {
-      console.log('Reordering modules...');
-      
-      try {
-        const oldIndex = principalProduct.modules.findIndex((m: any) => m?.id === active.id);
-        const newIndex = principalProduct.modules.findIndex((m: any) => m?.id === over.id);
-        
-        console.log('Module indices:', { oldIndex, newIndex });
-        
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          const reorderedModules = arrayMove([...principalProduct.modules], oldIndex, newIndex);
-          
-          // Verificar se todos os módulos têm ID antes de criar o array
-          const modulesForUpdate = reorderedModules
-            .filter((module: any) => module && module.id)
-            .map((module: any, index: number) => ({
-              id: module.id,
-              sort_order: index + 1
-            }));
-          
-          console.log('Sending module order update:', modulesForUpdate);
-          
-          if (modulesForUpdate.length > 0) {
-            updateOrderMutation.mutate({ items: modulesForUpdate, type: 'modules' });
-          }
-        }
-      } catch (error) {
-        console.error('Error in module reordering:', error);
+    if (activeType === 'module' && overType === 'module' && principalProduct?.modules) {
+      const oldIndex = principalProduct.modules.findIndex((m: any) => m.id === active.id);
+      const newIndex = principalProduct.modules.findIndex((m: any) => m.id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
+        updateOrderMutation.mutate({ items: reorderedModules, type: 'modules' });
       }
     }
     
-    // Reordenar aulas
-    if (activeType === 'lesson' && overType === 'lesson') {
-      console.log('Reordering lessons...');
-      
-      try {
-        const activeLesson = active.data?.current?.lesson;
-        const overLesson = over.data?.current?.lesson;
-        
-        if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
-          const module = principalProduct.modules.find((m: any) => m?.id === activeLesson.module_id);
-          
-          if (module && module.lessons && Array.isArray(module.lessons)) {
-            const oldIndex = module.lessons.findIndex((l: any) => l?.id === active.id);
-            const newIndex = module.lessons.findIndex((l: any) => l?.id === over.id);
-            
-            console.log('Lesson indices:', { oldIndex, newIndex });
-            
-            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-              const reorderedLessons = arrayMove([...module.lessons], oldIndex, newIndex);
-              
-              // Verificar se todas as aulas têm ID antes de criar o array
-              const lessonsForUpdate = reorderedLessons
-                .filter((lesson: any) => lesson && lesson.id)
-                .map((lesson: any, index: number) => ({
-                  id: lesson.id,
-                  sort_order: index + 1,
-                  module_id: lesson.module_id
-                }));
-              
-              console.log('Sending lesson order update:', lessonsForUpdate);
-              
-              if (lessonsForUpdate.length > 0) {
-                updateOrderMutation.mutate({ items: lessonsForUpdate, type: 'lessons' });
-              }
-            }
+    if (activeType === 'lesson' && overType === 'lesson' && principalProduct?.modules) {
+      const activeLesson = active.data.current?.lesson;
+      const overLesson = over.data.current?.lesson;
+      if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
+        const module = principalProduct.modules.find((m: any) => m.id === activeLesson.module_id);
+        if (module?.lessons) {
+          const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
+          const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
+            updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
           }
         }
-      } catch (error) {
-        console.error('Error in lesson reordering:', error);
       }
     }
   };
@@ -418,10 +326,7 @@ export default function EditSpacePage() {
   if (isLoading) {
     return (
       <ProducerLayout>
-        <div className="p-8">
-          <Skeleton className="h-10 w-1/3 mb-4" />
-          <Skeleton className="h-6 w-1/2" />
-        </div>
+        <div className="p-8"><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></div>
       </ProducerLayout>
     );
   }
@@ -429,48 +334,34 @@ export default function EditSpacePage() {
   if (isError) {
     return (
       <ProducerLayout>
-        <div className="p-8 text-red-500">
-          Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}
-        </div>
+        <div className="p-8 text-red-500">Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}</div>
       </ProducerLayout>
     );
   }
 
   return (
     <ProducerLayout>
-      <DndContext 
-        sensors={sensors} 
-        collisionDetection={closestCenter} 
-        onDragEnd={handleDragEnd}
-        onDragStart={(event) => {
-          console.log('Drag started:', event.active.id, event.active.data.current?.type);
-        }}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="p-4 md:p-8">
           <h1 className="text-3xl font-bold">Editando: {spaceData.name}</h1>
           <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData.slug}</p>
-          
           <Tabs defaultValue="content" className="mt-8">
             <TabsList>
               <TabsTrigger value="content">Conteúdo</TabsTrigger>
               <TabsTrigger value="students" disabled>Alunos</TabsTrigger>
               <TabsTrigger value="classes" disabled>Turmas</TabsTrigger>
             </TabsList>
-            
             <TabsContent value="content" className="mt-6">
               <Card>
                 <CardContent className="p-6">
                   {principalProduct?.modules && principalProduct.modules.length > 0 ? (
-                    <SortableContext 
-                      items={principalProduct.modules.map((m: any) => m.id)} 
-                      strategy={verticalListSortingStrategy}
-                    >
+                    <SortableContext items={principalProduct.modules.map((m: any) => m.id)} strategy={verticalListSortingStrategy}>
                       <Accordion type="multiple" className="w-full space-y-4">
                         {principalProduct.modules.map((module: any) => (
                           <SortableModuleItem 
                             key={module.id} 
                             module={module} 
-                            onAddLesson={(moduleId: string) => openLessonEditor(null, moduleId)}
+                            onAddLesson={() => openLessonEditor(null, module.id)}
                             onRename={() => setModalState({ ...modalState, rename: module })}
                             onDelete={() => setModalState({ ...modalState, deleteModule: module })}
                             onEditLesson={openLessonEditor}
@@ -480,22 +371,12 @@ export default function EditSpacePage() {
                       </Accordion>
                     </SortableContext>
                   ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p>
-                    </div>
+                    <div className="text-center py-8"><p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p></div>
                   )}
                   
                   <div className="mt-6 flex gap-2">
-                    <Input 
-                      placeholder="Nome do novo módulo" 
-                      value={newModuleTitle} 
-                      onChange={(e) => setNewModuleTitle(e.target.value)} 
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}
-                    />
-                    <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Adicionar Módulo
-                    </Button>
+                    <Input placeholder="Nome do novo módulo" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}/>
+                    <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}><PlusCircle className="mr-2 h-4 w-4" />Adicionar Módulo</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -504,14 +385,10 @@ export default function EditSpacePage() {
         </div>
       </DndContext>
 
-      {/* Modais */}
       {isLessonEditorOpen && currentModuleId && (
         <LessonEditorModal
           isOpen={isLessonEditorOpen}
-          onClose={() => { 
-            setIsLessonEditorOpen(false); 
-            setEditingLesson(null); 
-          }}
+          onClose={() => { setIsLessonEditorOpen(false); setEditingLesson(null); }}
           moduleId={currentModuleId}
           spaceId={spaceId!}
           initialData={editingLesson}
