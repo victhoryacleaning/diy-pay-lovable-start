@@ -101,20 +101,29 @@ export default function EditSpacePage() {
   // --- Mutações ---
   const updateOrderMutation = useMutation({
     mutationFn: async ({ items, type }: { items: any[], type: 'modules' | 'lessons' }) => {
+      console.log('Updating order:', { items, type }); // Debug log
+      
       // Preparar os dados com order_index correto
       const orderedItems = items.map((item, index) => ({
         id: item.id,
         order_index: index + 1
       }));
 
-      const { error } = await supabase.functions.invoke('update-content-order', { 
+      const { data, error } = await supabase.functions.invoke('update-content-order', { 
         body: { items: orderedItems, type } 
       });
-      if (error) throw new Error(error.message);
       
-      return orderedItems;
+      if (error) {
+        console.error('Update order error:', error); // Debug log
+        throw new Error(error.message);
+      }
+      
+      console.log('Update order success:', data); // Debug log
+      return data;
     },
     onMutate: async ({ items, type }) => {
+      console.log('onMutate called:', { items, type }); // Debug log
+      
       // Cancelar queries em andamento
       await queryClient.cancelQueries({ queryKey: ['space', spaceId] });
       
@@ -123,9 +132,13 @@ export default function EditSpacePage() {
       
       // Atualização otimista
       queryClient.setQueryData(['space', spaceId], (old: any) => {
-        if (!old?.principal_product) return old;
+        if (!old?.principal_product) {
+          console.log('No principal product found'); // Debug log
+          return old;
+        }
         
         if (type === 'modules') {
+          console.log('Updating modules order optimistically'); // Debug log
           return {
             ...old,
             principal_product: {
@@ -134,9 +147,13 @@ export default function EditSpacePage() {
             }
           };
         } else if (type === 'lessons') {
+          console.log('Updating lessons order optimistically'); // Debug log
           // Encontrar o módulo correto e atualizar suas aulas
           const moduleId = items[0]?.module_id;
-          if (!moduleId) return old;
+          if (!moduleId) {
+            console.log('No moduleId found in lessons'); // Debug log
+            return old;
+          }
           
           const updatedModules = old.principal_product.modules.map((module: any) => 
             module.id === moduleId ? { ...module, lessons: items } : module
@@ -157,6 +174,7 @@ export default function EditSpacePage() {
       return { previousData };
     },
     onError: (error: any, variables, context) => {
+      console.error('Mutation error:', error); // Debug log
       // Reverter para o estado anterior em caso de erro
       if (context?.previousData) {
         queryClient.setQueryData(['space', spaceId], context.previousData);
@@ -167,13 +185,15 @@ export default function EditSpacePage() {
         variant: "destructive" 
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Mutation success:', data); // Debug log
       toast({ 
         title: "Sucesso!", 
         description: "Ordem do conteúdo atualizada." 
       });
     },
     onSettled: () => {
+      console.log('Mutation settled, invalidating queries'); // Debug log
       // Revalidar os dados
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     }
@@ -236,9 +256,16 @@ export default function EditSpacePage() {
     }
   };
 
-  const openLessonEditor = (lesson: any | null, moduleId: string) => {
-    setEditingLesson(lesson);
-    setCurrentModuleId(moduleId);
+  const openLessonEditor = (lessonOrModuleId: any | string, moduleId?: string) => {
+    // Se é string, é o moduleId para criar nova aula
+    if (typeof lessonOrModuleId === 'string') {
+      setEditingLesson(null);
+      setCurrentModuleId(lessonOrModuleId);
+    } else {
+      // Se é objeto, é uma aula para editar
+      setEditingLesson(lessonOrModuleId);
+      setCurrentModuleId(moduleId!);
+    }
     setIsLessonEditorOpen(true);
   };
 
@@ -267,53 +294,46 @@ export default function EditSpacePage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     
-    const activeType = active.data.current?.type;
-    const overType = over.data.current?.type;
+    const activeData = active.data.current;
+    const overData = over.data.current;
+    
+    if (!activeData || !overData) return;
+    
+    const activeType = activeData.type;
+    const overType = overData.type;
 
     // Reordenar módulos
     if (activeType === 'module' && overType === 'module' && principalProduct?.modules) {
-      const oldIndex = principalProduct.modules.findIndex((m: any) => m.id === active.id);
-      const newIndex = principalProduct.modules.findIndex((m: any) => m.id === over.id);
+      const modules = principalProduct.modules;
+      const oldIndex = modules.findIndex((m: any) => m.id === active.id);
+      const newIndex = modules.findIndex((m: any) => m.id === over.id);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
-        
-        // Adicionar order_index a cada módulo
-        const modulesWithOrder = reorderedModules.map((module, index) => ({
-          ...module,
-          order_index: index + 1
-        }));
-        
+        const reorderedModules = arrayMove([...modules], oldIndex, newIndex);
         updateOrderMutation.mutate({ 
-          items: modulesWithOrder, 
+          items: reorderedModules, 
           type: 'modules' 
         });
       }
     }
     
     // Reordenar aulas dentro do mesmo módulo
-    if (activeType === 'lesson' && overType === 'lesson' && principalProduct?.modules) {
-      const activeLesson = active.data.current?.lesson;
-      const overLesson = over.data.current?.lesson;
+    else if (activeType === 'lesson' && overType === 'lesson') {
+      const activeLesson = activeData.lesson;
+      const overLesson = overData.lesson;
       
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
-        const module = principalProduct.modules.find((m: any) => m.id === activeLesson.module_id);
+        const module = principalProduct?.modules?.find((m: any) => m.id === activeLesson.module_id);
         
         if (module?.lessons) {
-          const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
-          const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
+          const lessons = module.lessons;
+          const oldIndex = lessons.findIndex((l: any) => l.id === active.id);
+          const newIndex = lessons.findIndex((l: any) => l.id === over.id);
           
           if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-            const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
-            
-            // Adicionar order_index a cada aula
-            const lessonsWithOrder = reorderedLessons.map((lesson, index) => ({
-              ...lesson,
-              order_index: index + 1
-            }));
-            
+            const reorderedLessons = arrayMove([...lessons], oldIndex, newIndex);
             updateOrderMutation.mutate({ 
-              items: lessonsWithOrder, 
+              items: reorderedLessons, 
               type: 'lessons' 
             });
           }
