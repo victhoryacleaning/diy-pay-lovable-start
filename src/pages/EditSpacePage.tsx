@@ -147,22 +147,33 @@ export default function EditSpacePage() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log('=== DRAG END TRIGGERED ===', event);
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      console.log('=== DRAG CANCELLED - no over or same item ===');
+      return;
+    }
     
     const activeType = active.data.current?.type;
     const overType = over.data.current?.type;
+    
+    console.log('=== DRAG TYPES ===', { activeType, overType });
 
     if (activeType === 'module' && overType === 'module' && principalProduct?.modules) {
+      console.log('=== REORDERING MODULES ===');
       const oldIndex = principalProduct.modules.findIndex((m: any) => m.id === active.id);
       const newIndex = principalProduct.modules.findIndex((m: any) => m.id === over.id);
+      console.log('=== MODULE INDICES ===', { oldIndex, newIndex });
+      
       if (oldIndex !== -1 && newIndex !== -1) {
         const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
+        console.log('=== CALLING UPDATE MUTATION FOR MODULES ===', reorderedModules);
         updateOrderMutation.mutate({ items: reorderedModules, type: 'modules' });
       }
     }
     
     if (activeType === 'lesson' && overType === 'lesson' && principalProduct?.modules) {
+      console.log('=== REORDERING LESSONS ===');
       const activeLesson = active.data.current?.lesson;
       const overLesson = over.data.current?.lesson;
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
@@ -170,8 +181,11 @@ export default function EditSpacePage() {
         if (module?.lessons) {
           const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
           const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
+          console.log('=== LESSON INDICES ===', { oldIndex, newIndex });
+          
           if (oldIndex !== -1 && newIndex !== -1) {
             const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
+            console.log('=== CALLING UPDATE MUTATION FOR LESSONS ===', reorderedLessons);
             updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
           }
         }
