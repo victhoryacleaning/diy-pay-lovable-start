@@ -115,14 +115,36 @@ export default function EditSpacePage() {
     onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
-  // (Outras mutações continuam aqui)
-
   // --- Handlers ---
-  const handleAddModule = () => { /* ... */ };
-  const openLessonEditor = (lesson: any | null, moduleId: string) => { /* ... */ };
-  const handleRenameModule = (newTitle: string) => { /* ... */ };
-  const handleDeleteModule = () => { /* ... */ };
-  const handleDeleteLesson = () => { /* ... */ };
+  const handleAddModule = () => {
+    if (!newModuleTitle.trim()) return;
+    // Implementação do adicionar módulo
+    setNewModuleTitle('');
+  };
+
+  const openLessonEditor = (lesson: any | null, moduleId: string) => {
+    setCurrentModuleId(moduleId);
+    setEditingLesson(lesson);
+    setIsLessonEditorOpen(true);
+  };
+
+  const handleRenameModule = (newTitle: string) => {
+    if (!modalState.rename) return;
+    // Implementação do renomear módulo
+    setModalState({ ...modalState, rename: null });
+  };
+
+  const handleDeleteModule = () => {
+    if (!modalState.deleteModule) return;
+    // Implementação do deletar módulo
+    setModalState({ ...modalState, deleteModule: null });
+  };
+
+  const handleDeleteLesson = () => {
+    if (!modalState.deleteLesson) return;
+    // Implementação do deletar aula
+    setModalState({ ...modalState, deleteLesson: null });
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -162,10 +184,103 @@ export default function EditSpacePage() {
 
   return (
     <ProducerLayout>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        {/* ... (o resto do JSX) ... */}
-      </DndContext>
-      {/* ... (Modais) ... */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Editar Espaço</h1>
+        <p className="text-muted-foreground mt-2">Gerencie o conteúdo do seu espaço</p>
+      </div>
+
+      <Tabs defaultValue="content" className="w-full">
+        <TabsList className="grid w-full grid-cols-1">
+          <TabsTrigger value="content">Conteúdo</TabsTrigger>
+        </TabsList>
+        <TabsContent value="content" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Input
+                  placeholder="Nome do novo módulo"
+                  value={newModuleTitle}
+                  onChange={(e) => setNewModuleTitle(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={handleAddModule} disabled={!newModuleTitle.trim()}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Adicionar Módulo
+                </Button>
+              </div>
+
+              {principalProduct?.modules && principalProduct.modules.length > 0 ? (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={principalProduct.modules.map((m: any) => m.id)} strategy={verticalListSortingStrategy}>
+                    <Accordion type="multiple" className="space-y-4">
+                      {principalProduct.modules.map((module: any) => (
+                        <SortableModuleItem
+                          key={module.id}
+                          module={module}
+                          onAddLesson={(moduleId: string) => openLessonEditor(null, moduleId)}
+                          onRename={() => setModalState({ ...modalState, rename: module })}
+                          onDelete={() => setModalState({ ...modalState, deleteModule: module })}
+                          onEditLesson={(lesson: any) => openLessonEditor(lesson, module.id)}
+                          onDeleteLesson={(lesson: any) => setModalState({ ...modalState, deleteLesson: lesson })}
+                        />
+                      ))}
+                    </Accordion>
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <PlusCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">Nenhum módulo criado</h3>
+                  <p>Adicione seu primeiro módulo para começar a organizar o conteúdo.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Modais */}
+      {isLessonEditorOpen && currentModuleId && (
+        <LessonEditorModal
+          isOpen={isLessonEditorOpen}
+          onClose={() => {
+            setIsLessonEditorOpen(false);
+            setEditingLesson(null);
+          }}
+          moduleId={currentModuleId}
+          spaceId={spaceId!}
+          initialData={editingLesson}
+        />
+      )}
+
+      {modalState.rename && (
+        <RenameModuleModal
+          isOpen={!!modalState.rename}
+          onClose={() => setModalState({ ...modalState, rename: null })}
+          currentTitle={modalState.rename.title}
+          onConfirm={(newTitle) => handleRenameModule(newTitle)}
+        />
+      )}
+
+      {modalState.deleteModule && (
+        <ConfirmationModal
+          isOpen={!!modalState.deleteModule}
+          onClose={() => setModalState({ ...modalState, deleteModule: null })}
+          onConfirm={() => handleDeleteModule()}
+          title="Excluir Módulo?"
+          description="Tem certeza? Todas as aulas dentro deste módulo também serão excluídas."
+        />
+      )}
+
+      {modalState.deleteLesson && (
+        <ConfirmationModal
+          isOpen={!!modalState.deleteLesson}
+          onClose={() => setModalState({ ...modalState, deleteLesson: null })}
+          onConfirm={() => handleDeleteLesson()}
+          title="Excluir Aula?"
+          description="Tem certeza que deseja excluir esta aula? Esta ação não pode ser desfeita."
+        />
+      )}
     </ProducerLayout>
   );
 }
