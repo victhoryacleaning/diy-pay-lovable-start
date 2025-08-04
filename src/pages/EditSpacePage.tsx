@@ -185,13 +185,7 @@ export default function EditSpacePage() {
   });
 
   const principalProduct = useMemo(() => spaceData?.principal_product, [spaceData]);
-  const sensors = useSensors(
-    useSensor(PointerSensor, { 
-      activationConstraint: { 
-        distance: 8, // Aumenta a distância para iniciar o arraste, evitando cliques acidentais
-      } 
-    })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   // --- Mutações ---
   const updateOrderMutation = useMutation({
@@ -323,21 +317,8 @@ export default function EditSpacePage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <ProducerLayout>
-        <div className="p-8"><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></div>
-      </ProducerLayout>
-    );
-  }
-
-  if (isError) {
-    return (
-      <ProducerLayout>
-        <div className="p-8 text-red-500">Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}</div>
-      </ProducerLayout>
-    );
-  }
+  if (isLoading) return <ProducerLayout><div className="p-8"><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></div></ProducerLayout>;
+  if (isError) return <ProducerLayout><div className="p-8 text-red-500">Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}</div></ProducerLayout>;
 
   return (
     <ProducerLayout>
