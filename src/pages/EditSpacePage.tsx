@@ -203,18 +203,23 @@ export default function EditSpacePage() {
     mutationFn: async ({ items, type }: { items: any[], type: 'modules' | 'lessons' }) => {
       console.log('updateOrderMutation called with:', { items, type });
       
-      const { data, error } = await supabase.functions.invoke('update-content-order', { 
-        body: { items, type } 
-      });
-      
-      console.log('API response:', { data, error });
-      
-      if (error) {
-        console.error('API error:', error);
-        throw error;
+      try {
+        const { data, error } = await supabase.functions.invoke('update-content-order', { 
+          body: { items, type } 
+        });
+        
+        console.log('API response:', { data, error });
+        
+        if (error) {
+          console.error('API error:', error);
+          throw new Error(error.message || 'Erro na API');
+        }
+        
+        return data;
+      } catch (err) {
+        console.error('Caught error in updateOrderMutation:', err);
+        throw err;
       }
-      
-      return data;
     },
     onSuccess: (data) => {
       console.log('Order update successful:', data);
@@ -225,7 +230,7 @@ export default function EditSpacePage() {
       console.error('Order update failed:', error);
       toast({ 
         title: "Erro", 
-        description: `Erro ao atualizar ordem: ${error.message}`, 
+        description: `Erro ao atualizar ordem: ${error?.message || 'Erro desconhecido'}`, 
         variant: "destructive" 
       });
     },
@@ -318,68 +323,94 @@ export default function EditSpacePage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('Drag end:', { activeId: active.id, overId: over?.id }); // Debug
+    console.log('Drag end:', { activeId: active.id, overId: over?.id });
     
     if (!over || active.id === over.id) {
       console.log('Drag cancelled or same position');
       return;
     }
+    
     if (!principalProduct?.modules) {
       console.log('No modules found');
       return;
     }
     
-    const activeType = active.data.current?.type;
-    const overType = over.data.current?.type;
+    const activeType = active.data?.current?.type;
+    const overType = over.data?.current?.type;
     
-    console.log('Drag types:', { activeType, overType }); // Debug
+    console.log('Drag types:', { activeType, overType });
 
     // Reordenar módulos
     if (activeType === 'module' && overType === 'module') {
-      console.log('Reordering modules...'); // Debug
-      const oldIndex = principalProduct.modules.findIndex((m: any) => m.id === active.id);
-      const newIndex = principalProduct.modules.findIndex((m: any) => m.id === over.id);
+      console.log('Reordering modules...');
       
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
+      try {
+        const oldIndex = principalProduct.modules.findIndex((m: any) => m?.id === active.id);
+        const newIndex = principalProduct.modules.findIndex((m: any) => m?.id === over.id);
         
-        // Criar array com apenas os dados necessários para o backend
-        const modulesForUpdate = reorderedModules.map((module: any, index: number) => ({
-          id: module.id,
-          sort_order: index + 1
-        }));
+        console.log('Module indices:', { oldIndex, newIndex });
         
-        console.log('Sending module order update:', modulesForUpdate);
-        updateOrderMutation.mutate({ items: modulesForUpdate, type: 'modules' });
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const reorderedModules = arrayMove([...principalProduct.modules], oldIndex, newIndex);
+          
+          // Verificar se todos os módulos têm ID antes de criar o array
+          const modulesForUpdate = reorderedModules
+            .filter((module: any) => module && module.id)
+            .map((module: any, index: number) => ({
+              id: module.id,
+              sort_order: index + 1
+            }));
+          
+          console.log('Sending module order update:', modulesForUpdate);
+          
+          if (modulesForUpdate.length > 0) {
+            updateOrderMutation.mutate({ items: modulesForUpdate, type: 'modules' });
+          }
+        }
+      } catch (error) {
+        console.error('Error in module reordering:', error);
       }
     }
     
     // Reordenar aulas
     if (activeType === 'lesson' && overType === 'lesson') {
-      console.log('Reordering lessons...'); // Debug
-      const activeLesson = active.data.current?.lesson;
-      const overLesson = over.data.current?.lesson;
+      console.log('Reordering lessons...');
       
-      if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
-        const module = principalProduct.modules.find((m: any) => m.id === activeLesson.module_id);
-        if (module && module.lessons) {
-          const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
-          const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
+      try {
+        const activeLesson = active.data?.current?.lesson;
+        const overLesson = over.data?.current?.lesson;
+        
+        if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
+          const module = principalProduct.modules.find((m: any) => m?.id === activeLesson.module_id);
           
-          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-            const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
+          if (module && module.lessons && Array.isArray(module.lessons)) {
+            const oldIndex = module.lessons.findIndex((l: any) => l?.id === active.id);
+            const newIndex = module.lessons.findIndex((l: any) => l?.id === over.id);
             
-            // Criar array com apenas os dados necessários para o backend
-            const lessonsForUpdate = reorderedLessons.map((lesson: any, index: number) => ({
-              id: lesson.id,
-              sort_order: index + 1,
-              module_id: lesson.module_id
-            }));
+            console.log('Lesson indices:', { oldIndex, newIndex });
             
-            console.log('Sending lesson order update:', lessonsForUpdate);
-            updateOrderMutation.mutate({ items: lessonsForUpdate, type: 'lessons' });
+            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+              const reorderedLessons = arrayMove([...module.lessons], oldIndex, newIndex);
+              
+              // Verificar se todas as aulas têm ID antes de criar o array
+              const lessonsForUpdate = reorderedLessons
+                .filter((lesson: any) => lesson && lesson.id)
+                .map((lesson: any, index: number) => ({
+                  id: lesson.id,
+                  sort_order: index + 1,
+                  module_id: lesson.module_id
+                }));
+              
+              console.log('Sending lesson order update:', lessonsForUpdate);
+              
+              if (lessonsForUpdate.length > 0) {
+                updateOrderMutation.mutate({ items: lessonsForUpdate, type: 'lessons' });
+              }
+            }
           }
         }
+      } catch (error) {
+        console.error('Error in lesson reordering:', error);
       }
     }
   };
