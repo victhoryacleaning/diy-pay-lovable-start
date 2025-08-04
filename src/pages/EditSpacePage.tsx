@@ -25,40 +25,118 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 // --- Componentes Helper ---
 
 const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit: () => void; onDelete: () => void; }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lesson.id, data: { current: { type: 'lesson', lesson } } });
-  const style = { transform: CSS.Transform.toString(transform), transition };
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+    id: lesson.id, 
+    data: { current: { type: 'lesson', lesson } } 
+  });
+  
+  const style = { 
+    transform: CSS.Transform.toString(transform), 
+    transition 
+  };
+  
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-background rounded border">
-      <span {...attributes} {...listeners} className="cursor-grab touch-none p-1"><GripVertical className="h-4 w-4 text-muted-foreground" /></span>
-      {lesson.content_type === 'video' ? <Video className="h-4 w-4 text-muted-foreground"/> : <FileText className="h-4 w-4 text-muted-foreground"/>}
+      <span {...attributes} {...listeners} className="cursor-grab touch-none p-1">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </span>
+      {lesson.content_type === 'video' ? 
+        <Video className="h-4 w-4 text-muted-foreground"/> : 
+        <FileText className="h-4 w-4 text-muted-foreground"/>
+      }
       <span className="text-sm flex-1">{lesson.title}</span>
-      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={onEdit}>
+            <Edit className="h-4 w-4 mr-2" />Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onDelete} className="text-destructive">
+            <Trash className="h-4 w-4 mr-2" />Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
 
-const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLesson, onDeleteLesson }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: module.id, data: { current: { type: 'module' } } });
-  const style = { transform: CSS.Transform.toString(transform), transition };
+const SortableModuleItem = ({ 
+  module, 
+  onAddLesson, 
+  onRename, 
+  onDelete, 
+  onEditLesson, 
+  onDeleteLesson 
+}: {
+  module: any;
+  onAddLesson: (moduleId: string) => void;
+  onRename: () => void;
+  onDelete: () => void;
+  onEditLesson: (lesson: any, moduleId: string) => void;
+  onDeleteLesson: (lesson: any) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+    id: module.id, 
+    data: { current: { type: 'module' } } 
+  });
+  
+  const style = { 
+    transform: CSS.Transform.toString(transform), 
+    transition 
+  };
+  
   return (
     <div ref={setNodeRef} style={style}>
       <AccordionItem value={module.id} className="border-none bg-muted rounded-md">
         <div className="flex items-center gap-3 p-3 rounded-t-md border-b">
-          <span {...attributes} {...listeners} className="cursor-grab touch-none p-1"><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
-          <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">{module.title}</AccordionTrigger>
-          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onRename}><Edit className="h-4 w-4 mr-2" />Renomear</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-          <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>+ Adicionar Aula</Button>
+          <span {...attributes} {...listeners} className="cursor-grab touch-none p-1">
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </span>
+          <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">
+            {module.title}
+          </AccordionTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={onRename}>
+                <Edit className="h-4 w-4 mr-2" />Renomear
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                <Trash className="h-4 w-4 mr-2" />Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>
+            + Adicionar Aula
+          </Button>
         </div>
         <AccordionContent className="p-4 rounded-b-md">
           {module.lessons?.length > 0 ? (
             <SortableContext items={module.lessons.map((l: any) => l.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
                 {module.lessons.map((lesson: any) => (
-                  <SortableLessonItem key={lesson.id} lesson={lesson} onEdit={() => onEditLesson(lesson, module.id)} onDelete={() => onDeleteLesson(lesson)} />
+                  <SortableLessonItem 
+                    key={lesson.id} 
+                    lesson={lesson} 
+                    onEdit={() => onEditLesson(lesson, module.id)} 
+                    onDelete={() => onDeleteLesson(lesson)} 
+                  />
                 ))}
               </div>
             </SortableContext>
-          ) : (<p className="text-sm text-muted-foreground text-center py-4">Nenhuma aula neste módulo.</p>)}
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhuma aula neste módulo.
+            </p>
+          )}
         </AccordionContent>
       </AccordionItem>
     </div>
@@ -81,7 +159,15 @@ export default function EditSpacePage() {
   const [isLessonEditorOpen, setIsLessonEditorOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<any | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
-  const [modalState, setModalState] = useState<{ rename: any | null; deleteModule: any | null; deleteLesson: any | null; }>({ rename: null, deleteModule: null, deleteLesson: null });
+  const [modalState, setModalState] = useState<{ 
+    rename: any | null; 
+    deleteModule: any | null; 
+    deleteLesson: any | null; 
+  }>({ 
+    rename: null, 
+    deleteModule: null, 
+    deleteLesson: null 
+  });
 
   const { data: spaceData, isLoading, isError, error } = useQuery({
     queryKey: ['space', spaceId],
@@ -102,7 +188,7 @@ export default function EditSpacePage() {
       toast({ title: "Sucesso!", description: "Ordem do conteúdo atualizada." });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   const createModuleMutation = useMutation({
@@ -116,7 +202,7 @@ export default function EditSpacePage() {
       setNewModuleTitle('');
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   const updateModuleMutation = useMutation({
@@ -128,7 +214,7 @@ export default function EditSpacePage() {
       toast({ title: "Módulo atualizado com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error) => toast({ title: "Erro ao atualizar módulo", description: error.message, variant: "destructive" }),
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   const deleteModuleMutation = useMutation({
@@ -140,7 +226,7 @@ export default function EditSpacePage() {
       toast({ title: "Módulo excluído com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error) => toast({ title: "Erro ao excluir módulo", description: error.message, variant: "destructive" }),
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   const deleteLessonMutation = useMutation({
@@ -152,7 +238,7 @@ export default function EditSpacePage() {
       toast({ title: "Aula excluída com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error) => toast({ title: "Erro ao excluir aula", description: error.message, variant: "destructive" }),
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
   // --- Handlers ---
@@ -162,7 +248,7 @@ export default function EditSpacePage() {
     }
   };
 
-  const openLessonEditor = (lesson: any | null, moduleId: string) => {
+  const openLessonEditor = (lesson: any | null = null, moduleId: string) => {
     setEditingLesson(lesson);
     setCurrentModuleId(moduleId);
     setIsLessonEditorOpen(true);
@@ -208,16 +294,36 @@ export default function EditSpacePage() {
       const overLesson = over.data.current?.lesson;
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
         const module = principalProduct.modules.find((m: any) => m.id === activeLesson.module_id);
-        const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
-        const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
-        const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
-        updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
+        if (module) {
+          const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
+          const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
+          const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
+          updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
+        }
       }
     }
   };
 
-  if (isLoading) return <ProducerLayout><div className="p-8"><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></div></ProducerLayout>;
-  if (isError) return <ProducerLayout><div className="p-8 text-red-500">Erro: {error.message}</div></ProducerLayout>;
+  if (isLoading) {
+    return (
+      <ProducerLayout>
+        <div className="p-8">
+          <Skeleton className="h-10 w-1/3 mb-4" />
+          <Skeleton className="h-6 w-1/2" />
+        </div>
+      </ProducerLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ProducerLayout>
+        <div className="p-8 text-red-500">
+          Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}
+        </div>
+      </ProducerLayout>
+    );
+  }
 
   return (
     <ProducerLayout>
@@ -225,33 +331,53 @@ export default function EditSpacePage() {
         <div className="p-4 md:p-8">
           <h1 className="text-3xl font-bold">Editando: {spaceData.name}</h1>
           <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData.slug}</p>
+          
           <Tabs defaultValue="content" className="mt-8">
             <TabsList>
               <TabsTrigger value="content">Conteúdo</TabsTrigger>
               <TabsTrigger value="students" disabled>Alunos</TabsTrigger>
               <TabsTrigger value="classes" disabled>Turmas</TabsTrigger>
             </TabsList>
+            
             <TabsContent value="content" className="mt-6">
               <Card>
                 <CardContent className="p-6">
-                  <SortableContext items={principalProduct?.modules?.map((m: any) => m.id) || []} strategy={verticalListSortingStrategy}>
-                    <Accordion type="multiple" className="w-full space-y-4">
-                      {principalProduct?.modules?.map((module: any) => (
-                        <SortableModuleItem 
-                          key={module.id} 
-                          module={module} 
-                          onAddLesson={openLessonEditor}
-                          onRename={() => setModalState({ ...modalState, rename: module })}
-                          onDelete={() => setModalState({ ...modalState, deleteModule: module })}
-                          onEditLesson={openLessonEditor}
-                          onDeleteLesson={(lesson: any) => setModalState({ ...modalState, deleteLesson: lesson })}
-                        />
-                      ))}
-                    </Accordion>
-                  </SortableContext>
+                  {principalProduct?.modules && principalProduct.modules.length > 0 ? (
+                    <SortableContext 
+                      items={principalProduct.modules.map((m: any) => m.id)} 
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <Accordion type="multiple" className="w-full space-y-4">
+                        {principalProduct.modules.map((module: any) => (
+                          <SortableModuleItem 
+                            key={module.id} 
+                            module={module} 
+                            onAddLesson={(moduleId: string) => openLessonEditor(null, moduleId)}
+                            onRename={() => setModalState({ ...modalState, rename: module })}
+                            onDelete={() => setModalState({ ...modalState, deleteModule: module })}
+                            onEditLesson={openLessonEditor}
+                            onDeleteLesson={(lesson: any) => setModalState({ ...modalState, deleteLesson: lesson })}
+                          />
+                        ))}
+                      </Accordion>
+                    </SortableContext>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p>
+                    </div>
+                  )}
+                  
                   <div className="mt-6 flex gap-2">
-                    <Input placeholder="Nome do novo módulo" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}/>
-                    <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}><PlusCircle className="mr-2 h-4 w-4" />Adicionar Módulo</Button>
+                    <Input 
+                      placeholder="Nome do novo módulo" 
+                      value={newModuleTitle} 
+                      onChange={(e) => setNewModuleTitle(e.target.value)} 
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}
+                    />
+                    <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Adicionar Módulo
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -260,15 +386,20 @@ export default function EditSpacePage() {
         </div>
       </DndContext>
 
+      {/* Modais */}
       {isLessonEditorOpen && currentModuleId && (
         <LessonEditorModal
           isOpen={isLessonEditorOpen}
-          onClose={() => { setIsLessonEditorOpen(false); setEditingLesson(null); }}
+          onClose={() => { 
+            setIsLessonEditorOpen(false); 
+            setEditingLesson(null); 
+          }}
           moduleId={currentModuleId}
           spaceId={spaceId!}
           initialData={editingLesson}
         />
       )}
+      
       {modalState.rename && (
         <RenameModuleModal
           isOpen={!!modalState.rename}
@@ -277,6 +408,7 @@ export default function EditSpacePage() {
           onConfirm={handleRenameModule}
         />
       )}
+      
       {modalState.deleteModule && (
         <ConfirmationModal
           isOpen={!!modalState.deleteModule}
@@ -286,6 +418,7 @@ export default function EditSpacePage() {
           description="Tem certeza? Todas as aulas dentro deste módulo também serão excluídas."
         />
       )}
+      
       {modalState.deleteLesson && (
         <ConfirmationModal
           isOpen={!!modalState.deleteLesson}
