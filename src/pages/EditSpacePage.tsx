@@ -32,9 +32,7 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit:
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-background rounded border">
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1">
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </div>
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1"><GripVertical className="h-4 w-4 text-muted-foreground" /></div>
       {lesson.content_type === 'video' ? <Video className="h-4 w-4 text-muted-foreground"/> : <FileText className="h-4 w-4 text-muted-foreground"/>}
       <span className="text-sm flex-1">{lesson.title}</span>
       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
@@ -52,9 +50,7 @@ const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLes
     <div ref={setNodeRef} style={style}>
       <AccordionItem value={module.id} className="border-none bg-muted rounded-md">
         <div className="flex items-center gap-3 p-3 rounded-t-md border-b">
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1">
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
-          </div>
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1"><GripVertical className="h-5 w-5 text-muted-foreground" /></div>
           <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">{module.title}</AccordionTrigger>
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onRename}><Edit className="h-4 w-4 mr-2" />Renomear</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
           <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>+ Adicionar Aula</Button>
@@ -87,6 +83,7 @@ export default function EditSpacePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newModuleTitle, setNewModuleTitle] = useState('');
+  
   const [isLessonEditorOpen, setIsLessonEditorOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<any | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
@@ -116,15 +113,14 @@ export default function EditSpacePage() {
 
   const createModuleMutation = useMutation({
     mutationFn: async (title: string) => {
-      const { error } = await supabase.functions.invoke('create-module', { 
-        body: { productId: principalProduct.id, title } 
-      });
-      if (error) throw new Error(error.message);
+      if (!principalProduct?.id) throw new Error("Produto principal não encontrado.");
+      const { error } = await supabase.functions.invoke('create-module', { body: { productId: principalProduct.id, title } });
+      if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Sucesso!", description: "Módulo criado." });
-      queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
       setNewModuleTitle('');
+      queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
     onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
@@ -132,10 +128,10 @@ export default function EditSpacePage() {
   const updateModuleMutation = useMutation({
     mutationFn: async ({ moduleId, title }: { moduleId: string; title: string }) => {
       const { error } = await supabase.functions.invoke('update-module', { body: { moduleId, title } });
-      if (error) throw new Error(error.message);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Sucesso!", description: "Módulo renomeado." });
+      toast({ title: "Módulo atualizado com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
     onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
@@ -144,10 +140,10 @@ export default function EditSpacePage() {
   const deleteModuleMutation = useMutation({
     mutationFn: async (moduleId: string) => {
       const { error } = await supabase.functions.invoke('delete-module', { body: { moduleId } });
-      if (error) throw new Error(error.message);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Sucesso!", description: "Módulo excluído." });
+      toast({ title: "Módulo excluído com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
     onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
@@ -156,10 +152,10 @@ export default function EditSpacePage() {
   const deleteLessonMutation = useMutation({
     mutationFn: async (lessonId: string) => {
       const { error } = await supabase.functions.invoke('delete-lesson', { body: { lessonId } });
-      if (error) throw new Error(error.message);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Sucesso!", description: "Aula excluída." });
+      toast({ title: "Aula excluída com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
     onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
@@ -173,18 +169,18 @@ export default function EditSpacePage() {
   };
 
   const openLessonEditor = (lesson: any | null, moduleId: string) => {
-    setCurrentModuleId(moduleId);
     setEditingLesson(lesson);
+    setCurrentModuleId(moduleId);
     setIsLessonEditorOpen(true);
   };
 
   const handleRenameModule = (newTitle: string) => {
-    if (modalState.rename) {
-      updateModuleMutation.mutate({ moduleId: modalState.rename.id, title: newTitle });
-      setModalState({ ...modalState, rename: null });
+    if (modalState.rename && newTitle.trim()) {
+      updateModuleMutation.mutate({ moduleId: modalState.rename.id, title: newTitle.trim() });
     }
+    setModalState({ ...modalState, rename: null });
   };
-
+  
   const handleDeleteModule = () => {
     if (modalState.deleteModule) {
       deleteModuleMutation.mutate(modalState.deleteModule.id);
@@ -237,74 +233,60 @@ export default function EditSpacePage() {
 
   return (
     <ProducerLayout>
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{spaceData?.name}</h1>
-          <p className="text-muted-foreground">Gerencie o conteúdo do seu espaço</p>
-        </div>
-
-        <Tabs defaultValue="content" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="content">Conteúdo</TabsTrigger>
-            <TabsTrigger value="settings">Configurações</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="content" className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <Input
-                    placeholder="Nome do novo módulo"
-                    value={newModuleTitle}
-                    onChange={(e) => setNewModuleTitle(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}
-                  />
-                  <Button onClick={handleAddModule} disabled={!newModuleTitle.trim()}>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Adicionar Módulo
-                  </Button>
-                </div>
-
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  {principalProduct?.modules?.length > 0 ? (
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="p-4 md:p-8">
+          <h1 className="text-3xl font-bold">Editando: {spaceData.name}</h1>
+          <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData.slug}</p>
+          <Tabs defaultValue="content" className="mt-8">
+            <TabsList>
+              <TabsTrigger value="content">Conteúdo</TabsTrigger>
+              <TabsTrigger value="students" disabled>Alunos</TabsTrigger>
+              <TabsTrigger value="classes" disabled>Turmas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="content" className="mt-6">
+              <Card>
+                <CardContent className="p-6">
+                  {principalProduct?.modules && principalProduct.modules.length > 0 ? (
                     <SortableContext items={principalProduct.modules.map((m: any) => m.id)} strategy={verticalListSortingStrategy}>
-                      <Accordion type="multiple" className="space-y-4">
+                      <Accordion type="multiple" className="w-full space-y-4">
                         {principalProduct.modules.map((module: any) => (
-                          <SortableModuleItem
-                            key={module.id}
-                            module={module}
-                            onAddLesson={(moduleId: string) => openLessonEditor(null, moduleId)}
+                          <SortableModuleItem 
+                            key={module.id} 
+                            module={module} 
+                            onAddLesson={openLessonEditor}
                             onRename={() => setModalState({ ...modalState, rename: module })}
                             onDelete={() => setModalState({ ...modalState, deleteModule: module })}
-                            onEditLesson={(lesson: any, moduleId: string) => openLessonEditor(lesson, moduleId)}
+                            onEditLesson={openLessonEditor}
                             onDeleteLesson={(lesson: any) => setModalState({ ...modalState, deleteLesson: lesson })}
                           />
                         ))}
                       </Accordion>
                     </SortableContext>
                   ) : (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p>
-                      <p className="text-sm text-muted-foreground">Adicione seu primeiro módulo para começar a organizar o conteúdo.</p>
-                    </div>
+                    <div className="text-center py-8"><p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p></div>
                   )}
-                </DndContext>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  
+                  <div className="mt-6 flex gap-2">
+                    <Input placeholder="Nome do novo módulo" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}/>
+                    <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}><PlusCircle className="mr-2 h-4 w-4" />Adicionar Módulo</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </DndContext>
 
-          <TabsContent value="settings">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Configurações do Espaço</h3>
-                <p className="text-muted-foreground">Configurações em breve...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Modais */}
+      {isLessonEditorOpen && currentModuleId && (
+        <LessonEditorModal
+          isOpen={isLessonEditorOpen}
+          onClose={() => { setIsLessonEditorOpen(false); setEditingLesson(null); }}
+          moduleId={currentModuleId}
+          spaceId={spaceId!}
+          initialData={editingLesson}
+        />
+      )}
+      
       {modalState.rename && (
         <RenameModuleModal
           isOpen={!!modalState.rename}
@@ -313,7 +295,7 @@ export default function EditSpacePage() {
           onConfirm={handleRenameModule}
         />
       )}
-
+      
       {modalState.deleteModule && (
         <ConfirmationModal
           isOpen={!!modalState.deleteModule}
@@ -323,7 +305,7 @@ export default function EditSpacePage() {
           description="Tem certeza? Todas as aulas dentro deste módulo também serão excluídas."
         />
       )}
-
+      
       {modalState.deleteLesson && (
         <ConfirmationModal
           isOpen={!!modalState.deleteLesson}
@@ -331,20 +313,6 @@ export default function EditSpacePage() {
           onConfirm={handleDeleteLesson}
           title="Excluir Aula?"
           description="Tem certeza que deseja excluir esta aula? Esta ação não pode ser desfeita."
-        />
-      )}
-
-      {isLessonEditorOpen && currentModuleId && (
-        <LessonEditorModal
-          isOpen={isLessonEditorOpen}
-          onClose={() => {
-            setIsLessonEditorOpen(false);
-            setEditingLesson(null);
-            setCurrentModuleId(null);
-          }}
-          moduleId={currentModuleId}
-          spaceId={spaceId!}
-          initialData={editingLesson}
         />
       )}
     </ProducerLayout>
