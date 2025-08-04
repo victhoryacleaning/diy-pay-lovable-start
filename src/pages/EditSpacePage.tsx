@@ -201,14 +201,34 @@ export default function EditSpacePage() {
   // --- Mutações ---
   const updateOrderMutation = useMutation({
     mutationFn: async ({ items, type }: { items: any[], type: 'modules' | 'lessons' }) => {
-      const { error } = await supabase.functions.invoke('update-content-order', { body: { items, type } });
-      if (error) throw error;
+      console.log('updateOrderMutation called with:', { items, type });
+      
+      const { data, error } = await supabase.functions.invoke('update-content-order', { 
+        body: { items, type } 
+      });
+      
+      console.log('API response:', { data, error });
+      
+      if (error) {
+        console.error('API error:', error);
+        throw error;
+      }
+      
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Order update successful:', data);
       toast({ title: "Sucesso!", description: "Ordem do conteúdo atualizada." });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+    onError: (error: any) => {
+      console.error('Order update failed:', error);
+      toast({ 
+        title: "Erro", 
+        description: `Erro ao atualizar ordem: ${error.message}`, 
+        variant: "destructive" 
+      });
+    },
   });
 
   const createModuleMutation = useMutation({
@@ -300,8 +320,14 @@ export default function EditSpacePage() {
     const { active, over } = event;
     console.log('Drag end:', { activeId: active.id, overId: over?.id }); // Debug
     
-    if (!over || active.id === over.id) return;
-    if (!principalProduct?.modules) return;
+    if (!over || active.id === over.id) {
+      console.log('Drag cancelled or same position');
+      return;
+    }
+    if (!principalProduct?.modules) {
+      console.log('No modules found');
+      return;
+    }
     
     const activeType = active.data.current?.type;
     const overType = over.data.current?.type;
@@ -314,10 +340,17 @@ export default function EditSpacePage() {
       const oldIndex = principalProduct.modules.findIndex((m: any) => m.id === active.id);
       const newIndex = principalProduct.modules.findIndex((m: any) => m.id === over.id);
       
-      if (oldIndex !== -1 && newIndex !== -1) {
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
-        console.log('Module order update:', { oldIndex, newIndex, reorderedModules }); // Debug
-        updateOrderMutation.mutate({ items: reorderedModules, type: 'modules' });
+        
+        // Criar array com apenas os dados necessários para o backend
+        const modulesForUpdate = reorderedModules.map((module: any, index: number) => ({
+          id: module.id,
+          sort_order: index + 1
+        }));
+        
+        console.log('Sending module order update:', modulesForUpdate);
+        updateOrderMutation.mutate({ items: modulesForUpdate, type: 'modules' });
       }
     }
     
@@ -333,10 +366,18 @@ export default function EditSpacePage() {
           const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
           const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
           
-          if (oldIndex !== -1 && newIndex !== -1) {
+          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
             const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
-            console.log('Lesson order update:', { oldIndex, newIndex, reorderedLessons }); // Debug
-            updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
+            
+            // Criar array com apenas os dados necessários para o backend
+            const lessonsForUpdate = reorderedLessons.map((lesson: any, index: number) => ({
+              id: lesson.id,
+              sort_order: index + 1,
+              module_id: lesson.module_id
+            }));
+            
+            console.log('Sending lesson order update:', lessonsForUpdate);
+            updateOrderMutation.mutate({ items: lessonsForUpdate, type: 'lessons' });
           }
         }
       }
