@@ -131,14 +131,21 @@ export default function EditSpacePage() {
   // --- Mutações ---
   const updateOrderMutation = useMutation({
     mutationFn: async ({ items, type }: { items: any[], type: 'modules' | 'lessons' }) => {
-      const { error } = await supabase.functions.invoke('update-content-order', { body: { items, type } });
+      console.log('=== CALLING SUPABASE FUNCTION ===', { items: items.length, type });
+      const { data, error } = await supabase.functions.invoke('update-content-order', { body: { items, type } });
+      console.log('=== SUPABASE RESPONSE ===', { data, error });
       if (error) throw new Error(error.message);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('=== MUTATION SUCCESS ===', data);
       toast({ title: "Sucesso!", description: "Ordem do conteúdo atualizada." });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     },
-    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+    onError: (error: any) => {
+      console.error('=== MUTATION ERROR ===', error);
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
   });
 
   // --- Handlers ---
