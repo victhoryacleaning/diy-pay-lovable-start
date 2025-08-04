@@ -1,5 +1,4 @@
-// src/components/spaces/CreateLessonModal.tsx
-
+import { useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +6,7 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // Estilos do editor
+import 'react-quill/dist/quill.snow.css';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from 'lucide-react';
-import '@/index.css'; // Importando o CSS global
 
 const lessonSchema = z.object({
   title: z.string().min(3, { message: "O título deve ter no mínimo 3 caracteres." }),
@@ -42,46 +40,102 @@ const quillModules = {
   ],
 };
 
-interface CreateLessonModalProps {
+interface LessonEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   moduleId: string;
   spaceId: string;
+  initialData?: any; // Dados da aula para edição
 }
 
-export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: CreateLessonModalProps) {
+export function LessonEditorModal({ isOpen, onClose, moduleId, spaceId, initialData }: LessonEditorModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const mode = initialData ? 'edit' : 'create';
 
   const form = useForm<LessonFormValues>({
     resolver: zodResolver(lessonSchema),
-    defaultValues: { title: '', video_source: 'youtube', content_url: '', content_text: '', release_type: 'immediate' },
+    defaultValues: { 
+      title: '', 
+      video_source: 'youtube', 
+      content_url: '', 
+      content_text: '', 
+      release_type: 'immediate' 
+    },
   });
 
-  const createLessonMutation = useMutation({
-    mutationFn: async (values: LessonFormValues) => {
-      const contentType = values.video_source ? 'video' : 'text';
-      const { error } = await supabase.functions.invoke('create-lesson', {
-        body: { moduleId, ...values, content_type: contentType },
+  // Efeito para preencher o formulário com dados existentes no modo de edição
+  useEffect(() => {
+    if (initialData && form) {
+      form.reset({
+        title: initialData.title || "",
+        video_source: initialData.content_type === 'video' ? 'youtube' : undefined,
+        content_url: initialData.content_url || "",
+        content_text: initialData.content_text || "",
+        release_type: initialData.release_type || "immediate",
+        release_days: initialData.release_days || undefined,
+        release_date: initialData.release_date || undefined,
       });
+    }
+  }, [initialData, form]);
+
+  const lessonMutation = useMutation({
+    mutationFn: async (values: LessonFormValues) => {
+      const functionName = mode === 'create' ? 'create-lesson' : 'update-lesson';
+      const contentType = values.video_source ? 'video' : 'text';
+      
+      const body = mode === 'create' 
+        ? { 
+            moduleId, 
+            title: values.title,
+            content_type: contentType,
+            content_url: values.content_url,
+            content_text: values.content_text,
+            release_type: values.release_type,
+            release_days: values.release_days,
+            release_date: values.release_date,
+          }
+        : { 
+            lessonId: initialData.id, 
+            title: values.title,
+            content_type: contentType,
+            content_url: values.content_url,
+            content_text: values.content_text,
+            release_type: values.release_type,
+            release_days: values.release_days,
+            release_date: values.release_date,
+          };
+
+      const { error } = await supabase.functions.invoke(functionName, { body });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Sucesso!", description: "Aula criada." });
+      toast({
+        title: "Sucesso!",
+        description: `Aula ${mode === 'create' ? 'criada' : 'atualizada'} com sucesso!`,
+      });
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
       onClose();
     },
-    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const onSubmit = (values: LessonFormValues) => {
-    createLessonMutation.mutate(values);
+    lessonMutation.mutate(values);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px]">
-        <DialogHeader><DialogTitle>Criar Nova Aula</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Criar Nova' : 'Editar'} Aula</DialogTitle>
+        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
             <FormField control={form.control} name="title" render={({ field }) => (
@@ -120,7 +174,6 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
               <FormItem>
                 <FormLabel>Conteúdo da Aula (Descrição, links, etc.)</FormLabel>
                 <FormControl>
-                  {/* --- MUDANÇA CRÍTICA AQUI --- */}
                   <div className="quill-editor-container">
                     <ReactQuill theme="snow" modules={quillModules} {...field} />
                   </div>
@@ -165,9 +218,9 @@ export function CreateLessonModal({ isOpen, onClose, moduleId, spaceId }: Create
             
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-              <Button type="submit" disabled={createLessonMutation.isPending}>
-                {createLessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar Aula
+              <Button type="submit" disabled={lessonMutation.isPending}>
+                {lessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {mode === 'create' ? 'Criar Aula' : 'Salvar Alterações'}
               </Button>
             </DialogFooter>
           </form>
