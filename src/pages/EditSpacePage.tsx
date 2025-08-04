@@ -257,7 +257,7 @@ export default function EditSpacePage() {
                           <SortableModuleItem 
                             key={module.id} 
                             module={module} 
-                            onAddLesson={() => openLessonEditor(null, module.id)}
+                            onAddLesson={openLessonEditor}
                             onRename={() => setModalState({ ...modalState, rename: module })}
                             onDelete={() => setModalState({ ...modalState, deleteModule: module })}
                             onEditLesson={openLessonEditor}
