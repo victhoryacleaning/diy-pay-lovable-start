@@ -48,29 +48,55 @@ const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLes
     data: { current: { type: 'module', module } } 
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  
   return (
-    <div ref={setNodeRef} style={style}>
-      <AccordionItem value={module.id} className="border-none bg-muted rounded-md">
-        <div className="flex items-center gap-3 p-3 rounded-t-md border-b">
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1">
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">{module.title}</AccordionTrigger>
-          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onRename}><Edit className="h-4 w-4 mr-2" />Renomear</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-          <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>+ Adicionar Aula</Button>
+    <div ref={setNodeRef} style={style} className="bg-muted rounded-md border">
+      <div className="flex items-center gap-3 p-3 border-b">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1">
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
-        <AccordionContent className="p-4 rounded-b-md">
-          {module.lessons?.length > 0 ? (
-            <SortableContext items={module.lessons.map((l: any) => l.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {module.lessons.map((lesson: any) => (
-                  <SortableLessonItem key={lesson.id} lesson={lesson} onEdit={() => onEditLesson(lesson, module.id)} onDelete={() => onDeleteLesson(lesson)} />
-                ))}
-              </div>
-            </SortableContext>
-          ) : (<p className="text-sm text-muted-foreground text-center py-4">Nenhuma aula neste módulo.</p>)}
-        </AccordionContent>
-      </AccordionItem>
+        <div className="flex-1">
+          <h3 className="font-semibold">{module.title}</h3>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={onRename}>
+              <Edit className="h-4 w-4 mr-2" />Renomear
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete} className="text-destructive">
+              <Trash className="h-4 w-4 mr-2" />Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>
+          + Adicionar Aula
+        </Button>
+      </div>
+      <div className="p-4">
+        {module.lessons?.length > 0 ? (
+          <SortableContext items={module.lessons.map((l: any) => l.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {module.lessons.map((lesson: any) => (
+                <SortableLessonItem 
+                  key={lesson.id} 
+                  lesson={lesson} 
+                  onEdit={() => onEditLesson(lesson, module.id)} 
+                  onDelete={() => onDeleteLesson(lesson)} 
+                />
+              ))}
+            </div>
+          </SortableContext>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Nenhuma aula neste módulo.
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -226,7 +252,7 @@ export default function EditSpacePage() {
               {principalProduct?.modules && principalProduct.modules.length > 0 ? (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={principalProduct.modules.map((m: any) => m.id)} strategy={verticalListSortingStrategy}>
-                    <Accordion type="multiple" className="space-y-4">
+                    <div className="space-y-4">
                       {principalProduct.modules.map((module: any) => (
                         <SortableModuleItem
                           key={module.id}
@@ -238,7 +264,7 @@ export default function EditSpacePage() {
                           onDeleteLesson={(lesson: any) => setModalState({ ...modalState, deleteLesson: lesson })}
                         />
                       ))}
-                    </Accordion>
+                    </div>
                   </SortableContext>
                 </DndContext>
               ) : (
