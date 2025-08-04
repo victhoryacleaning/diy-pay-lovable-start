@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     console.log(`--- Usuário autenticado: ${user.id} ---`);
 
     const { items, type } = await req.json();
-    console.log('--- Payload recebido ---', { items, type });
+    console.log('--- Payload recebido ---', { items: items?.length, type });
 
     if (!items || !Array.isArray(items) || !type || (type !== 'modules' && type !== 'lessons')) {
       throw new Error("Payload inválido. 'items' (array) e 'type' ('modules' ou 'lessons') são obrigatórios.");
@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     console.log(`--- Payload preparado para RPC: ---`, { table_name: type, items: updatePayload });
     
     // Chama a função RPC no banco de dados
-    const { error } = await serviceClient.rpc('update_display_order', {
+    const { data, error } = await serviceClient.rpc('update_display_order', {
       table_name: type,
       items: updatePayload
     });
@@ -42,9 +42,9 @@ Deno.serve(async (req) => {
        throw error;
     }
 
-    console.log('--- Chamada RPC concluída com sucesso ---');
+    console.log('--- Chamada RPC concluída com sucesso ---', { data });
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, updated: updatePayload.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
