@@ -25,14 +25,15 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 // --- Componentes Helper ---
 
 const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit: () => void; onDelete: () => void; }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
     id: lesson.id, 
     data: { current: { type: 'lesson', lesson } } 
   });
   
   const style = { 
     transform: CSS.Transform.toString(transform), 
-    transition 
+    transition,
+    opacity: isDragging ? 0.5 : 1
   };
   
   return (
@@ -79,14 +80,15 @@ const SortableModuleItem = ({
   onEditLesson: (lesson: any, moduleId: string) => void;
   onDeleteLesson: (lesson: any) => void;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
     id: module.id, 
-    data: { current: { type: 'module' } } 
+    data: { current: { type: 'module', module } } 
   });
   
   const style = { 
     transform: CSS.Transform.toString(transform), 
-    transition 
+    transition,
+    opacity: isDragging ? 0.5 : 1
   };
   
   return (
@@ -114,7 +116,15 @@ const SortableModuleItem = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Add lesson button clicked for module:', module.id); // Debug
+              onAddLesson(module.id);
+            }}
+          >
             + Adicionar Aula
           </Button>
         </div>
@@ -176,7 +186,11 @@ export default function EditSpacePage() {
   });
 
   const principalProduct = useMemo(() => spaceData?.principal_product, [spaceData]);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { 
+      activationConstraint: { distance: 5 } 
+    })
+  );
 
   // --- Mutações ---
   const updateOrderMutation = useMutation({
@@ -248,7 +262,8 @@ export default function EditSpacePage() {
     }
   };
 
-  const openLessonEditor = (lesson: any | null = null, moduleId: string) => {
+  const openLessonEditor = (lesson: any | null, moduleId: string) => {
+    console.log('openLessonEditor called with:', { lesson, moduleId }); // Debug
     setEditingLesson(lesson);
     setCurrentModuleId(moduleId);
     setIsLessonEditorOpen(true);
@@ -277,28 +292,46 @@ export default function EditSpacePage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('Drag end:', { activeId: active.id, overId: over?.id }); // Debug
+    
     if (!over || active.id === over.id) return;
+    if (!principalProduct?.modules) return;
     
     const activeType = active.data.current?.type;
     const overType = over.data.current?.type;
+    
+    console.log('Drag types:', { activeType, overType }); // Debug
 
+    // Reordenar módulos
     if (activeType === 'module' && overType === 'module') {
+      console.log('Reordering modules...'); // Debug
       const oldIndex = principalProduct.modules.findIndex((m: any) => m.id === active.id);
       const newIndex = principalProduct.modules.findIndex((m: any) => m.id === over.id);
-      const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
-      updateOrderMutation.mutate({ items: reorderedModules, type: 'modules' });
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedModules = arrayMove(principalProduct.modules, oldIndex, newIndex);
+        console.log('Module order update:', { oldIndex, newIndex, reorderedModules }); // Debug
+        updateOrderMutation.mutate({ items: reorderedModules, type: 'modules' });
+      }
     }
     
+    // Reordenar aulas
     if (activeType === 'lesson' && overType === 'lesson') {
+      console.log('Reordering lessons...'); // Debug
       const activeLesson = active.data.current?.lesson;
       const overLesson = over.data.current?.lesson;
+      
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
         const module = principalProduct.modules.find((m: any) => m.id === activeLesson.module_id);
-        if (module) {
+        if (module && module.lessons) {
           const oldIndex = module.lessons.findIndex((l: any) => l.id === active.id);
           const newIndex = module.lessons.findIndex((l: any) => l.id === over.id);
-          const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
-          updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
+          
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const reorderedLessons = arrayMove(module.lessons, oldIndex, newIndex);
+            console.log('Lesson order update:', { oldIndex, newIndex, reorderedLessons }); // Debug
+            updateOrderMutation.mutate({ items: reorderedLessons, type: 'lessons' });
+          }
         }
       }
     }
