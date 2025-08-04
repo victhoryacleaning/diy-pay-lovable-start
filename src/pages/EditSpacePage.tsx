@@ -27,7 +27,7 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit: () => void; onDelete: () => void; }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
     id: lesson.id, 
-    data: { current: { type: 'lesson', lesson } } 
+    data: { type: 'lesson', lesson } // CORRIGIDO: removido 'current'
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -45,7 +45,7 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit:
 const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLesson, onDeleteLesson }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
     id: module.id, 
-    data: { current: { type: 'module', module } } 
+    data: { type: 'module', module } // CORRIGIDO: removido 'current'
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   
@@ -187,8 +187,8 @@ export default function EditSpacePage() {
       return;
     }
     
-    const activeType = active.data.current?.type;
-    const overType = over.data.current?.type;
+    const activeType = (active.data as any)?.type;
+    const overType = (over.data as any)?.type;
     
     console.log('=== DRAG TYPES ===', { activeType, overType });
 
@@ -207,8 +207,8 @@ export default function EditSpacePage() {
     
     if (activeType === 'lesson' && overType === 'lesson' && principalProduct?.modules) {
       console.log('=== REORDERING LESSONS ===');
-      const activeLesson = active.data.current?.lesson;
-      const overLesson = over.data.current?.lesson;
+      const activeLesson = (active.data as any)?.lesson;
+      const overLesson = (over.data as any)?.lesson;
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
         const module = principalProduct.modules.find((m: any) => m.id === activeLesson.module_id);
         if (module?.lessons) {
