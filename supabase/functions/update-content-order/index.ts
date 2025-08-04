@@ -25,32 +25,31 @@ Deno.serve(async (req) => {
       throw new Error("Payload inválido. 'items' (array) e 'type' ('modules' ou 'lessons') são obrigatórios.");
     }
 
-    console.log(`--- Iniciando ${updates.length} atualizações na tabela "${type}" ---`);
-
-    const updates = items.map((item, index) => 
-      serviceClient
-        .from(type)
-        .update({ display_order: index })
-        .eq('id', item.id)
-    );
-
-    const results = await Promise.all(updates);
-    console.log('--- Resultados das atualizações do Supabase ---', results);
-
-    const firstError = results.find(result => result.error);
-    if (firstError) {
-      console.error('--- ERRO ENCONTRADO EM UMA DAS ATUALIZAÇÕES ---', firstError.error);
-      throw firstError.error;
-    }
+    const updatePayload = items.map((item, index) => ({
+      id: item.id,
+      display_order: index
+    }));
+    console.log(`--- Payload preparado para RPC: ---`, { table_name: type, items: updatePayload });
     
-    console.log('--- Todas as atualizações concluídas com sucesso ---');
+    // Chama a função RPC no banco de dados
+    const { error } = await serviceClient.rpc('update_display_order', {
+      table_name: type,
+      items: updatePayload
+    });
+
+    if (error) {
+       console.error('--- ERRO DETALHADO DA CHAMADA RPC ---', error);
+       throw error;
+    }
+
+    console.log('--- Chamada RPC concluída com sucesso ---');
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    console.error('--- ERRO DETALHADO NA FUNÇÃO UPDATE-CONTENT-ORDER ---:', error);
+    console.error('--- ERRO GERAL NA FUNÇÃO UPDATE-CONTENT-ORDER ---:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
