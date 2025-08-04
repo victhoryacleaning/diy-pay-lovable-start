@@ -235,8 +235,8 @@ export default function EditSpacePage() {
     <ProducerLayout>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="p-4 md:p-8">
-          <h1 className="text-3xl font-bold">Editando: {spaceData.name}</h1>
-          <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData.slug}</p>
+          <h1 className="text-3xl font-bold">Editando: {spaceData?.name}</h1>
+          <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData?.slug}</p>
           <Tabs defaultValue="content" className="mt-8">
             <TabsList>
               <TabsTrigger value="content">Conteúdo</TabsTrigger>
@@ -246,6 +246,10 @@ export default function EditSpacePage() {
             <TabsContent value="content" className="mt-6">
               <Card>
                 <CardContent className="p-6">
+                  <div className="flex items-center gap-4 mb-6">
+                    <Input placeholder="Nome do novo módulo" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}/>
+                    <Button onClick={handleAddModule} disabled={!newModuleTitle.trim() || createModuleMutation.isPending}><PlusCircle className="mr-2 h-4 w-4" />Adicionar Módulo</Button>
+                  </div>
                   {principalProduct?.modules && principalProduct.modules.length > 0 ? (
                     <SortableContext items={principalProduct.modules.map((m: any) => m.id)} strategy={verticalListSortingStrategy}>
                       <Accordion type="multiple" className="w-full space-y-4">
@@ -253,7 +257,7 @@ export default function EditSpacePage() {
                           <SortableModuleItem 
                             key={module.id} 
                             module={module} 
-                            onAddLesson={openLessonEditor}
+                            onAddLesson={() => openLessonEditor(null, module.id)}
                             onRename={() => setModalState({ ...modalState, rename: module })}
                             onDelete={() => setModalState({ ...modalState, deleteModule: module })}
                             onEditLesson={openLessonEditor}
@@ -265,11 +269,6 @@ export default function EditSpacePage() {
                   ) : (
                     <div className="text-center py-8"><p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p></div>
                   )}
-                  
-                  <div className="mt-6 flex gap-2">
-                    <Input placeholder="Nome do novo módulo" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}/>
-                    <Button onClick={handleAddModule} disabled={createModuleMutation.isPending}><PlusCircle className="mr-2 h-4 w-4" />Adicionar Módulo</Button>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
