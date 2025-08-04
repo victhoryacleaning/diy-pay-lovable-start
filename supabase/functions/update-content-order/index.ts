@@ -1,3 +1,5 @@
+// supabase/functions/update-content-order/index.ts
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
@@ -15,23 +17,28 @@ Deno.serve(async (req) => {
     if (!user) throw new Error('Unauthorized');
 
     const { items, type } = await req.json(); // 'type' é 'modules' ou 'lessons'
-    if (!items || !Array.isArray(items) || !type) {
-      throw new Error("Payload inválido.");
+    if (!items || !Array.isArray(items) || !type || (type !== 'modules' && type !== 'lessons')) {
+      throw new Error("Payload inválido. 'items' (array) e 'type' ('modules' ou 'lessons') são obrigatórios.");
     }
 
-    // Mapeia os dados para o formato que a função SQL espera
-    const updatePayload = items.map((item, index) => ({
-      id: item.id,
-      display_order: index
-    }));
-    
-    // Chama a função RPC no banco de dados
-    const { error } = await serviceClient.rpc('update_display_order', {
-      table_name: type,
-      items: updatePayload
-    });
+    // --- LÓGICA DE ATUALIZAÇÃO DIRETA E ROBUSTA ---
+    // Em vez de usar RPC, iteramos e atualizamos cada item individualmente.
+    // Isso é mais explícito e menos propenso a erros de permissão ou de tipo.
+    const updates = items.map((item, index) => 
+      serviceClient
+        .from(type)
+        .update({ display_order: index })
+        .eq('id', item.id)
+    );
 
-    if (error) throw error;
+    // Executa todas as atualizações em paralelo
+    const results = await Promise.all(updates);
+
+    // Verifica se houve algum erro em qualquer uma das atualizações
+    const firstError = results.find(result => result.error);
+    if (firstError) {
+      throw firstError.error;
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
