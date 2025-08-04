@@ -25,26 +25,20 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 // --- Componentes Helper ---
 
 const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit: () => void; onDelete: () => void; }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lesson.id, data: { type: 'lesson', lesson } });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lesson.id, data: { current: { type: 'lesson', lesson } } });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-background rounded border">
       <span {...attributes} {...listeners} className="cursor-grab touch-none p-1"><GripVertical className="h-4 w-4 text-muted-foreground" /></span>
       {lesson.content_type === 'video' ? <Video className="h-4 w-4 text-muted-foreground"/> : <FileText className="h-4 w-4 text-muted-foreground"/>}
       <span className="text-sm flex-1">{lesson.title}</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem>
-          <DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
     </div>
   );
 };
 
 const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLesson, onDeleteLesson }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: module.id, data: { type: 'module' } });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: module.id, data: { current: { type: 'module' } } });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
     <div ref={setNodeRef} style={style}>
@@ -52,24 +46,19 @@ const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLes
         <div className="flex items-center gap-3 p-3 rounded-t-md border-b">
           <span {...attributes} {...listeners} className="cursor-grab touch-none p-1"><GripVertical className="h-5 w-5 text-muted-foreground" /></span>
           <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">{module.title}</AccordionTrigger>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={onRename}><Edit className="h-4 w-4 mr-2" />Renomear</DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onRename}><Edit className="h-4 w-4 mr-2" />Renomear</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
           <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>+ Adicionar Aula</Button>
         </div>
         <AccordionContent className="p-4 rounded-b-md">
-          <SortableContext items={module.lessons?.map((l: any) => l.id) || []} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {module.lessons?.map((lesson: any) => (
-                <SortableLessonItem key={lesson.id} lesson={lesson} onEdit={() => onEditLesson(lesson, module.id)} onDelete={() => onDeleteLesson(lesson)} />
-              ))}
-            </div>
-          </SortableContext>
-          {(!module.lessons || module.lessons.length === 0) && (<p className="text-sm text-muted-foreground text-center py-4">Nenhuma aula neste módulo.</p>)}
+          {module.lessons?.length > 0 ? (
+            <SortableContext items={module.lessons.map((l: any) => l.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {module.lessons.map((lesson: any) => (
+                  <SortableLessonItem key={lesson.id} lesson={lesson} onEdit={() => onEditLesson(lesson, module.id)} onDelete={() => onDeleteLesson(lesson)} />
+                ))}
+              </div>
+            </SortableContext>
+          ) : (<p className="text-sm text-muted-foreground text-center py-4">Nenhuma aula neste módulo.</p>)}
         </AccordionContent>
       </AccordionItem>
     </div>
@@ -255,7 +244,7 @@ export default function EditSpacePage() {
                           onRename={() => setModalState({ ...modalState, rename: module })}
                           onDelete={() => setModalState({ ...modalState, deleteModule: module })}
                           onEditLesson={openLessonEditor}
-                          onDeleteLesson={(lesson) => setModalState({ ...modalState, deleteLesson: lesson })}
+                          onDeleteLesson={(lesson: any) => setModalState({ ...modalState, deleteLesson: lesson })}
                         />
                       ))}
                     </Accordion>
