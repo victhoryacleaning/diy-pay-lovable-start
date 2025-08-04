@@ -38,9 +38,9 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit:
   
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-background rounded border">
-      <span {...attributes} {...listeners} className="cursor-grab touch-none p-1">
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1">
         <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </span>
+      </div>
       {lesson.content_type === 'video' ? 
         <Video className="h-4 w-4 text-muted-foreground"/> : 
         <FileText className="h-4 w-4 text-muted-foreground"/>
@@ -95,9 +95,9 @@ const SortableModuleItem = ({
     <div ref={setNodeRef} style={style}>
       <AccordionItem value={module.id} className="border-none bg-muted rounded-md">
         <div className="flex items-center gap-3 p-3 rounded-t-md border-b">
-          <span {...attributes} {...listeners} className="cursor-grab touch-none p-1">
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1">
             <GripVertical className="h-5 w-5 text-muted-foreground" />
-          </span>
+          </div>
           <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">
             {module.title}
           </AccordionTrigger>
@@ -130,7 +130,10 @@ const SortableModuleItem = ({
         </div>
         <AccordionContent className="p-4 rounded-b-md">
           {module.lessons?.length > 0 ? (
-            <SortableContext items={module.lessons.map((l: any) => l.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext 
+              items={module.lessons.map((l: any) => l.id)} 
+              strategy={verticalListSortingStrategy}
+            >
               <div className="space-y-2">
                 {module.lessons.map((lesson: any) => (
                   <SortableLessonItem 
@@ -188,7 +191,10 @@ export default function EditSpacePage() {
   const principalProduct = useMemo(() => spaceData?.principal_product, [spaceData]);
   const sensors = useSensors(
     useSensor(PointerSensor, { 
-      activationConstraint: { distance: 5 } 
+      activationConstraint: { 
+        distance: 3,
+        delay: 100
+      } 
     })
   );
 
@@ -360,7 +366,14 @@ export default function EditSpacePage() {
 
   return (
     <ProducerLayout>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext 
+        sensors={sensors} 
+        collisionDetection={closestCenter} 
+        onDragEnd={handleDragEnd}
+        onDragStart={(event) => {
+          console.log('Drag started:', event.active.id, event.active.data.current?.type);
+        }}
+      >
         <div className="p-4 md:p-8">
           <h1 className="text-3xl font-bold">Editando: {spaceData.name}</h1>
           <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData.slug}</p>
