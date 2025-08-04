@@ -101,57 +101,67 @@ export default function EditSpacePage() {
   // --- Mutações ---
   const updateOrderMutation = useMutation({
     mutationFn: async ({ items, type }: { items: any[], type: 'modules' | 'lessons' }) => {
-      console.log('Updating order:', { items, type }); // Debug log
+      console.log('🔄 [DRAG] Starting update order mutation:', { items, type });
       
       // Preparar os dados com order_index correto
       const orderedItems = items.map((item, index) => ({
         id: item.id,
-        order_index: index + 1
+        order_index: index + 1,
+        ...(type === 'lessons' && { module_id: item.module_id }) // Incluir module_id para aulas
       }));
 
-      const { data, error } = await supabase.functions.invoke('update-content-order', { 
-        body: { items: orderedItems, type } 
-      });
-      
-      if (error) {
-        console.error('Update order error:', error); // Debug log
-        throw new Error(error.message);
+      console.log('📦 [DRAG] Prepared data for API:', orderedItems);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('update-content-order', { 
+          body: { items: orderedItems, type } 
+        });
+        
+        if (error) {
+          console.error('❌ [DRAG] API Error:', error);
+          throw new Error(error.message || 'Erro na API');
+        }
+        
+        console.log('✅ [DRAG] API Success:', data);
+        return data;
+      } catch (apiError) {
+        console.error('🚨 [DRAG] Caught API Error:', apiError);
+        throw apiError;
       }
-      
-      console.log('Update order success:', data); // Debug log
-      return data;
     },
     onMutate: async ({ items, type }) => {
-      console.log('onMutate called:', { items, type }); // Debug log
+      console.log('⚡ [DRAG] onMutate called:', { itemsCount: items.length, type });
       
       // Cancelar queries em andamento
       await queryClient.cancelQueries({ queryKey: ['space', spaceId] });
       
       // Salvar o valor anterior
       const previousData = queryClient.getQueryData(['space', spaceId]);
+      console.log('💾 [DRAG] Previous data saved');
       
       // Atualização otimista
       queryClient.setQueryData(['space', spaceId], (old: any) => {
         if (!old?.principal_product) {
-          console.log('No principal product found'); // Debug log
+          console.log('⚠️ [DRAG] No principal product found');
           return old;
         }
         
         if (type === 'modules') {
-          console.log('Updating modules order optimistically'); // Debug log
-          return {
+          console.log('🏗️ [DRAG] Updating modules order optimistically');
+          const newData = {
             ...old,
             principal_product: {
               ...old.principal_product,
               modules: items
             }
           };
+          console.log('✨ [DRAG] New modules data:', newData.principal_product.modules.map(m => ({ id: m.id, title: m.title })));
+          return newData;
         } else if (type === 'lessons') {
-          console.log('Updating lessons order optimistically'); // Debug log
-          // Encontrar o módulo correto e atualizar suas aulas
+          console.log('📚 [DRAG] Updating lessons order optimistically');
           const moduleId = items[0]?.module_id;
           if (!moduleId) {
-            console.log('No moduleId found in lessons'); // Debug log
+            console.log('⚠️ [DRAG] No moduleId found in lessons');
             return old;
           }
           
@@ -159,13 +169,15 @@ export default function EditSpacePage() {
             module.id === moduleId ? { ...module, lessons: items } : module
           );
           
-          return {
+          const newData = {
             ...old,
             principal_product: {
               ...old.principal_product,
               modules: updatedModules
             }
           };
+          console.log('✨ [DRAG] New lessons data for module', moduleId, ':', items.map(l => ({ id: l.id, title: l.title })));
+          return newData;
         }
         
         return old;
@@ -174,27 +186,30 @@ export default function EditSpacePage() {
       return { previousData };
     },
     onError: (error: any, variables, context) => {
-      console.error('Mutation error:', error); // Debug log
+      console.error('💥 [DRAG] Mutation error:', error);
+      console.log('🔄 [DRAG] Variables that caused error:', variables);
+      
       // Reverter para o estado anterior em caso de erro
       if (context?.previousData) {
+        console.log('⏪ [DRAG] Reverting to previous data');
         queryClient.setQueryData(['space', spaceId], context.previousData);
       }
+      
       toast({ 
-        title: "Erro ao atualizar ordem", 
-        description: error.message, 
+        title: "❌ Erro ao arrastar", 
+        description: `Falha: ${error.message}. Verifique o console para mais detalhes.`, 
         variant: "destructive" 
       });
     },
     onSuccess: (data) => {
-      console.log('Mutation success:', data); // Debug log
+      console.log('🎉 [DRAG] Mutation success:', data);
       toast({ 
-        title: "Sucesso!", 
-        description: "Ordem do conteúdo atualizada." 
+        title: "✅ Sucesso!", 
+        description: "Ordem atualizada com sucesso!" 
       });
     },
     onSettled: () => {
-      console.log('Mutation settled, invalidating queries'); // Debug log
-      // Revalidar os dados
+      console.log('🔚 [DRAG] Mutation settled, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['space', spaceId] });
     }
   });
@@ -291,38 +306,71 @@ export default function EditSpacePage() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log('🎯 [DRAG] Drag ended:', { 
+      activeId: event.active.id, 
+      overId: event.over?.id,
+      activeData: event.active.data.current,
+      overData: event.over?.data.current
+    });
+    
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      console.log('⏭️ [DRAG] Skipping: same position or no target');
+      return;
+    }
     
     const activeData = active.data.current;
     const overData = over.data.current;
     
-    if (!activeData || !overData) return;
+    if (!activeData || !overData) {
+      console.log('⚠️ [DRAG] Missing drag data:', { activeData, overData });
+      return;
+    }
     
     const activeType = activeData.type;
     const overType = overData.type;
+    
+    console.log('🏷️ [DRAG] Drag types:', { activeType, overType });
 
     // Reordenar módulos
     if (activeType === 'module' && overType === 'module' && principalProduct?.modules) {
+      console.log('🏗️ [DRAG] Processing module reorder');
+      
       const modules = principalProduct.modules;
       const oldIndex = modules.findIndex((m: any) => m.id === active.id);
       const newIndex = modules.findIndex((m: any) => m.id === over.id);
       
+      console.log('📍 [DRAG] Module indices:', { oldIndex, newIndex, totalModules: modules.length });
+      
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        console.log('✅ [DRAG] Valid module reorder, processing...');
         const reorderedModules = arrayMove([...modules], oldIndex, newIndex);
+        console.log('🔄 [DRAG] Reordered modules:', reorderedModules.map(m => ({ id: m.id, title: m.title })));
+        
         updateOrderMutation.mutate({ 
           items: reorderedModules, 
           type: 'modules' 
         });
+      } else {
+        console.log('❌ [DRAG] Invalid module reorder:', { oldIndex, newIndex });
       }
     }
     
     // Reordenar aulas dentro do mesmo módulo
     else if (activeType === 'lesson' && overType === 'lesson') {
+      console.log('📚 [DRAG] Processing lesson reorder');
+      
       const activeLesson = activeData.lesson;
       const overLesson = overData.lesson;
       
+      console.log('📖 [DRAG] Lesson data:', { 
+        activeLesson: { id: activeLesson?.id, title: activeLesson?.title, module_id: activeLesson?.module_id },
+        overLesson: { id: overLesson?.id, title: overLesson?.title, module_id: overLesson?.module_id }
+      });
+      
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
+        console.log('✅ [DRAG] Same module, proceeding with lesson reorder');
+        
         const module = principalProduct?.modules?.find((m: any) => m.id === activeLesson.module_id);
         
         if (module?.lessons) {
@@ -330,15 +378,28 @@ export default function EditSpacePage() {
           const oldIndex = lessons.findIndex((l: any) => l.id === active.id);
           const newIndex = lessons.findIndex((l: any) => l.id === over.id);
           
+          console.log('📍 [DRAG] Lesson indices:', { oldIndex, newIndex, totalLessons: lessons.length });
+          
           if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+            console.log('✅ [DRAG] Valid lesson reorder, processing...');
             const reorderedLessons = arrayMove([...lessons], oldIndex, newIndex);
+            console.log('🔄 [DRAG] Reordered lessons:', reorderedLessons.map(l => ({ id: l.id, title: l.title })));
+            
             updateOrderMutation.mutate({ 
               items: reorderedLessons, 
               type: 'lessons' 
             });
+          } else {
+            console.log('❌ [DRAG] Invalid lesson reorder:', { oldIndex, newIndex });
           }
+        } else {
+          console.log('⚠️ [DRAG] Module has no lessons:', module);
         }
+      } else {
+        console.log('❌ [DRAG] Different modules or missing lesson data');
       }
+    } else {
+      console.log('❓ [DRAG] Unhandled drag type combination:', { activeType, overType });
     }
   };
 
