@@ -2,45 +2,39 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// A função agora aceita 'producerId' como um argumento explícito e garantido
+// FUNÇÃO DE DIAGNÓSTICO
 async function createSpaceWithDefaultCohort(supabase: SupabaseClient, product: any, producerId: string) {
-  // 1. Criar o 'space'
+  // PASSO 1: Tenta criar o 'space'
   const { data: space, error: spaceError } = await supabase
     .from('spaces')
-    .insert({
-      name: product.name,
-      slug: product.checkout_link_slug,
-      // Usa o producerId garantido
-      producer_id: producerId 
-    })
+    .insert({ name: product.name, slug: product.checkout_link_slug, producer_id: producerId })
     .select()
     .single();
 
-  if (spaceError) throw new Error(`Erro ao criar o espaço: ${spaceError.message}`);
+  if (spaceError) {
+    // Se falhar aqui, lança um erro específico
+    throw new Error(`[FALHA NO PASSO 1: CRIAR SPACE] --> ${spaceError.message}`);
+  }
 
-  // 2. Vincula o produto ao novo space como "principal"
+  // PASSO 2: Tenta vincular o produto ao 'space'
   const { error: spaceProductError } = await supabase
     .from('space_products')
-    .insert({
-      space_id: space.id,
-      product_id: product.id,
-      product_type: 'principal',
-    });
+    .insert({ space_id: space.id, product_id: product.id, product_type: 'principal' });
 
-  if (spaceProductError) throw new Error(`Erro ao vincular produto ao espaço: ${spaceProductError.message}`);
+  if (spaceProductError) {
+    // Se falhar aqui, lança um erro específico
+    throw new Error(`[FALHA NO PASSO 2: VINCULAR PRODUTO] --> ${spaceProductError.message}`);
+  }
 
-  // 3. Criar a 'cohort' (turma) padrão, já como ativa
+  // PASSO 3: Tenta criar a 'cohort' (turma)
   const { error: cohortError } = await supabase
     .from('cohorts')
-    .insert({
-      name: 'Turma 01',
-      space_id: space.id,
-      is_default: true,
-      // Usa o producerId garantido para o user_id da turma
-      user_id: producerId
-    });
+    .insert({ name: 'Turma 01', space_id: space.id, is_default: true, user_id: producerId });
 
-  if (cohortError) throw new Error(`Erro ao criar a turma padrão: ${cohortError.message}`);
+  if (cohortError) {
+    // Se falhar aqui, lança um erro específico
+    throw new Error(`[FALHA NO PASSO 3: CRIAR TURMA] --> ${cohortError.message}`);
+  }
   
   return { space };
 }
@@ -63,7 +57,6 @@ serve(async (req) => {
     const productDataWithDelivery = await req.json();
     const { delivery_type, ...productData } = productDataWithDelivery;
 
-    // 1. Criar o produto principal
     const { data: newProduct, error: productError } = await supabase
       .from('products')
       .insert({ ...productData, producer_id: user.id })
@@ -72,9 +65,7 @@ serve(async (req) => {
 
     if (productError) throw productError;
 
-    // 2. Se for um produto com área de membros, cria o espaço e a turma padrão
     if (delivery_type === 'members_area') {
-      // Passa o user.id (garantido) como argumento para a função auxiliar
       await createSpaceWithDefaultCohort(supabase, newProduct, user.id);
     }
 
@@ -83,6 +74,7 @@ serve(async (req) => {
       status: 201,
     })
   } catch (error) {
+    // Retorna a mensagem de erro específica que a função de diagnóstico gerou
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
