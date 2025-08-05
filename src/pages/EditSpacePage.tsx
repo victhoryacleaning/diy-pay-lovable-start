@@ -25,52 +25,132 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 // --- Componentes Helper ---
 
 const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit: () => void; onDelete: () => void; }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
-    id: lesson.id, 
-    data: { 
-      type: 'lesson', 
-      lesson: lesson 
-    } 
-  });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const sortableConfig = {
+    id: lesson.id,
+    data: {
+      type: 'lesson',
+      lesson: lesson,
+      moduleId: lesson.module_id
+    }
+  };
+  
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable(sortableConfig);
+  
+  const style = { 
+    transform: CSS.Transform.toString(transform), 
+    transition, 
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 999 : 'auto'
+  };
+  
+  // Debug log
+  console.log('🔧 [LESSON] Sortable config:', sortableConfig);
+  
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-2 bg-background rounded border">
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1"><GripVertical className="h-4 w-4 text-muted-foreground" /></div>
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-muted rounded"
+        style={{ touchAction: 'none' }}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
       {lesson.content_type === 'video' ? <Video className="h-4 w-4 text-muted-foreground"/> : <FileText className="h-4 w-4 text-muted-foreground"/>}
       <span className="text-sm flex-1">{lesson.title}</span>
-      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={onEdit}>
+            <Edit className="h-4 w-4 mr-2" />Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onDelete} className="text-destructive">
+            <Trash className="h-4 w-4 mr-2" />Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
 
 const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLesson, onDeleteLesson }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
-    id: module.id, 
-    data: { 
-      type: 'module', 
-      module: module 
-    } 
-  });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const sortableConfig = {
+    id: module.id,
+    data: {
+      type: 'module',
+      module: module
+    }
+  };
+  
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable(sortableConfig);
+  
+  const style = { 
+    transform: CSS.Transform.toString(transform), 
+    transition, 
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 999 : 'auto'
+  };
+  
+  // Debug log
+  console.log('🔧 [MODULE] Sortable config:', sortableConfig);
+  
   return (
     <div ref={setNodeRef} style={style}>
       <AccordionItem value={module.id} className="border-none bg-muted rounded-md">
         <div className="flex items-center gap-3 p-3 rounded-t-md border-b">
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none p-1"><GripVertical className="h-5 w-5 text-muted-foreground" /></div>
-          <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">{module.title}</AccordionTrigger>
-          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={onRename}><Edit className="h-4 w-4 mr-2" />Renomear</DropdownMenuItem><DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash className="h-4 w-4 mr-2" />Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-          <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>+ Adicionar Aula</Button>
+          <div 
+            {...attributes} 
+            {...listeners} 
+            className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-muted-foreground/10 rounded"
+            style={{ touchAction: 'none' }}
+          >
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <AccordionTrigger className="p-0 flex-grow text-left hover:no-underline font-semibold">
+            {module.title}
+          </AccordionTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={onRename}>
+                <Edit className="h-4 w-4 mr-2" />Renomear
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                <Trash className="h-4 w-4 mr-2" />Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="sm" onClick={() => onAddLesson(module.id)}>
+            + Adicionar Aula
+          </Button>
         </div>
         <AccordionContent className="p-4 rounded-b-md">
           {module.lessons?.length > 0 ? (
             <SortableContext items={module.lessons.map((l: any) => l.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
                 {module.lessons.map((lesson: any) => (
-                  <SortableLessonItem key={lesson.id} lesson={lesson} onEdit={() => onEditLesson(lesson, module.id)} onDelete={() => onDeleteLesson(lesson)} />
+                  <SortableLessonItem 
+                    key={lesson.id} 
+                    lesson={lesson} 
+                    onEdit={() => onEditLesson(lesson, module.id)} 
+                    onDelete={() => onDeleteLesson(lesson)} 
+                  />
                 ))}
               </div>
             </SortableContext>
-          ) : (<p className="text-sm text-muted-foreground text-center py-4">Nenhuma aula neste módulo.</p>)}
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhuma aula neste módulo.
+            </p>
+          )}
         </AccordionContent>
       </AccordionItem>
     </div>
@@ -102,7 +182,15 @@ export default function EditSpacePage() {
   });
 
   const principalProduct = useMemo(() => spaceData?.principal_product, [spaceData]);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { 
+      activationConstraint: { 
+        distance: 8,
+        delay: 100,
+        tolerance: 5
+      } 
+    })
+  );
 
   // --- Mutações ---
   const updateOrderMutation = useMutation({
@@ -311,13 +399,17 @@ export default function EditSpacePage() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    console.log('🎯 [DRAG] Drag ended:', { 
-      activeId: event.active.id, 
-      overId: event.over?.id,
-      activeData: event.active.data,
-      overData: event.over?.data
+  const handleDragStart = (event: any) => {
+    console.log('🚀 [DRAG] Drag started:', {
+      activeId: event.active.id,
+      activeData: event.active.data
     });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log('🎯 [DRAG] Raw drag event:', event);
+    console.log('🎯 [DRAG] Active data:', event.active.data);
+    console.log('🎯 [DRAG] Over data:', event.over?.data);
     
     const { active, over } = event;
     if (!over || active.id === over.id) {
@@ -325,87 +417,109 @@ export default function EditSpacePage() {
       return;
     }
     
-    const activeData = active.data;
-    const overData = over.data;
+    // Tentar acessar dados de diferentes formas
+    let activeData = active.data || active.data?.current;
+    let overData = over.data || over.data?.current;
+    
+    console.log('🔍 [DRAG] Processed data:', { activeData, overData });
     
     if (!activeData || !overData) {
-      console.log('⚠️ [DRAG] Missing drag data:', { activeData, overData });
+      console.log('⚠️ [DRAG] Still missing drag data after processing');
       return;
     }
     
     const activeType = activeData.type;
     const overType = overData.type;
     
-    console.log('🏷️ [DRAG] Drag types:', { activeType, overType });
+    console.log('🏷️ [DRAG] Final drag types:', { activeType, overType });
+
+    // Se ainda estão undefined, usar uma abordagem manual
+    if (!activeType || !overType) {
+      console.log('🔧 [DRAG] Manual type detection...');
+      
+      // Detectar tipo baseado nos dados dos módulos/aulas
+      const activeIsModule = principalProduct?.modules?.some((m: any) => m.id === active.id);
+      const overIsModule = principalProduct?.modules?.some((m: any) => m.id === over.id);
+      
+      if (activeIsModule && overIsModule) {
+        console.log('🏗️ [DRAG] Manual detection: both are modules');
+        handleModuleReorder(active.id, over.id);
+        return;
+      }
+      
+      // Verificar se são aulas
+      let activeLesson, overLesson, moduleId;
+      for (const module of principalProduct?.modules || []) {
+        const activeFound = module.lessons?.find((l: any) => l.id === active.id);
+        const overFound = module.lessons?.find((l: any) => l.id === over.id);
+        
+        if (activeFound && overFound && module.id === module.id) {
+          console.log('📚 [DRAG] Manual detection: both are lessons in same module');
+          handleLessonReorder(active.id, over.id, module.id, module.lessons);
+          return;
+        }
+      }
+      
+      console.log('❌ [DRAG] Could not determine drag types');
+      return;
+    }
 
     // Reordenar módulos
-    if (activeType === 'module' && overType === 'module' && principalProduct?.modules) {
-      console.log('🏗️ [DRAG] Processing module reorder');
-      
-      const modules = principalProduct.modules;
-      const oldIndex = modules.findIndex((m: any) => m.id === active.id);
-      const newIndex = modules.findIndex((m: any) => m.id === over.id);
-      
-      console.log('📍 [DRAG] Module indices:', { oldIndex, newIndex, totalModules: modules.length });
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log('✅ [DRAG] Valid module reorder, processing...');
-        const reorderedModules = arrayMove([...modules], oldIndex, newIndex);
-        console.log('🔄 [DRAG] Reordered modules:', reorderedModules.map(m => ({ id: m.id, title: m.title })));
-        
-        updateOrderMutation.mutate({ 
-          items: reorderedModules, 
-          type: 'modules' 
-        });
-      } else {
-        console.log('❌ [DRAG] Invalid module reorder:', { oldIndex, newIndex });
-      }
+    if (activeType === 'module' && overType === 'module') {
+      handleModuleReorder(active.id, over.id);
     }
-    
-    // Reordenar aulas dentro do mesmo módulo
+    // Reordenar aulas
     else if (activeType === 'lesson' && overType === 'lesson') {
-      console.log('📚 [DRAG] Processing lesson reorder');
-      
       const activeLesson = activeData.lesson;
       const overLesson = overData.lesson;
       
-      console.log('📖 [DRAG] Lesson data:', { 
-        activeLesson: { id: activeLesson?.id, title: activeLesson?.title, module_id: activeLesson?.module_id },
-        overLesson: { id: overLesson?.id, title: overLesson?.title, module_id: overLesson?.module_id }
-      });
-      
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
-        console.log('✅ [DRAG] Same module, proceeding with lesson reorder');
-        
         const module = principalProduct?.modules?.find((m: any) => m.id === activeLesson.module_id);
-        
         if (module?.lessons) {
-          const lessons = module.lessons;
-          const oldIndex = lessons.findIndex((l: any) => l.id === active.id);
-          const newIndex = lessons.findIndex((l: any) => l.id === over.id);
-          
-          console.log('📍 [DRAG] Lesson indices:', { oldIndex, newIndex, totalLessons: lessons.length });
-          
-          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-            console.log('✅ [DRAG] Valid lesson reorder, processing...');
-            const reorderedLessons = arrayMove([...lessons], oldIndex, newIndex);
-            console.log('🔄 [DRAG] Reordered lessons:', reorderedLessons.map(l => ({ id: l.id, title: l.title })));
-            
-            updateOrderMutation.mutate({ 
-              items: reorderedLessons, 
-              type: 'lessons' 
-            });
-          } else {
-            console.log('❌ [DRAG] Invalid lesson reorder:', { oldIndex, newIndex });
-          }
-        } else {
-          console.log('⚠️ [DRAG] Module has no lessons:', module);
+          handleLessonReorder(active.id, over.id, module.id, module.lessons);
         }
-      } else {
-        console.log('❌ [DRAG] Different modules or missing lesson data');
       }
-    } else {
-      console.log('❓ [DRAG] Unhandled drag type combination:', { activeType, overType });
+    }
+  };
+
+  const handleModuleReorder = (activeId: string, overId: string) => {
+    console.log('🏗️ [DRAG] Processing module reorder:', { activeId, overId });
+    
+    const modules = principalProduct?.modules;
+    if (!modules) return;
+    
+    const oldIndex = modules.findIndex((m: any) => m.id === activeId);
+    const newIndex = modules.findIndex((m: any) => m.id === overId);
+    
+    console.log('📍 [DRAG] Module indices:', { oldIndex, newIndex });
+    
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      const reorderedModules = arrayMove([...modules], oldIndex, newIndex);
+      console.log('✅ [DRAG] Module reorder successful');
+      
+      updateOrderMutation.mutate({ 
+        items: reorderedModules, 
+        type: 'modules' 
+      });
+    }
+  };
+
+  const handleLessonReorder = (activeId: string, overId: string, moduleId: string, lessons: any[]) => {
+    console.log('📚 [DRAG] Processing lesson reorder:', { activeId, overId, moduleId });
+    
+    const oldIndex = lessons.findIndex((l: any) => l.id === activeId);
+    const newIndex = lessons.findIndex((l: any) => l.id === overId);
+    
+    console.log('📍 [DRAG] Lesson indices:', { oldIndex, newIndex });
+    
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      const reorderedLessons = arrayMove([...lessons], oldIndex, newIndex);
+      console.log('✅ [DRAG] Lesson reorder successful');
+      
+      updateOrderMutation.mutate({ 
+        items: reorderedLessons, 
+        type: 'lessons' 
+      });
     }
   };
 
@@ -414,7 +528,12 @@ export default function EditSpacePage() {
 
   return (
     <ProducerLayout>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext 
+        sensors={sensors} 
+        collisionDetection={closestCenter} 
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <div className="p-4 md:p-8">
           <h1 className="text-3xl font-bold">Editando: {spaceData?.name}</h1>
           <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData?.slug}</p>
