@@ -123,7 +123,7 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
                 <div key={cohort.id} className="flex justify-between items-center p-3 border-b last:border-b-0">
                   <div className="flex items-center gap-3">
                     <p className="font-medium">{cohort.name}</p>
-                    {cohort.is_default && <Badge variant="default">Padrão</Badge>}
+                    {cohort.is_default && <Badge variant="default">Ativa</Badge>}
                   </div>
                   <div className="flex items-center gap-4">
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -138,7 +138,7 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
                           <Edit className="mr-2 h-4 w-4"/> Renomear
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleSetDefault(cohort.id)} disabled={cohort.is_default || updateCohortMutation.isPending}>
-                          <CheckSquare className="mr-2 h-4 w-4"/> Definir como padrão
+                          <CheckSquare className="mr-2 h-4 w-4"/> Definir como Ativa
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => setModalState({ ...modalState, delete: cohort })} disabled={cohort.is_default}>
                           <Trash className="mr-2 h-4 w-4"/> Excluir
