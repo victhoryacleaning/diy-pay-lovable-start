@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
@@ -18,11 +19,27 @@ const fetchStudents = async (productId: string) => {
 
 export function StudentsTab({ productId }: { productId: string }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
   
   const { data: students, isLoading, isError, error } = useQuery({
     queryKey: ['space-students', productId],
     queryFn: () => fetchStudents(productId),
     enabled: !!productId,
+  });
+
+  const resendAccessMutation = useMutation({
+    mutationFn: async (studentUserId: string) => {
+      const { error } = await supabase.functions.invoke('resend-access-email', {
+        body: { studentUserId },
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "O e-mail de acesso foi reenviado para o aluno." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
   });
 
   const filteredStudents = students?.filter((student: any) =>
@@ -106,15 +123,18 @@ export function StudentsTab({ productId }: { productId: string }) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => resendAccessMutation.mutate(student.id)} 
+                          disabled={resendAccessMutation.isPending}
+                        >
                           <Mail className="mr-2 h-4 w-4"/>
                           Reenviar Acesso
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem disabled>
                           <RefreshCcw className="mr-2 h-4 w-4"/>
                           Resetar Progresso
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem className="text-destructive" disabled>
                           <UserX className="mr-2 h-4 w-4"/>
                           Revogar Acesso
                         </DropdownMenuItem>
