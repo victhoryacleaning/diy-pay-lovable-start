@@ -19,14 +19,13 @@ Deno.serve(async (req) => {
     const { items, type } = await req.json();
     if (!items ||!Array.isArray(items) ||!type) throw new Error("Payload inválido.");
 
-    // --- CORREÇÃO FINAL AQUI ---
-    // Usando 'order_index' para corresponder ao que o banco de dados provavelmente espera
+    // --- CORREÇÃO FINAL AQUI: Usando 'display_order' ---
     const updatePayload = items.map((item, index) => ({
       id: item.id,
-      order_index: index
+      display_order: index
     }));
     
-    // Chamamos a função RPC, que também deve ser ajustada para usar 'order_index'
+    // Chama a função RPC, que agora também espera 'display_order'
     const { error } = await serviceClient.rpc('update_display_order', {
       table_name: type,
       items: updatePayload
