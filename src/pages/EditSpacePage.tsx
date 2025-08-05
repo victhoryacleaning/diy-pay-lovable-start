@@ -298,7 +298,7 @@ export default function EditSpacePage() {
     onSuccess: (data) => {
       console.log('🎉 [DRAG] Mutation success:', data);
       toast({ 
-        title: "✅ Sucesso!", 
+        title: "Sucesso!", 
         description: "Ordem atualizada com sucesso!" 
       });
     },
