@@ -21,6 +21,7 @@ import { ConfirmationModal } from '@/components/core/ConfirmationModal';
 import { RenameModuleModal } from '@/components/spaces/RenameModuleModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } from 'lucide-react';
+import { StudentsTab } from '@/components/spaces/StudentsTab';
 
 // --- Componentes Helper ---
 
@@ -418,8 +419,8 @@ export default function EditSpacePage() {
     }
     
     // Tentar acessar dados de diferentes formas
-    let activeData = active.data || active.data?.current;
-    let overData = over.data || over.data?.current;
+    let activeData = active.data?.current || active.data;
+    let overData = over.data?.current || over.data;
     
     console.log('🔍 [DRAG] Processed data:', { activeData, overData });
     
@@ -428,8 +429,8 @@ export default function EditSpacePage() {
       return;
     }
     
-    const activeType = activeData.type;
-    const overType = overData.type;
+    const activeType = (activeData as any)?.type;
+    const overType = (overData as any)?.type;
     
     console.log('🏷️ [DRAG] Final drag types:', { activeType, overType });
 
@@ -438,24 +439,23 @@ export default function EditSpacePage() {
       console.log('🔧 [DRAG] Manual type detection...');
       
       // Detectar tipo baseado nos dados dos módulos/aulas
-      const activeIsModule = principalProduct?.modules?.some((m: any) => m.id === active.id);
-      const overIsModule = principalProduct?.modules?.some((m: any) => m.id === over.id);
+      const activeIsModule = principalProduct?.modules?.some((m: any) => m.id === String(active.id));
+      const overIsModule = principalProduct?.modules?.some((m: any) => m.id === String(over.id));
       
       if (activeIsModule && overIsModule) {
         console.log('🏗️ [DRAG] Manual detection: both are modules');
-        handleModuleReorder(active.id, over.id);
+        handleModuleReorder(String(active.id), String(over.id));
         return;
       }
       
       // Verificar se são aulas
-      let activeLesson, overLesson, moduleId;
       for (const module of principalProduct?.modules || []) {
-        const activeFound = module.lessons?.find((l: any) => l.id === active.id);
-        const overFound = module.lessons?.find((l: any) => l.id === over.id);
+        const activeFound = module.lessons?.find((l: any) => l.id === String(active.id));
+        const overFound = module.lessons?.find((l: any) => l.id === String(over.id));
         
-        if (activeFound && overFound && module.id === module.id) {
+        if (activeFound && overFound) {
           console.log('📚 [DRAG] Manual detection: both are lessons in same module');
-          handleLessonReorder(active.id, over.id, module.id, module.lessons);
+          handleLessonReorder(String(active.id), String(over.id), String(module.id), module.lessons);
           return;
         }
       }
@@ -466,17 +466,17 @@ export default function EditSpacePage() {
 
     // Reordenar módulos
     if (activeType === 'module' && overType === 'module') {
-      handleModuleReorder(active.id, over.id);
+      handleModuleReorder(String(active.id), String(over.id));
     }
     // Reordenar aulas
     else if (activeType === 'lesson' && overType === 'lesson') {
-      const activeLesson = activeData.lesson;
-      const overLesson = overData.lesson;
+      const activeLesson = (activeData as any)?.lesson;
+      const overLesson = (overData as any)?.lesson;
       
       if (activeLesson && overLesson && activeLesson.module_id === overLesson.module_id) {
         const module = principalProduct?.modules?.find((m: any) => m.id === activeLesson.module_id);
         if (module?.lessons) {
-          handleLessonReorder(active.id, over.id, module.id, module.lessons);
+          handleLessonReorder(String(active.id), String(over.id), String(module.id), module.lessons);
         }
       }
     }
@@ -540,7 +540,7 @@ export default function EditSpacePage() {
           <Tabs defaultValue="content" className="mt-8">
             <TabsList>
               <TabsTrigger value="content">Conteúdo</TabsTrigger>
-              <TabsTrigger value="students" disabled>Alunos</TabsTrigger>
+              <TabsTrigger value="students">Alunos</TabsTrigger>
               <TabsTrigger value="classes" disabled>Turmas</TabsTrigger>
             </TabsList>
             <TabsContent value="content" className="mt-6">
@@ -568,6 +568,18 @@ export default function EditSpacePage() {
                     </SortableContext>
                   ) : (
                     <div className="text-center py-8"><p className="text-muted-foreground mb-4">Nenhum módulo criado ainda.</p></div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="students" className="mt-6">
+              <Card>
+                <CardContent className="p-6">
+                  {principalProduct ? (
+                    <StudentsTab productId={principalProduct.id} />
+                  ) : (
+                    <p className="text-center text-muted-foreground">Este espaço ainda não tem um produto principal associado.</p>
                   )}
                 </CardContent>
               </Card>
