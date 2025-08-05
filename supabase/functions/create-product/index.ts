@@ -2,15 +2,16 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Função auxiliar para criar o espaço e a turma padrão
-async function createSpaceWithDefaultCohort(supabase: SupabaseClient, product: any) {
+// A função agora aceita 'producerId' como um argumento explícito e garantido
+async function createSpaceWithDefaultCohort(supabase: SupabaseClient, product: any, producerId: string) {
   // 1. Criar o 'space'
   const { data: space, error: spaceError } = await supabase
     .from('spaces')
     .insert({
       name: product.name,
       slug: product.checkout_link_slug,
-      producer_id: product.producer_id
+      // Usa o producerId garantido
+      producer_id: producerId 
     })
     .select()
     .single();
@@ -35,7 +36,8 @@ async function createSpaceWithDefaultCohort(supabase: SupabaseClient, product: a
       name: 'Turma 01',
       space_id: space.id,
       is_default: true,
-      user_id: product.producer_id // <-- GARANTIR QUE ESTA LINHA SEJA ADICIONADA
+      // Usa o producerId garantido para o user_id da turma
+      user_id: producerId
     });
 
   if (cohortError) throw new Error(`Erro ao criar a turma padrão: ${cohortError.message}`);
@@ -72,7 +74,8 @@ serve(async (req) => {
 
     // 2. Se for um produto com área de membros, cria o espaço e a turma padrão
     if (delivery_type === 'members_area') {
-      await createSpaceWithDefaultCohort(supabase, newProduct);
+      // Passa o user.id (garantido) como argumento para a função auxiliar
+      await createSpaceWithDefaultCohort(supabase, newProduct, user.id);
     }
 
     return new Response(JSON.stringify(newProduct), {
