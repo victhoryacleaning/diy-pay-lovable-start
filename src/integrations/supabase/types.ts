@@ -14,26 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      cohorts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohorts_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollments: {
         Row: {
+          cohort_id: string | null
           enrolled_at: string
           id: string
           product_id: string
           user_id: string
         }
         Insert: {
+          cohort_id?: string | null
           enrolled_at?: string
           id?: string
           product_id: string
           user_id: string
         }
         Update: {
+          cohort_id?: string | null
           enrolled_at?: string
           id?: string
           product_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "enrollments_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "enrollments_product_id_fkey"
             columns: ["product_id"]

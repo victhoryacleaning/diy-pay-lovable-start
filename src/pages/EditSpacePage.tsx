@@ -22,6 +22,7 @@ import { RenameModuleModal } from '@/components/spaces/RenameModuleModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } from 'lucide-react';
 import { StudentsTab } from '@/components/spaces/StudentsTab';
+import { CohortsTab } from '@/components/spaces/CohortsTab';
 
 // --- Componentes Helper ---
 
@@ -541,7 +542,7 @@ export default function EditSpacePage() {
             <TabsList>
               <TabsTrigger value="content">Conteúdo</TabsTrigger>
               <TabsTrigger value="students">Alunos</TabsTrigger>
-              <TabsTrigger value="classes" disabled>Turmas</TabsTrigger>
+              <TabsTrigger value="classes">Turmas</TabsTrigger>
             </TabsList>
             <TabsContent value="content" className="mt-6">
               <Card>
@@ -583,6 +584,10 @@ export default function EditSpacePage() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="classes" className="mt-6">
+              <CohortsTab spaceId={spaceId!} />
             </TabsContent>
           </Tabs>
         </div>
