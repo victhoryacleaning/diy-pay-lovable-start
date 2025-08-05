@@ -256,6 +256,45 @@ Deno.serve(async (req) => {
       }
       
       console.log(`[SALE_UPDATED] Sale ${sale.id} updated to 'paid' with security reserve of ${securityReserveCents} cents.`);
+      
+      // --- INÍCIO DA NOVA LÓGICA DE MATRÍCULA ---
+
+      // 1. Encontrar ou criar o usuário com base no e-mail da venda
+      let { data: userData, error: userError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', sale.buyer_email)
+        .single();
+
+      // Se o usuário não existir, crie-o
+      if (userError || !userData) {
+        const { data: newUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: sale.buyer_email,
+          email_confirm: true, // Auto-confirma o e-mail
+        });
+        if (authError) throw new Error(`Falha ao criar usuário: ${authError.message}`);
+        userData = { id: newUser.user.id };
+      }
+      
+      const studentUserId = userData.id;
+
+      // 2. Criar a matrícula na tabela 'enrollments'
+      const { error: enrollmentError } = await supabaseAdmin
+        .from('enrollments')
+        .insert({
+          user_id: studentUserId,
+          product_id: sale.product_id,
+        });
+      
+      if (enrollmentError) {
+        // Loga o erro mas não quebra o fluxo para garantir que o pagamento seja processado
+        console.error(`[ENROLLMENT_ERROR] Falha ao matricular aluno ${studentUserId} no produto ${sale.product_id}:`, enrollmentError.message);
+      } else {
+        console.log(`[ENROLLMENT_SUCCESS] Aluno ${studentUserId} matriculado com sucesso no produto ${sale.product_id}.`);
+      }
+
+      // --- FIM DA NOVA LÓGICA DE MATRÍCULA ---
+      
     } else {
       console.log(`[EVENT_IGNORED] Evento "${event}" não requer ação.`);
     }
