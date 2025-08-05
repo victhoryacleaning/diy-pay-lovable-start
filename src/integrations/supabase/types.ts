@@ -874,6 +874,10 @@ export type Database = {
         Args: { p_product_id: string }
         Returns: Json
       }
+      set_new_default_cohort: {
+        Args: { p_space_id: string; p_new_default_cohort_id: string }
+        Returns: undefined
+      }
       update_display_order: {
         Args: { table_name: string; items: Json }
         Returns: undefined
