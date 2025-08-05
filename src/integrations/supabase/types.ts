@@ -41,6 +41,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       financial_transactions: {
@@ -822,6 +829,10 @@ export type Database = {
           p_start_date: string
           p_end_date: string
         }
+        Returns: Json
+      }
+      get_students_with_progress: {
+        Args: { p_product_id: string }
         Returns: Json
       }
       update_display_order: {
