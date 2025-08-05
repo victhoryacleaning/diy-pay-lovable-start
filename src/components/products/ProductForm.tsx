@@ -178,10 +178,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       toast.success(mode === 'create' ? 'Produto criado com sucesso!' : 'Produto atualizado com sucesso!');
       navigate('/products');
     },
-    // --- MUDANÇA CRÍTICA AQUI ---
-    onError: (error: any) => {
-      // Exibe a mensagem de erro detalhada que vem do backend
-      toast.error(error.message || 'Ocorreu um erro desconhecido.');
+    onError: (error) => {
+      toast.error('Erro ao salvar produto');
     }
   });
 

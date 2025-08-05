@@ -20,21 +20,18 @@ export type Database = {
           id: string
           name: string
           space_id: string
-          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           space_id: string
-          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           space_id?: string
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -876,10 +873,6 @@ export type Database = {
       get_students_with_progress: {
         Args: { p_product_id: string }
         Returns: Json
-      }
-      set_new_default_cohort: {
-        Args: { p_space_id: string; p_new_default_cohort_id: string }
-        Returns: undefined
       }
       update_display_order: {
         Args: { table_name: string; items: Json }

@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
       
       console.log(`[SALE_UPDATED] Sale ${sale.id} updated to 'paid' with security reserve of ${securityReserveCents} cents.`);
       
-      // --- INÍCIO DA NOVA LÓGICA DE MATRÍCULA COM TURMAS ---
+      // --- INÍCIO DA NOVA LÓGICA DE MATRÍCULA ---
 
       // 1. Encontrar ou criar o usuário com base no e-mail da venda
       let { data: userData, error: userError } = await supabaseAdmin
@@ -278,52 +278,22 @@ Deno.serve(async (req) => {
       
       const studentUserId = userData.id;
 
-      // 2. Encontrar o 'space' associado ao produto comprado
-      const { data: space, error: spaceError } = await supabaseAdmin
-        .from('spaces')
-        .select('id')
-        .eq('product_id', sale.product_id)
-        .single();
-
-      let cohortId = null;
-
-      if (!spaceError && space) {
-        // 3. Encontrar a turma 'Ativa' (padrão) para este espaço
-        const { data: activeCohort, error: cohortError } = await supabaseAdmin
-          .from('cohorts')
-          .select('id')
-          .eq('space_id', space.id)
-          .eq('is_default', true)
-          .single();
-
-        if (!cohortError && activeCohort) {
-          cohortId = activeCohort.id;
-          console.log(`[COHORT_FOUND] Turma ativa encontrada: ${cohortId} para o espaço ${space.id}`);
-        } else {
-          console.warn(`[COHORT_NOT_FOUND] Nenhuma turma ativa encontrada para o espaço ${space.id}`);
-        }
-      } else {
-        console.warn(`[SPACE_NOT_FOUND] Espaço para o produto ${sale.product_id} não encontrado`);
-      }
-
-      // 4. Criar a matrícula na tabela 'enrollments', associando à turma ativa se disponível
+      // 2. Criar a matrícula na tabela 'enrollments'
       const { error: enrollmentError } = await supabaseAdmin
         .from('enrollments')
         .insert({
           user_id: studentUserId,
           product_id: sale.product_id,
-          cohort_id: cohortId, // Associa à turma ativa se encontrada
         });
       
       if (enrollmentError) {
         // Loga o erro mas não quebra o fluxo para garantir que o pagamento seja processado
         console.error(`[ENROLLMENT_ERROR] Falha ao matricular aluno ${studentUserId} no produto ${sale.product_id}:`, enrollmentError.message);
       } else {
-        const cohortMessage = cohortId ? ` na turma ${cohortId}` : ' (sem turma específica)';
-        console.log(`[ENROLLMENT_SUCCESS] Aluno ${studentUserId} matriculado com sucesso no produto ${sale.product_id}${cohortMessage}.`);
+        console.log(`[ENROLLMENT_SUCCESS] Aluno ${studentUserId} matriculado com sucesso no produto ${sale.product_id}.`);
       }
 
-      // --- FIM DA NOVA LÓGICA DE MATRÍCULA COM TURMAS ---
+      // --- FIM DA NOVA LÓGICA DE MATRÍCULA ---
       
     } else {
       console.log(`[EVENT_IGNORED] Evento "${event}" não requer ação.`);
