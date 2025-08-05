@@ -27,7 +27,10 @@ import { PlusCircle, GripVertical, FileText, Video, MoreVertical, Edit, Trash } 
 const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit: () => void; onDelete: () => void; }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
     id: lesson.id, 
-    data: { current: { type: 'lesson', lesson } } 
+    data: { 
+      type: 'lesson', 
+      lesson: lesson 
+    } 
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -43,7 +46,10 @@ const SortableLessonItem = ({ lesson, onEdit, onDelete }: { lesson: any; onEdit:
 const SortableModuleItem = ({ module, onAddLesson, onRename, onDelete, onEditLesson, onDeleteLesson }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
     id: module.id, 
-    data: { current: { type: 'module', module } } 
+    data: { 
+      type: 'module', 
+      module: module 
+    } 
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
@@ -309,8 +315,8 @@ export default function EditSpacePage() {
     console.log('🎯 [DRAG] Drag ended:', { 
       activeId: event.active.id, 
       overId: event.over?.id,
-      activeData: event.active.data.current,
-      overData: event.over?.data.current
+      activeData: event.active.data,
+      overData: event.over?.data
     });
     
     const { active, over } = event;
@@ -319,8 +325,8 @@ export default function EditSpacePage() {
       return;
     }
     
-    const activeData = active.data.current;
-    const overData = over.data.current;
+    const activeData = active.data;
+    const overData = over.data;
     
     if (!activeData || !overData) {
       console.log('⚠️ [DRAG] Missing drag data:', { activeData, overData });
