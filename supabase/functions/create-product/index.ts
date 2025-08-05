@@ -34,7 +34,8 @@ async function createSpaceWithDefaultCohort(supabase: SupabaseClient, product: a
     .insert({
       name: 'Turma 01',
       space_id: space.id,
-      is_default: true
+      is_default: true,
+      user_id: product.producer_id // <-- GARANTIR QUE ESTA LINHA SEJA ADICIONADA
     });
 
   if (cohortError) throw new Error(`Erro ao criar a turma padrão: ${cohortError.message}`);
