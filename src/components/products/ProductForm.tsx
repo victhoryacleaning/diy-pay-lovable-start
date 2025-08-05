@@ -134,6 +134,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     return `${baseSlug}-${timestamp}`;
   };
 
+  // --- CÓDIGO CORRIGIDO DA IA APLICADO AQUI ---
   const saveProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
       const priceValue = data.product_type === 'donation' ? 0 : parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100;
@@ -163,11 +164,32 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
       if (mode === 'create') {
         const slug = generateSlug(data.name);
-        const { data: result, error } = await supabase.functions.invoke('create-product', {
-          body: { ...productData, checkout_link_slug: slug }
-        });
-        if (error) throw error;
-        return result;
+        
+        try {
+          const { data: result, error } = await supabase.functions.invoke('create-product', {
+            body: { ...productData, checkout_link_slug: slug }
+          });
+          
+          if (error) {
+            console.error('Erro da Edge Function:', error);
+            throw new Error(error.message || 'Erro desconhecido na Edge Function');
+          }
+          
+          if (result?.error) {
+            console.error('Erro no resultado:', result);
+            throw new Error(result.error);
+          }
+          
+          return result;
+        } catch (functionError: any) {
+          console.error('Erro completo na chamada da function:', functionError);
+          
+          if (functionError.name === 'FunctionsHttpError') { // Corrigido para o tipo de erro correto do Supabase
+            throw new Error(`Erro na função: ${functionError.message}`);
+          }
+          
+          throw functionError;
+        }
       } else {
         const { data: result, error } = await supabase.from('products').update(productData).eq('id', productId).select().single();
         if (error) throw error;
@@ -175,13 +197,19 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       }
     },
     onSuccess: () => {
-      toast.success(mode === 'create' ? 'Produto criado com sucesso!' : 'Produto atualizado com sucesso!');
+      toast.success('Produto criado com sucesso!');
       navigate('/products');
     },
-    onError: (error) => {
-      toast.error('Erro ao salvar produto');
+    onError: (error: any) => {
+      console.error('Erro detalhado na mutation:', error);
+      
+      const errorMessage = error.message || 'Erro desconhecido ao salvar produto';
+      toast.error(`Erro ao salvar produto: ${errorMessage}`);
+      
+      console.log('Stack trace:', error.stack);
     }
   });
+  // --- FIM DO BLOCO CORRIGIDO ---
 
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
