@@ -1,3 +1,5 @@
+// Caminho do arquivo: src/components/spaces/CohortsTab.tsx
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,13 +23,16 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
   const { data: cohorts, isLoading } = useQuery({
     queryKey: ['space-cohorts', spaceId],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-space-cohorts', {
-        body: { spaceId }
-      });
+      const { data, error } = await supabase.from('cohorts').select('*, enrollments(count)').eq('space_id', spaceId).order('created_at');
       if (error) throw new Error(error.message);
       return data;
     },
-    enabled: !!spaceId
+    enabled: !!spaceId,
+    // ======================= A CORREÇÃO DEFINITIVA ESTÁ AQUI =======================
+    // Esta opção força a busca por dados novos sempre que a janela/aba
+    // do navegador recebe foco, resolvendo o problema de cache de forma simples.
+    refetchOnWindowFocus: true,
+    // ===============================================================================
   });
 
   // MUTATIONS
@@ -87,6 +92,14 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
     }
   };
 
+  // Correção na renderização da contagem para ser mais robusta
+  const getEnrollmentCount = (cohort: any) => {
+    if (cohort.enrollments && cohort.enrollments.length > 0) {
+      return cohort.enrollments[0].count;
+    }
+    return 0;
+  };
+
   return (
     <>
       <div className="space-y-6">
@@ -117,7 +130,7 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
                   <div className="flex items-center gap-3">
                     <p className="font-medium">{cohort.name}</p>
                     {cohort.is_active && <Badge variant="default" className="bg-green-600">Ativa</Badge>}
-                    <span className="text-sm text-muted-foreground flex items-center gap-1.5"><Users className="h-4 w-4" /> {cohort.enrollments_count || 0} alunos</span>
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5"><Users className="h-4 w-4" /> {getEnrollmentCount(cohort)} alunos</span>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -146,6 +159,7 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
         onConfirm={confirmDelete}
         title="Confirmar Exclusão"
         description={`Tem certeza que deseja excluir a turma "${selectedCohort?.name}"? Esta ação não pode ser desfeita.`}
+        isLoading={deleteCohortMutation.isPending}
       />
     </>
   );
