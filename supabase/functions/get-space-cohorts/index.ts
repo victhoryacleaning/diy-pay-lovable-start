@@ -21,13 +21,20 @@ Deno.serve(async (req) => {
 
     const { data, error } = await serviceClient
       .from('cohorts')
-      .select('*, enrollments(count)')
+      .select('id, name, is_active, enrollments(count)')
       .eq('space_id', spaceId)
       .order('created_at');
 
     if (error) throw error;
+    
+    const formattedData = data.map(cohort => ({
+      id: cohort.id,
+      name: cohort.name,
+      is_active: cohort.is_active,
+      enrollments_count: cohort.enrollments?.count || 0
+    }));
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(formattedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

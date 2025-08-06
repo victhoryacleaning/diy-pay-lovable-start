@@ -25,20 +25,21 @@ Deno.serve(async (req) => {
       .single();
     if (productError) throw productError;
 
-    // 2. Se a entrega for via Área de Membros, criar o "Space" e o "Space Product"
+    // 2. Se a entrega for via Área de Membros, criar o "Space" e a "Turma 01"
     if (delivery_type === 'members_area') {
+      // 2a. Criar o Space
       const { data: newSpace, error: spaceError } = await serviceClient
         .from('spaces')
         .insert({
           producer_id: user.id,
-          name: newProduct.name, // Usa o nome do produto como nome do Space
-          slug: newProduct.checkout_link_slug, // Usa o mesmo slug do produto
+          name: newProduct.name,
+          slug: newProduct.checkout_link_slug,
         })
         .select('id')
         .single();
       if (spaceError) throw spaceError;
 
-      // Vincula o produto ao novo space como "principal"
+      // 2b. Vincular o produto ao novo space
       const { error: spaceProductError } = await serviceClient
         .from('space_products')
         .insert({
@@ -47,6 +48,17 @@ Deno.serve(async (req) => {
           product_type: 'principal',
         });
       if (spaceProductError) throw spaceProductError;
+
+      // 2c. (NOVA LÓGICA) Criar a Turma 01 padrão e marcá-la como ativa
+      const { error: cohortError } = await serviceClient
+        .from('cohorts')
+        .insert({
+          space_id: newSpace.id,
+          name: 'Turma 01',
+          is_active: true, // Marcando como ativa
+          user_id: user.id
+        });
+      if (cohortError) throw cohortError;
     }
 
     return new Response(JSON.stringify(newProduct), {

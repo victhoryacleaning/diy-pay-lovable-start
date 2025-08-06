@@ -5,99 +5,148 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, PlusCircle } from 'lucide-react';
-
-const fetchCohorts = async (spaceId: string) => {
-  const { data, error } = await supabase.functions.invoke('get-space-cohorts', {
-    body: { spaceId }
-  });
-  if (error) throw new Error(error.message);
-  return data;
-};
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Badge } from '@/components/ui/badge';
+import { Users, PlusCircle, MoreHorizontal, CheckCircle, Trash2, Loader2 } from 'lucide-react';
+import { ConfirmationModal } from '@/components/core/ConfirmationModal';
 
 export function CohortsTab({ spaceId }: { spaceId: string }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newCohortName, setNewCohortName] = useState('');
-  
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedCohort, setSelectedCohort] = useState<any>(null);
+
+  // FETCH
   const { data: cohorts, isLoading } = useQuery({
     queryKey: ['space-cohorts', spaceId],
-    queryFn: () => fetchCohorts(spaceId),
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-space-cohorts', {
+        body: { spaceId }
+      });
+      if (error) throw new Error(error.message);
+      return data;
+    },
     enabled: !!spaceId
   });
 
+  // MUTATIONS
   const createCohortMutation = useMutation({
     mutationFn: async (name: string) => {
-      const { error } = await supabase.functions.invoke('create-cohort', {
-        body: { spaceId, name }
-      });
+      const { error } = await supabase.functions.invoke('create-cohort', { body: { spaceId, name } });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({
-        title: "Sucesso!",
-        description: "Turma criada."
-      });
+      toast({ title: "Sucesso!", description: "Turma criada." });
       setNewCohortName('');
       queryClient.invalidateQueries({ queryKey: ['space-cohorts', spaceId] });
     },
-    onError: (error: any) => toast({
-      title: "Erro",
-      description: error.message,
-      variant: "destructive"
-    })
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" })
   });
 
+  const setActiveMutation = useMutation({
+    mutationFn: async (cohortId: string) => {
+      const { error } = await supabase.functions.invoke('set-active-cohort', { body: { space_id: spaceId, cohort_id: cohortId }});
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "Turma ativa foi alterada." });
+      queryClient.invalidateQueries({ queryKey: ['space-cohorts', spaceId] });
+    },
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" })
+  });
+  
+  const deleteCohortMutation = useMutation({
+    mutationFn: async (cohortId: string) => {
+      const { error } = await supabase.functions.invoke('delete-cohort', { body: { cohort_id: cohortId }});
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "Turma excluída." });
+      queryClient.invalidateQueries({ queryKey: ['space-cohorts', spaceId] });
+      setDeleteModalOpen(false);
+    },
+    onError: (error: any) => toast({ title: "Erro", description: error.message, variant: "destructive" })
+  });
+
+  // HANDLERS
   const handleAddCohort = () => {
     if (newCohortName.trim()) {
       createCohortMutation.mutate(newCohortName.trim());
     }
   };
+  
+  const handleDeleteClick = (cohort: any) => {
+    setSelectedCohort(cohort);
+    setDeleteModalOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (selectedCohort) {
+      deleteCohortMutation.mutate(selectedCohort.id);
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Criar Nova Turma</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Nome da nova turma (Ex: Turma de Agosto)"
-              value={newCohortName}
-              onChange={(e) => setNewCohortName(e.target.value)}
-            />
-            <Button
-              onClick={handleAddCohort}
-              disabled={!newCohortName.trim() || createCohortMutation.isPending}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Criar Turma
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><PlusCircle className="h-5 w-5"/> Criar Nova Turma</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input placeholder="Nome da nova turma (Ex: Turma de Setembro)" value={newCohortName} onChange={(e) => setNewCohortName(e.target.value)} />
+              <Button onClick={handleAddCohort} disabled={!newCohortName.trim() || createCohortMutation.isPending}>
+                {createCohortMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                Criar Turma
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Turmas Existentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p>Carregando...</p>
-          ) : (
-            cohorts?.map((cohort: any) => (
-              <div key={cohort.id} className="flex justify-between items-center p-2 rounded hover:bg-muted">
-                <p>{cohort.name}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  {cohort.enrollments?.length || 0} alunos
-                </p>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Turmas Existentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading && <p>Carregando turmas...</p>}
+            <div className="space-y-2">
+              {cohorts?.map((cohort: any) => (
+                <div key={cohort.id} className="flex justify-between items-center p-3 rounded-md border">
+                  <div className="flex items-center gap-3">
+                    <p className="font-medium">{cohort.name}</p>
+                    {cohort.is_active && <Badge variant="default" className="bg-green-600">Ativa</Badge>}
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5"><Users className="h-4 w-4" /> {cohort.enrollments_count || 0} alunos</span>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setActiveMutation.mutate(cohort.id)} disabled={cohort.is_active || setActiveMutation.isPending}>
+                        <CheckCircle className="mr-2 h-4 w-4" /> Definir como Ativa
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(cohort)} disabled={cohort.is_active}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <ConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirmar Exclusão"
+        description={`Tem certeza que deseja excluir a turma "${selectedCohort?.name}"? Esta ação não pode ser desfeita.`}
+      />
+    </>
   );
 }
