@@ -18,20 +18,26 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           name: string
           space_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           space_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           space_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -873,6 +879,14 @@ export type Database = {
       get_students_with_progress: {
         Args: { p_product_id: string }
         Returns: Json
+      }
+      set_active_cohort_for_space: {
+        Args: { p_space_id: string; p_cohort_id_to_activate: string }
+        Returns: undefined
+      }
+      set_new_default_cohort: {
+        Args: { p_space_id: string; p_new_default_cohort_id: string }
+        Returns: undefined
       }
       update_display_order: {
         Args: { table_name: string; items: Json }
