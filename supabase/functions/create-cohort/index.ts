@@ -21,12 +21,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await serviceClient
       .from('cohorts')
-      .insert({ 
-        space_id: spaceId, 
-        name: name,
-        is_default: false, // Turmas manuais nunca são a padrão
-        user_id: user.id // Adiciona o ID do criador
-      })
+      .insert({ space_id: spaceId, name: name })
       .select()
       .single();
 
