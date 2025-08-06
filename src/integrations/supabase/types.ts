@@ -785,6 +785,7 @@ export type Database = {
           id: string
           name: string
           producer_id: string
+          product_id: string | null
           slug: string
           updated_at: string
         }
@@ -793,6 +794,7 @@ export type Database = {
           id?: string
           name: string
           producer_id: string
+          product_id?: string | null
           slug: string
           updated_at?: string
         }
@@ -801,6 +803,7 @@ export type Database = {
           id?: string
           name?: string
           producer_id?: string
+          product_id?: string | null
           slug?: string
           updated_at?: string
         }
@@ -810,6 +813,13 @@ export type Database = {
             columns: ["producer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]

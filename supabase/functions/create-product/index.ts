@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
           producer_id: user.id,
           name: newProduct.name,
           slug: newProduct.checkout_link_slug,
+          product_id: newProduct.id, // A PONTE SENDO CRIADA
         })
         .select('id')
         .single();
