@@ -1,129 +1,135 @@
 // src/pages/PersonalizeSpacePage.tsx (Nova Versão)
-import { useEffect } from 'react';
+
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+
 import { ProducerLayout } from '@/components/ProducerLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2 } from 'lucide-react';
-
-const spaceDetailsSchema = z.object({
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
-  slug: z.string().min(3, { message: "A URL deve ter pelo menos 3 caracteres." })
-    .regex(/^[a-z0-9-]+$/, { message: "A URL deve conter apenas letras minúsculas, números e hifens." }),
-});
-type SpaceDetailsFormValues = z.infer<typeof spaceDetailsSchema>;
+import { PlusCircle, GripVertical, MoreHorizontal } from 'lucide-react';
+import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceModal';
 
 export default function PersonalizeSpacePage() {
   const { spaceId } = useParams<{ spaceId: string }>();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [isAddProductModalOpen, setAddProductModalOpen] = useState(false);
 
-  const { data: space, isLoading: isLoadingSpace } = useQuery({
-    queryKey: ['space-details', spaceId],
+  // Busca os dados do space, incluindo os produtos associados
+  const { data: space, isLoading } = useQuery({
+    queryKey: ['space-details-with-products', spaceId],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-space-details', { body: { spaceId } });
+      // Usaremos uma função RPC futura para isso, por enquanto, buscamos de 'space_products'
+      const { data, error } = await supabase
+        .from('space_products')
+        .select(`
+          product_type,
+          product:products (id, name, checkout_image_url)
+        `)
+        .eq('space_id', spaceId);
+      
       if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!spaceId,
   });
 
-  const form = useForm<SpaceDetailsFormValues>({
-    resolver: zodResolver(spaceDetailsSchema),
-    defaultValues: { name: '', slug: '' },
-  });
-
-  useEffect(() => {
+  // Agrupa os produtos por tipo usando useMemo para performance
+  const productGroups = useMemo(() => {
+    const groups = { principal: [], bonus: [], locked: [] };
     if (space) {
-      form.reset({ name: space.name, slug: space.slug });
-    }
-  }, [space, form]);
-
-  const updateMutation = useMutation({
-    mutationFn: async (values: SpaceDetailsFormValues) => {
-      const { data, error } = await supabase.functions.invoke('update-space-details', {
-        body: { spaceId, ...values },
+      space.forEach(sp => {
+        if (sp.product_type === 'principal') groups.principal.push(sp.product);
+        else if (sp.product_type === 'bonus') groups.bonus.push(sp.product);
+        else if (sp.product_type === 'locked') groups.locked.push(sp.product);
       });
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    onSuccess: (updatedSpace) => {
-      toast({ title: "Sucesso!", description: "As informações foram salvas." });
-      queryClient.setQueryData(['space-details', spaceId], updatedSpace);
-      queryClient.invalidateQueries({ queryKey: ['producer-spaces'] });
-    },
-    onError: (error) => {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    },
-  });
+    }
+    return groups;
+  }, [space]);
 
-  const onSubmit = (values: SpaceDetailsFormValues) => {
-    updateMutation.mutate(values);
-  };
-
-  if (isLoadingSpace) {
-    return (
-      <ProducerLayout>
-        <div className="p-8"><Skeleton className="h-64 w-full" /></div>
-      </ProducerLayout>
-    );
+  if (isLoading) {
+    return <ProducerLayout><div className="p-8"><Skeleton className="h-96 w-full" /></div></ProducerLayout>;
   }
 
   return (
-    <ProducerLayout>
-      <div className="p-4 md:p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Personalizar Área de Membros</h1>
-          <p className="text-muted-foreground">Ajuste as informações básicas e a aparência da sua área de membros.</p>
+    <>
+      <ProducerLayout>
+        <div className="p-4 md:p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Personalizar Vitrine</h1>
+            <Button onClick={() => setAddProductModalOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Curso
+            </Button>
+          </div>
+          
+          <div className="space-y-6">
+            {/* Container do Produto Principal */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Produto Principal</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {productGroups.principal.length > 0 ? productGroups.principal.map(product => (
+                  <div key={product.id} className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="flex items-center gap-4">
+                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      <img src={product.checkout_image_url || '/placeholder.svg'} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
+                      <span>{product.name}</span>
+                    </div>
+                    {/* O produto principal não pode ser removido, então não há menu */}
+                  </div>
+                )) : <p className="text-sm text-muted-foreground">Nenhum produto principal definido.</p>}
+              </CardContent>
+            </Card>
+
+            {/* Container de Bônus */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Cursos Bônus</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {productGroups.bonus.length > 0 ? productGroups.bonus.map(product => (
+                  <div key={product.id} className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="flex items-center gap-4">
+                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      <img src={product.checkout_image_url || '/placeholder.svg'} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
+                      <span>{product.name}</span>
+                    </div>
+                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                  </div>
+                )) : <p className="text-sm text-muted-foreground">Nenhum curso bônus adicionado.</p>}
+              </CardContent>
+            </Card>
+
+            {/* Container de Produtos Bloqueados */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Produtos Bloqueados (Ofertas)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {productGroups.locked.length > 0 ? productGroups.locked.map(product => (
+                  <div key={product.id} className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="flex items-center gap-4">
+                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      <img src={product.checkout_image_url || '/placeholder.svg'} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
+                      <span>{product.name}</span>
+                    </div>
+                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                  </div>
+                )) : <p className="text-sm text-muted-foreground">Nenhum produto bloqueado adicionado.</p>}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações Gerais</CardTitle>
-            <CardDescription>Altere o nome e a URL de acesso da sua área de membros.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Título</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <FormField control={form.control} name="slug" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL de Acesso</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <span className="text-sm text-muted-foreground bg-muted p-2 rounded-l-md border border-r-0">diypay.com.br/members/</span>
-                        <Input {...field} className="rounded-l-none" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}/>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={updateMutation.isPending}>
-                    {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Salvar Alterações
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
-    </ProducerLayout>
+      </ProducerLayout>
+
+      <AddProductToSpaceModal 
+        isOpen={isAddProductModalOpen}
+        onClose={() => setAddProductModalOpen(false)}
+        spaceId={spaceId!}
+      />
+    </>
   );
 }
