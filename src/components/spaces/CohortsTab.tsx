@@ -159,7 +159,6 @@ export function CohortsTab({ spaceId }: { spaceId: string }) {
         onConfirm={confirmDelete}
         title="Confirmar Exclusão"
         description={`Tem certeza que deseja excluir a turma "${selectedCohort?.name}"? Esta ação não pode ser desfeita.`}
-        isLoading={deleteCohortMutation.isPending}
       />
     </>
   );

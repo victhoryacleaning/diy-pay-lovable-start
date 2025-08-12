@@ -33,6 +33,7 @@ import SettingsHubPage from "./pages/Producer/SettingsHubPage";
 import AccountPage from "./pages/Producer/Settings/AccountPage";
 import WebhooksPage from "./pages/Producer/Settings/WebhooksPage";
 import APIPage from "./pages/Producer/Settings/APIPage";
+import PersonalizeSpacePage from "./pages/PersonalizeSpacePage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -130,6 +131,14 @@ const App = () => {
                 element={
                   <ProtectedRoute requiredRole="producer">
                     <EditSpacePage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/personalize/edit/:spaceId" 
+                element={
+                  <ProtectedRoute requiredRole="producer">
+                    <PersonalizeSpacePage />
                   </ProtectedRoute>
                 } 
               />
