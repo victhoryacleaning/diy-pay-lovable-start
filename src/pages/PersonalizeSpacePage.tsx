@@ -1,123 +1,125 @@
-// src/pages/PersonalizeSpacePage.tsx (Versão com Remoção)
-import { useState, useMemo } from 'react';
+// src/pages/PersonalizeSpacePage.tsx (Versão com Containers)
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ProducerLayout } from '@/components/ProducerLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, GripVertical, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Edit, Brush } from 'lucide-react';
 import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceModal';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+const spaceDetailsSchema = z.object({
+  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
+  slug: z.string().min(3, { message: "A URL deve ter pelo menos 3 caracteres." }).regex(/^[a-z0-9-]+$/, { message: "URL inválida." }),
+});
+type SpaceDetailsFormValues = z.infer<typeof spaceDetailsSchema>;
 
 export default function PersonalizeSpacePage() {
   const { spaceId } = useParams<{ spaceId: string }>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddProductModalOpen, setAddProductModalOpen] = useState(false);
+  const [newContainerTitle, setNewContainerTitle] = useState('');
 
-  const { data: spaceProducts, isLoading } = useQuery({
-    queryKey: ['space-details-with-products', spaceId],
+  const { data: space, isLoading } = useQuery({
+    queryKey: ['space-details', spaceId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('space_products').select(`product_type, product:products (id, name, checkout_image_url)`).eq('space_id', spaceId);
+      const { data, error } = await supabase.functions.invoke('get-space-details', { body: { spaceId } });
       if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!spaceId,
   });
 
-  const removeProductMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const { error } = await supabase.functions.invoke('remove-product-from-space', {
-        body: { spaceId, productId },
-      });
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => {
-      toast({ title: "Sucesso!", description: "Produto removido da vitrine." });
-      queryClient.invalidateQueries({ queryKey: ['space-details-with-products', spaceId] });
-    },
-    onError: (error) => {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    },
+  const form = useForm<SpaceDetailsFormValues>({
+    resolver: zodResolver(spaceDetailsSchema),
+    defaultValues: { name: '', slug: '' },
   });
 
-  const productGroups = useMemo(() => {
-    const groups = { principal: [], bonus: [], locked: [] };
-    if (spaceProducts) {
-      spaceProducts.forEach(sp => {
-        if (sp.product_type === 'principal') groups.principal.push(sp.product);
-        else if (sp.product_type === 'bonus') groups.bonus.push(sp.product);
-        else if (sp.product_type === 'locked') groups.locked.push(sp.product);
-      });
+  useEffect(() => {
+    if (space) {
+      form.reset({ name: space.name, slug: space.slug });
     }
-    return groups;
-  }, [spaceProducts]);
+  }, [space, form]);
+  
+  const createContainerMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase.functions.invoke('create-space-container', { body: { spaceId, title } });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "Novo container criado." });
+      setNewContainerTitle('');
+      queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
+    },
+    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+  });
+
+  const handleCreateContainer = () => {
+    if (newContainerTitle.trim()) {
+      createContainerMutation.mutate(newContainerTitle.trim());
+    }
+  };
 
   if (isLoading) {
     return <ProducerLayout><div className="p-8"><Skeleton className="h-96 w-full" /></div></ProducerLayout>;
   }
 
-  const renderProductCard = (product: any, isPrincipal = false) => (
-    <div key={product.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
-      <div className="flex items-center gap-4">
-        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-        <img src={product.checkout_image_url || '/placeholder.svg'} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
-        <span className="font-medium">{product.name}</span>
-      </div>
-      {!isPrincipal && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem className="text-destructive" onClick={() => removeProductMutation.mutate(product.id)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Remover
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
-  );
-
   return (
     <>
       <ProducerLayout>
         <div className="p-4 md:p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold">Personalizar Vitrine</h1>
-            <Button onClick={() => setAddProductModalOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Curso
-            </Button>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold flex items-center gap-2">{space?.name || 'Carregando...'} <Button variant="ghost" size="icon"><Edit className="h-5 w-5" /></Button></h1>
+            <p className="text-muted-foreground flex items-center gap-2">URL: diypay.com.br/members/{space?.slug} <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button></p>
           </div>
           
-          <div className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle>Produto Principal</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {productGroups.principal.length > 0 ? productGroups.principal.map(p => renderProductCard(p, true)) : <p className="text-sm text-muted-foreground">Nenhum produto principal definido.</p>}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle>Cursos Bônus</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {productGroups.bonus.length > 0 ? productGroups.bonus.map(p => renderProductCard(p)) : <p className="text-sm text-muted-foreground">Nenhum curso bônus adicionado.</p>}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle>Produtos Bloqueados (Ofertas)</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {productGroups.locked.length > 0 ? productGroups.locked.map(p => renderProductCard(p)) : <p className="text-sm text-muted-foreground">Nenhum produto bloqueado adicionado.</p>}
-              </CardContent>
-            </Card>
+          <div className="space-y-4">
+            {space?.space_containers?.map((container: any) => (
+              <Card key={container.id}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>{container.title}</CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setAddProductModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Adicionar Curso</Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {container.space_products.map((sp: any) => (
+                    <div key={sp.product.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
+                      <div className="flex items-center gap-4">
+                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                        <img src={sp.product.checkout_image_url || '/placeholder.svg'} alt={sp.product.name} className="h-10 w-10 rounded-md object-cover" />
+                        <span className="font-medium">{sp.product.name}</span>
+                      </div>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </div>
+                  ))}
+                  {container.space_products.length === 0 && <p className="text-sm text-muted-foreground p-4 text-center">Nenhum curso neste container.</p>}
+                </CardContent>
+              </Card>
+            ))}
           </div>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Novo Container</CardTitle>
+              <CardDescription>Adicione uma nova seção para organizar seus produtos.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-2">
+              <Input placeholder="Título do novo container" value={newContainerTitle} onChange={(e) => setNewContainerTitle(e.target.value)} />
+              <Button onClick={handleCreateContainer} disabled={createContainerMutation.isPending}>
+                {createContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar Container"}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </ProducerLayout>
-
       <AddProductToSpaceModal isOpen={isAddProductModalOpen} onClose={() => setAddProductModalOpen(false)} spaceId={spaceId!} />
     </>
   );
