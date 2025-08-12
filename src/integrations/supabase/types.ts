@@ -734,8 +734,41 @@ export type Database = {
           },
         ]
       }
+      space_containers: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          space_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          space_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          space_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_containers_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_products: {
         Row: {
+          container_id: string | null
           container_title: string | null
           created_at: string
           display_order: number
@@ -745,6 +778,7 @@ export type Database = {
           space_id: string
         }
         Insert: {
+          container_id?: string | null
           container_title?: string | null
           created_at?: string
           display_order?: number
@@ -754,6 +788,7 @@ export type Database = {
           space_id: string
         }
         Update: {
+          container_id?: string | null
           container_title?: string | null
           created_at?: string
           display_order?: number
@@ -775,6 +810,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_space_products_container_id"
+            columns: ["container_id"]
+            isOneToOne: false
+            referencedRelation: "space_containers"
             referencedColumns: ["id"]
           },
         ]
