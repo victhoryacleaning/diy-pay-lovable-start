@@ -1,4 +1,4 @@
-// src/pages/PersonalizeSpacePage.tsx (Versão com Containers)
+// src/pages/PersonalizeSpacePage.tsx (Versão Final com Gestão de Containers)
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Edit, Brush } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Edit, Trash2, Pencil } from 'lucide-react';
 import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceModal';
 
 const spaceDetailsSchema = z.object({
@@ -28,6 +30,8 @@ export default function PersonalizeSpacePage() {
   const queryClient = useQueryClient();
   const [isAddProductModalOpen, setAddProductModalOpen] = useState(false);
   const [newContainerTitle, setNewContainerTitle] = useState('');
+  const [renameContainerId, setRenameContainerId] = useState<string | null>(null);
+  const [renameContainerTitle, setRenameContainerTitle] = useState('');
 
   const { data: space, isLoading } = useQuery({
     queryKey: ['space-details', spaceId],
@@ -63,9 +67,49 @@ export default function PersonalizeSpacePage() {
     onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
 
+  const updateContainerMutation = useMutation({
+    mutationFn: async ({ containerId, title }: { containerId: string; title: string }) => {
+      const { error } = await supabase.functions.invoke('update-space-container', { body: { containerId, title } });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "Container renomeado." });
+      setRenameContainerId(null);
+      setRenameContainerTitle('');
+      queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
+    },
+    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+  });
+
+  const deleteContainerMutation = useMutation({
+    mutationFn: async (containerId: string) => {
+      const { error } = await supabase.functions.invoke('delete-space-container', { body: { containerId } });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "Container excluído." });
+      queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
+    },
+    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+  });
+
   const handleCreateContainer = () => {
     if (newContainerTitle.trim()) {
       createContainerMutation.mutate(newContainerTitle.trim());
+    }
+  };
+
+  const handleRenameContainer = (containerId: string, currentTitle: string) => {
+    setRenameContainerId(containerId);
+    setRenameContainerTitle(currentTitle);
+  };
+
+  const submitRename = () => {
+    if (renameContainerId && renameContainerTitle.trim()) {
+      updateContainerMutation.mutate({ 
+        containerId: renameContainerId, 
+        title: renameContainerTitle.trim() 
+      });
     }
   };
 
@@ -87,7 +131,31 @@ export default function PersonalizeSpacePage() {
               <Card key={container.id}>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{container.title}</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setAddProductModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Adicionar Curso</Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setAddProductModalOpen(true)}>
+                      <PlusCircle className="mr-2 h-4 w-4"/>Adicionar Curso
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-background border">
+                        <DropdownMenuItem onClick={() => handleRenameContainer(container.id, container.title)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Renomear
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive" 
+                          onClick={() => deleteContainerMutation.mutate(container.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {container.space_products.map((sp: any) => (
@@ -120,7 +188,32 @@ export default function PersonalizeSpacePage() {
           </Card>
         </div>
       </ProducerLayout>
+
       <AddProductToSpaceModal isOpen={isAddProductModalOpen} onClose={() => setAddProductModalOpen(false)} spaceId={spaceId!} />
+      
+      {/* Rename Container Dialog */}
+      <Dialog open={!!renameContainerId} onOpenChange={() => setRenameContainerId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear Container</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input 
+              value={renameContainerTitle} 
+              onChange={(e) => setRenameContainerTitle(e.target.value)}
+              placeholder="Novo título do container"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setRenameContainerId(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={submitRename} disabled={updateContainerMutation.isPending}>
+                {updateContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
