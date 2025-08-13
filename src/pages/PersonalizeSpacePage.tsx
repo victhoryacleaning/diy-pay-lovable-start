@@ -1,4 +1,4 @@
-// src/pages/PersonalizeSpacePage.tsx (Versão com Formato de Nome Corrigido)
+// src/pages/PersonalizeSpacePage.tsx (Versão com Badges CORRIGIDAS)
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from '@/components/ui/badge';
 import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Edit, Trash2, Pencil } from 'lucide-react';
 import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceModal';
 
@@ -25,21 +26,27 @@ const spaceDetailsSchema = z.object({
 });
 type SpaceDetailsFormValues = z.infer<typeof spaceDetailsSchema>;
 
-// NOVA FUNÇÃO DE FORMATAÇÃO
-const formatProductName = (name: string, type: string) => {
-  let translatedType = '';
-  switch (type) {
-    case 'principal': translatedType = 'Principal'; break;
-    case 'bonus': translatedType = 'Bônus'; break;
-    case 'locked': translatedType = 'Bloqueado'; break;
-    default: return name;
+// FUNÇÕES HELPER PARA O DESIGN
+const getBadgeVariant = (productType: string) => {
+  switch (productType) {
+    case 'principal': return 'default';
+    case 'bonus': return 'secondary';
+    case 'locked': return 'destructive';
+    default: return 'outline';
   }
-  return `${name} (${translatedType})`;
 };
 
-// ... (Componente SortableContainer e outros permanecem, mas a renderização do produto mudará)
-// ... (Para manter o prompt claro, mostrarei o código completo da página)
+const getBadgeContent = (productType: string) => {
+  switch (productType) {
+    case 'principal': return 'Principal';
+    case 'bonus': return 'Bônus';
+    case 'locked': return 'Bloqueado';
+    default: return productType;
+  }
+};
 
+
+// Componente Principal da Página
 export default function PersonalizeSpacePage() {
   // ... (Hooks e estados permanecem os mesmos)
   const { spaceId } = useParams<{ spaceId: string }>();
@@ -135,8 +142,9 @@ export default function PersonalizeSpacePage() {
                     <div className="flex items-center gap-4">
                       <GripVertical className="h-5 w-5 text-muted-foreground" />
                       <img src={sp.product.checkout_image_url || '/placeholder.svg'} alt={sp.product.name} className="h-10 w-10 rounded-md object-cover" />
+                      <span className="font-medium">{sp.product.name}</span>
                       {/* A CORREÇÃO ESTÁ AQUI */}
-                      <span className="font-medium">{formatProductName(sp.product.name, sp.product_type)}</span>
+                      <Badge variant={getBadgeVariant(sp.product_type)}>{getBadgeContent(sp.product_type)}</Badge>
                     </div>
                     <MoreHorizontal className="h-4 w-4" />
                   </div>
