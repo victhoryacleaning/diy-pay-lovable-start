@@ -14,21 +14,41 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) throw new Error('Unauthorized');
 
-    const { page = 1, limit = 10 } = await req.json()
+    const { page = 1, limit = 10, spaceIdToExclude } = await req.json()
     const offset = (page - 1) * limit
 
-    const { count: totalProducts, error: countError } = await supabase
+    // Base query for products count
+    let countQuery = supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
       .eq('producer_id', user.id)
+
+    // Base query for products
+    let productsQuery = supabase
+      .from('products')
+      .select('*, space_products(product_type, space_id)')
+      .eq('producer_id', user.id)
+
+    // If spaceIdToExclude is provided, filter out products already in that space
+    if (spaceIdToExclude) {
+      // Get products already in the specified space
+      const { data: existingSpaceProducts } = await supabase
+        .from('space_products')
+        .select('product_id')
+        .eq('space_id', spaceIdToExclude)
+
+      const existingProductIds = existingSpaceProducts?.map(sp => sp.product_id) || []
+      
+      if (existingProductIds.length > 0) {
+        countQuery = countQuery.not('id', 'in', `(${existingProductIds.join(',')})`)
+        productsQuery = productsQuery.not('id', 'in', `(${existingProductIds.join(',')})`)
+      }
+    }
+
+    const { count: totalProducts, error: countError } = await countQuery
     if (countError) throw countError;
 
-    // ETAPA 1: QUERY APRIMORADA
-    // Buscamos os produtos e, para cada um, seus papéis na tabela space_products.
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('*, space_products(product_type)')
-      .eq('producer_id', user.id)
+    const { data: products, error: productsError } = await productsQuery
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
     if (productsError) throw productsError;
