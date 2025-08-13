@@ -33,9 +33,9 @@ type SpaceDetailsFormValues = z.infer<typeof spaceDetailsSchema>;
 const ProductCard = ({ product, type }: { product: any, type: string }) => {
   const getBadgeVariant = (productType: string) => {
     switch (productType) {
-      case 'principal': return 'default';
-      case 'bonus': return 'secondary';
-      case 'locked': return 'destructive';
+      case 'Principal': return 'default';
+      case 'Bônus': return 'secondary';
+      case 'Bloqueado': return 'destructive';
       default: return 'outline';
     }
   };
