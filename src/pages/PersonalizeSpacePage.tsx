@@ -20,7 +20,7 @@ import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceMod
 
 // Schema de validação simplificado (apenas slug)
 const spaceDetailsSchema = z.object({
-  slug: z.string().min(3, { message: "A URL deve ter pelo menos 3 caracteres." }).regex(/^[a-z0--9-]+$/, { message: "URL inválida." }),
+  slug: z.string().min(3, { message: "A URL deve ter pelo menos 3 caracteres." }).regex(/^[a-z0-9-]+$/, { message: "URL inválida." }),
 });
 type SpaceDetailsFormValues = z.infer<typeof spaceDetailsSchema>;
 
@@ -77,9 +77,9 @@ export default function PersonalizeSpacePage() {
     mutationFn: async (values: SpaceDetailsFormValues) => {
       // A função de backend update-space-details pode receber name e slug,
       // mas aqui só enviaremos o slug para atualização.
-      const { data: currentSpace } = await queryClient.fetchQuery({ queryKey: ['space-details', spaceId] });
+      const currentSpace = await queryClient.fetchQuery({ queryKey: ['space-details', spaceId] }) as any;
       const { error } = await supabase.functions.invoke('update-space-details', { 
-        body: { spaceId, slug: values.slug, name: currentSpace.name } 
+        body: { spaceId, slug: values.slug, name: currentSpace?.name } 
       });
       if (error) throw error;
     },
@@ -91,7 +91,20 @@ export default function PersonalizeSpacePage() {
     onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
   });
   
-  const createContainerMutation = useMutation({ /* ... (sem alterações) */ });
+  const createContainerMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase.functions.invoke('create-space-container', { 
+        body: { spaceId, title } 
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Sucesso!", description: "Container criado." });
+      queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
+      setNewContainerTitle('');
+    },
+    onError: (error) => toast({ title: "Erro", description: error.message, variant: "destructive" }),
+  });
 
   // Handlers
   const onSubmitDetails = (values: SpaceDetailsFormValues) => updateDetailsMutation.mutate(values);
