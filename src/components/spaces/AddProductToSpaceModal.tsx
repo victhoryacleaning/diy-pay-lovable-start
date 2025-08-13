@@ -38,6 +38,7 @@ export function AddProductToSpaceModal({ isOpen, onClose, spaceId }: AddProductT
     },
     onSuccess: () => {
       toast({ title: "Sucesso!", description: "Produto adicionado à vitrine." });
+      // A LINHA CRÍTICA: Garante que a query da página principal seja invalidada.
       queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
       onClose();
     },
