@@ -39,12 +39,16 @@ interface Profile {
   social_contract_url: string | null;
 }
 
+type ActiveView = 'producer' | 'student';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
   isGoogleUser: boolean;
+  activeView: ActiveView;
+  toggleView: () => void;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
@@ -59,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeView, setActiveView] = useState<ActiveView>('producer');
   
   // Check if user signed up with Google
   const isGoogleUser = user?.app_metadata?.provider === 'google';
@@ -154,6 +159,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
 
       setProfile(profileData);
+      
+      // Set initial active view based on role
+      if (profileData.role === 'producer') {
+        setActiveView('producer');
+      } else {
+        setActiveView('student');
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -271,6 +283,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const toggleView = () => {
+    if (profile?.role === 'producer') {
+      setActiveView(prevView => prevView === 'producer' ? 'student' : 'producer');
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -278,6 +296,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile,
       loading,
       isGoogleUser,
+      activeView,
+      toggleView,
       signUp,
       signIn,
       signInWithGoogle,

@@ -67,7 +67,7 @@ const App = () => {
               <Route 
                 path="/complete-producer-profile" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <CompleteProducerProfile />
                   </ProtectedRoute>
                 } 
@@ -75,7 +75,7 @@ const App = () => {
               <Route 
                 path="/producer-dashboard" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <ProducerDashboard />
                   </ProtectedRoute>
                 } 
@@ -83,7 +83,7 @@ const App = () => {
               <Route 
                 path="/products" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <ProductsPage />
                   </ProtectedRoute>
                 } 
@@ -91,7 +91,7 @@ const App = () => {
               <Route 
                 path="/products/new" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <CreateProductPage />
                   </ProtectedRoute>
                 } 
@@ -99,7 +99,7 @@ const App = () => {
               <Route 
                 path="/products/edit/:id" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <EditProductPage />
                   </ProtectedRoute>
                 } 
@@ -107,7 +107,7 @@ const App = () => {
               <Route 
                 path="/sales" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <ProducerSalesPage />
                   </ProtectedRoute>
                 } 
@@ -115,7 +115,7 @@ const App = () => {
               <Route 
                 path="/members-area" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <SpacesListPage />
                   </ProtectedRoute>
                 } 
@@ -123,7 +123,7 @@ const App = () => {
                 <Route 
                 path="/members-area/new" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <CreateSpacePage />
                   </ProtectedRoute>
                 } 
@@ -131,7 +131,7 @@ const App = () => {
               <Route 
                 path="/spaces/edit/:spaceId" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <EditSpacePage />
                   </ProtectedRoute>
                 } 
@@ -139,7 +139,7 @@ const App = () => {
               <Route 
                 path="/personalize/edit/:spaceId" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <PersonalizeSpacePage />
                   </ProtectedRoute>
                 } 
@@ -147,7 +147,7 @@ const App = () => {
               <Route 
                 path="/producer/subscriptions"
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <ProducerSubscriptionsPage />
                   </ProtectedRoute>
                 } 
@@ -155,7 +155,7 @@ const App = () => {
               <Route 
                 path="/financials" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <ProducerFinancialsPage />
                   </ProtectedRoute>
                 } 
@@ -163,7 +163,7 @@ const App = () => {
               <Route 
                 path="/settings" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <SettingsHubPage />
                   </ProtectedRoute>
                 } 
@@ -171,7 +171,7 @@ const App = () => {
               <Route 
                 path="/settings/account" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <AccountPage />
                   </ProtectedRoute>
                 } 
@@ -179,7 +179,7 @@ const App = () => {
               <Route 
                 path="/settings/webhooks" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <WebhooksPage />
                   </ProtectedRoute>
                 } 
@@ -187,7 +187,7 @@ const App = () => {
               <Route 
                 path="/settings/api" 
                 element={
-                  <ProtectedRoute requiredRole="producer">
+                  <ProtectedRoute requiredView="producer">
                     <APIPage />
                   </ProtectedRoute>
                 } 
@@ -197,7 +197,7 @@ const App = () => {
               <Route 
                 path="/members" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredView="student">
                     <MyCoursesPage />
                   </ProtectedRoute>
                 } 
@@ -205,7 +205,7 @@ const App = () => {
               <Route 
                 path="/members/:slug" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredView="student">
                     <CoursePlayerPage />
                   </ProtectedRoute>
                 } 

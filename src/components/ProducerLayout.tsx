@@ -4,7 +4,7 @@ import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Repeat } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { useProducerFinancialsStore } from '@/stores/producer-financials-store';
@@ -14,9 +14,14 @@ interface ProducerLayoutProps {
 }
 
 export function ProducerLayout({ children }: ProducerLayoutProps) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, toggleView } = useAuth();
   const navigate = useNavigate();
   const { financialData } = useProducerFinancialsStore();
+
+  const handleToggleView = () => {
+    toggleView();
+    navigate('/members');
+  };
 
   return (
     <SidebarProvider>
@@ -44,6 +49,10 @@ export function ProducerLayout({ children }: ProducerLayoutProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={handleToggleView} className="flex items-center gap-2">
+                      <Repeat className="h-4 w-4" />
+                      Mudar para painel do aluno
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/settings/account" className="flex items-center gap-2 w-full">
                         Minha conta

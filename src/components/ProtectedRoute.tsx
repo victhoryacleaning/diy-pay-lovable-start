@@ -5,39 +5,47 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredView?: 'producer' | 'student';
   requiredRole?: 'user' | 'producer' | 'admin';
-  redirectTo?: string;
 }
 
 const ProtectedRoute = ({ 
   children, 
-  requiredRole,
-  redirectTo = '/login' 
+  requiredView,
+  requiredRole
 }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, activeView } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-diypay-600" />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   if (!user || !profile) {
-    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Handle role-based restrictions (for admin routes)
   if (requiredRole && profile.role !== requiredRole) {
-    // Redirect based on user role
-    const roleRedirects = {
-      'producer': '/producer-dashboard',
-      'admin': '/admin-dashboard',
-      'user': '/member-area'
-    };
-    
-    return <Navigate to={roleRedirects[profile.role]} replace />;
+    if (profile.role !== 'producer' && requiredRole === 'producer') {
+      return <Navigate to="/members" replace />;
+    }
+    if (profile.role !== 'admin' && requiredRole === 'admin') {
+      return <Navigate to="/members" replace />;
+    }
+  }
+
+  // Handle view-based restrictions
+  if (requiredView && activeView !== requiredView) {
+    if (profile.role !== 'producer' && requiredView === 'producer') {
+      return <Navigate to="/members" replace />;
+    }
+    const viewDashboard = activeView === 'producer' ? '/producer-dashboard' : '/members';
+    return <Navigate to={viewDashboard} replace />;
   }
 
   return <>{children}</>;
