@@ -1,4 +1,4 @@
-// src/pages/PersonalizeSpacePage.tsx (Versão Final com Drag-and-Drop)
+// src/pages/PersonalizeSpacePage.tsx (Versão Final com Todas as Correções)
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -259,8 +259,22 @@ export default function PersonalizeSpacePage() {
             <h1 className="text-3xl font-bold flex items-center gap-2">{space?.name || 'Carregando...'} <Button variant="ghost" size="icon"><Edit className="h-5 w-5" /></Button></h1>
             <p className="text-muted-foreground flex items-center gap-2">URL: diypay.com.br/members/{space?.slug} <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button></p>
           </div>
+
+          {/* Novo Container - Movido para o topo */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Novo Container</CardTitle>
+              <CardDescription>Adicione uma nova seção para organizar seus produtos.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-2">
+              <Input placeholder="Título do novo container" value={newContainerTitle} onChange={(e) => setNewContainerTitle(e.target.value)} />
+              <Button onClick={handleCreateContainer} disabled={createContainerMutation.isPending}>
+                {createContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar Container"}
+              </Button>
+            </CardContent>
+          </Card>
           
-          <DndContext 
+          <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -282,19 +296,6 @@ export default function PersonalizeSpacePage() {
               </div>
             </SortableContext>
           </DndContext>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Novo Container</CardTitle>
-              <CardDescription>Adicione uma nova seção para organizar seus produtos.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-              <Input placeholder="Título do novo container" value={newContainerTitle} onChange={(e) => setNewContainerTitle(e.target.value)} />
-              <Button onClick={handleCreateContainer} disabled={createContainerMutation.isPending}>
-                {createContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar Container"}
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </ProducerLayout>
 
