@@ -13,9 +13,10 @@ interface AddProductToSpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
   spaceId: string;
+  containerId: string | null;
 }
 
-export function AddProductToSpaceModal({ isOpen, onClose, spaceId }: AddProductToSpaceModalProps) {
+export function AddProductToSpaceModal({ isOpen, onClose, spaceId, containerId }: AddProductToSpaceModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -33,7 +34,8 @@ export function AddProductToSpaceModal({ isOpen, onClose, spaceId }: AddProductT
 
   const addProductMutation = useMutation({
     mutationFn: async ({ productId, productType }: { productId: string; productType: 'bonus' | 'locked' }) => {
-      const { error } = await supabase.functions.invoke('add-product-to-space', { body: { spaceId, productId, productType } });
+      if (!containerId) throw new Error("ID do Container não especificado.");
+      const { error } = await supabase.functions.invoke('add-product-to-space', { body: { spaceId, productId, productType, containerId } });
       if (error) throw error;
     },
     onSuccess: () => {

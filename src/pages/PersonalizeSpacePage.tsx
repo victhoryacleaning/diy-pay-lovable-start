@@ -47,7 +47,7 @@ interface SortableContainerProps {
   container: any;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
-  onAddProduct: () => void;
+  onAddProduct: (containerId: string) => void;
 }
 
 function SortableContainer({ container, onRename, onDelete, onAddProduct }: SortableContainerProps) {
@@ -76,7 +76,7 @@ function SortableContainer({ container, onRename, onDelete, onAddProduct }: Sort
           <CardTitle>{container.title}</CardTitle>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onAddProduct}>
+          <Button variant="ghost" size="sm" onClick={() => onAddProduct(container.id)}>
             <PlusCircle className="mr-2 h-4 w-4"/>Adicionar Curso
           </Button>
           <DropdownMenu>
@@ -127,6 +127,7 @@ export default function PersonalizeSpacePage() {
   const [renameContainerId, setRenameContainerId] = useState<string | null>(null);
   const [renameContainerTitle, setRenameContainerTitle] = useState('');
   const [containers, setContainers] = useState<any[]>([]);
+  const [activeContainerId, setActiveContainerId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -213,6 +214,11 @@ export default function PersonalizeSpacePage() {
     }
   };
 
+  const handleAddProductClick = (containerId: string) => {
+    setActiveContainerId(containerId);
+    setAddProductModalOpen(true);
+  };
+
   const handleRenameContainer = (containerId: string, currentTitle: string) => {
     setRenameContainerId(containerId);
     setRenameContainerTitle(currentTitle);
@@ -290,7 +296,7 @@ export default function PersonalizeSpacePage() {
                     container={container}
                     onRename={handleRenameContainer}
                     onDelete={(id) => deleteContainerMutation.mutate(id)}
-                    onAddProduct={() => setAddProductModalOpen(true)}
+                    onAddProduct={handleAddProductClick}
                   />
                 ))}
               </div>
@@ -299,7 +305,12 @@ export default function PersonalizeSpacePage() {
         </div>
       </ProducerLayout>
 
-      <AddProductToSpaceModal isOpen={isAddProductModalOpen} onClose={() => setAddProductModalOpen(false)} spaceId={spaceId!} />
+      <AddProductToSpaceModal 
+        isOpen={isAddProductModalOpen} 
+        onClose={() => setAddProductModalOpen(false)} 
+        spaceId={spaceId!} 
+        containerId={activeContainerId}
+      />
       
       {/* Rename Container Dialog */}
       <Dialog open={!!renameContainerId} onOpenChange={() => setRenameContainerId(null)}>

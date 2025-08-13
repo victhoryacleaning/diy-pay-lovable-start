@@ -16,9 +16,9 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token);
     if (!user) throw new Error('Unauthorized');
 
-    const { spaceId, productId, productType } = await req.json();
-    if (!spaceId || !productId || !productType) {
-      throw new Error("spaceId, productId, e productType são obrigatórios.");
+    const { spaceId, productId, productType, containerId } = await req.json();
+    if (!spaceId || !productId || !productType || !containerId) {
+      throw new Error("spaceId, productId, productType e containerId são obrigatórios.");
     }
 
     // 2. Validar se o usuário é o dono do Space
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
         space_id: spaceId,
         product_id: productId,
         product_type: productType,
+        container_id: containerId,
       })
       .select()
       .single();
