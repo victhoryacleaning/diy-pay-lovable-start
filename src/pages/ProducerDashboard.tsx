@@ -16,14 +16,10 @@ import {
   Settings,
   Eye,
   Calendar,
-  Bell,
-  LogOut,
-  X,
   AlertTriangle
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ProducerSidebar } from "@/components/ProducerSidebar";
+import { ProducerLayout } from "@/components/ProducerLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatUserName } from '@/lib/utils';
 
 const ProducerDashboard = () => {
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const [dateFilter, setDateFilter] = useState("last_30_days");
   const [productFilter, setProductFilter] = useState("all");
@@ -116,52 +112,7 @@ const ProducerDashboard = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <ProducerSidebar />
-        <SidebarInset>
-          <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-white/80 backdrop-blur-sm">
-              <SidebarTrigger />
-              <div className="flex items-center gap-4 ml-auto">
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2 p-2">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-purple-100 text-purple-800 text-sm font-semibold">
-                          {(data?.userName || profile?.full_name || 'P').charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium">{data?.userName ? formatUserName(data.userName) : (profile?.full_name ? formatUserName(profile.full_name) : 'Usuário')}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link to="/settings/account" className="flex items-center gap-2 w-full">
-                        Minha conta
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => {
-                        signOut();
-                        navigate('/login');
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sair
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-            
-            <div className="p-6">
+    <ProducerLayout>
               {/* Welcome Message */}
               <div className="mb-8">
                 <div className="flex items-center gap-3">
@@ -433,10 +384,6 @@ const ProducerDashboard = () => {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        </SidebarInset>
-      </div>
 
       {/* Welcome Dialog */}
       <Dialog open={showWelcomeDialog} onOpenChange={handleCloseWelcomeDialog}>
@@ -468,7 +415,7 @@ const ProducerDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </ProducerLayout>
   );
 };
 

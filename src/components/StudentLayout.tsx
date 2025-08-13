@@ -31,7 +31,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
             {profile?.role === 'producer' && (
               <Button variant="outline" size="sm" onClick={handleToggleView}>
                 <Repeat className="h-4 w-4 mr-2" />
-                Mudar para painel do produtor
+                Painel do Produtor
               </Button>
             )}
             <div className="flex items-center gap-2">

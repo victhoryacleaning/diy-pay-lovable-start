@@ -4,7 +4,7 @@ import { ProducerSidebar } from "@/components/ProducerSidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, LogOut, Repeat } from "lucide-react";
+import { Bell, LogOut, Repeat, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { useProducerFinancialsStore } from '@/stores/producer-financials-store';
@@ -48,22 +48,23 @@ export function ProducerLayout({ children }: ProducerLayoutProps) {
                       <span className="text-sm font-medium">{financialData?.userName || profile?.full_name}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={handleToggleView} className="flex items-center gap-2">
-                      <Repeat className="h-4 w-4" />
-                      Mudar para painel do aluno
-                    </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
                       <Link to="/settings/account" className="flex items-center gap-2 w-full">
-                        Minha conta
+                        <User className="h-4 w-4" />
+                        Minha Conta
                       </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleToggleView} className="flex items-center gap-2">
+                      <Repeat className="h-4 w-4" />
+                      Painel do Aluno
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => {
                         signOut();
                         navigate('/login');
                       }}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-destructive"
                     >
                       <LogOut className="h-4 w-4" />
                       Sair
