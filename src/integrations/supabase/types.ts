@@ -823,6 +823,8 @@ export type Database = {
       }
       spaces: {
         Row: {
+          background_color: string | null
+          banner_image_url: string | null
           created_at: string
           id: string
           name: string
@@ -832,6 +834,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          background_color?: string | null
+          banner_image_url?: string | null
           created_at?: string
           id?: string
           name: string
@@ -841,6 +845,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          background_color?: string | null
+          banner_image_url?: string | null
           created_at?: string
           id?: string
           name?: string
