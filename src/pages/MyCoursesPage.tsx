@@ -77,7 +77,7 @@ export default function MyCoursesPage() {
                 </CardContent>
                 <CardFooter>
                   <Button asChild className="w-full">
-                    <Link to={`/members/${course.checkout_link_slug}`}>Começar</Link>
+                    <Link to={`/members/courses/${course.id}`}>Começar</Link>
                   </Button>
                 </CardFooter>
               </Card>
