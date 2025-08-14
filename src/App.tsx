@@ -37,6 +37,7 @@ import PersonalizeSpacePage from "./pages/PersonalizeSpacePage";
 import MyCoursesPage from "./pages/MyCoursesPage";
 import CoursePlayerPage from "./pages/CoursePlayerPage";
 import MembersCoursePlayerPage from "./pages/members/CoursePlayerPage";
+import MembersHubPage from "./pages/members/MembersHubPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -216,6 +217,14 @@ const App = () => {
                 element={
                   <ProtectedRoute requiredView="student">
                     <MembersCoursePlayerPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/members/spaces/:spaceId" 
+                element={
+                  <ProtectedRoute requiredView="student">
+                    <MembersHubPage />
                   </ProtectedRoute>
                 } 
               />
