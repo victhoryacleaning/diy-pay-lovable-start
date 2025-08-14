@@ -36,6 +36,7 @@ import APIPage from "./pages/Producer/Settings/APIPage";
 import PersonalizeSpacePage from "./pages/PersonalizeSpacePage";
 import MyCoursesPage from "./pages/MyCoursesPage";
 import CoursePlayerPage from "./pages/CoursePlayerPage";
+import MembersCoursePlayerPage from "./pages/members/CoursePlayerPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -207,6 +208,14 @@ const App = () => {
                 element={
                   <ProtectedRoute requiredView="student">
                     <CoursePlayerPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/members/courses/:productId" 
+                element={
+                  <ProtectedRoute requiredView="student">
+                    <MembersCoursePlayerPage />
                   </ProtectedRoute>
                 } 
               />
