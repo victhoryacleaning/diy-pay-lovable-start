@@ -1,4 +1,3 @@
-// supabase/functions/update-space-details/index.ts
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
@@ -12,14 +11,25 @@ Deno.serve(async (req) => {
     const { data: { user } } = await serviceClient.auth.getUser(token);
     if (!user) throw new Error('Unauthorized');
 
-    const { spaceId, name, slug } = await req.json();
-    if (!spaceId || !name || !slug) {
-      throw new Error("O ID do Space, nome e slug são obrigatórios.");
+    const { spaceId, name, slug, banner_image_url, background_color } = await req.json();
+    if (!spaceId) {
+      throw new Error("O ID do Space é obrigatório.");
+    }
+
+    // Constrói o objeto de atualização apenas com os campos fornecidos
+    const updateData: { [key: string]: any } = {};
+    if (name) updateData.name = name;
+    if (slug) updateData.slug = slug;
+    if (typeof banner_image_url !== 'undefined') updateData.banner_image_url = banner_image_url;
+    if (typeof background_color !== 'undefined') updateData.background_color = background_color;
+    
+    if (Object.keys(updateData).length === 0) {
+      throw new Error("Nenhum dado para atualizar foi fornecido.");
     }
 
     const { data, error } = await serviceClient
       .from('spaces')
-      .update({ name: name, slug: slug })
+      .update(updateData)
       .eq('id', spaceId)
       .eq('producer_id', user.id) // Garante que o usuário só pode editar seus próprios spaces
       .select()
