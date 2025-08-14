@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -922,9 +922,9 @@ export type Database = {
       }
       get_producer_financial_report: {
         Args: {
+          p_end_date: string
           p_producer_id: string
           p_start_date: string
-          p_end_date: string
         }
         Returns: Json
       }
@@ -933,19 +933,19 @@ export type Database = {
         Returns: Json
       }
       set_active_cohort_for_space: {
-        Args: { p_space_id: string; p_cohort_id_to_activate: string }
+        Args: { p_cohort_id_to_activate: string; p_space_id: string }
         Returns: undefined
       }
       set_new_default_cohort: {
-        Args: { p_space_id: string; p_new_default_cohort_id: string }
+        Args: { p_new_default_cohort_id: string; p_space_id: string }
         Returns: undefined
       }
       update_display_order: {
-        Args: { table_name: string; items: Json }
+        Args: { items: Json; table_name: string }
         Returns: undefined
       }
       upsert_producer_balance: {
-        Args: { p_producer_id: string; amount_to_add: number }
+        Args: { amount_to_add: number; p_producer_id: string }
         Returns: undefined
       }
     }
