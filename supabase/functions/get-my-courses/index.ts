@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
         product:products (
           id,
           name,
-          checkout_link_slug,
           checkout_image_url,
-          producer:profiles (full_name)
+          producer:profiles (full_name),
+          space_products!inner(space_id) 
         )
       `)
       .eq('user_id', user.id);
@@ -35,10 +35,21 @@ Deno.serve(async (req) => {
     if (error) throw error;
     
     // Simplifica a estrutura dos dados para o frontend
-    const courses = data.map(enrollment => ({
-      ...enrollment.product,
-      producer_name: enrollment.product.producer.full_name,
-    }));
+    const courses = data.map(enrollment => {
+      // Garante que o space_id seja extraído corretamente
+      const spaceId = enrollment.product.space_products && enrollment.product.space_products.length > 0
+        ? enrollment.product.space_products[0].space_id
+        : null;
+
+      // Remove o objeto aninhado para limpar a resposta
+      delete enrollment.product.space_products;
+
+      return {
+        ...enrollment.product,
+        producer_name: enrollment.product.producer.full_name,
+        space_id: spaceId, // Adiciona o space_id ao objeto final
+      };
+    }).filter(course => course.space_id !== null); // Garante que apenas cursos com um hub sejam mostrados
 
     return new Response(JSON.stringify(courses), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -76,8 +76,10 @@ export default function MyCoursesPage() {
                   {/* Barra de progresso será adicionada aqui */}
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link to={`/members/courses/${course.id}`}>Começar</Link>
+                  <Button asChild className="w-full" disabled={!course.space_id}>
+                    <Link to={course.space_id ? `/members/spaces/${course.space_id}` : '#'}>
+                      Começar
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
