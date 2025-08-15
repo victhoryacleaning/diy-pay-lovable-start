@@ -31,7 +31,8 @@ Deno.serve(async (req) => {
     const allowedOrigins = [
       "http://localhost:5173", 
       "https://*.lovableproject.com",
-      "https://diypay.com.br"
+      "https://diypay.com.br",
+      "https://id-preview--8f9085e6-3cb0-4a1b-bbe0-a727bed6f094.lovable.app"
     ];
     
     const r2Client = new S3Client({
