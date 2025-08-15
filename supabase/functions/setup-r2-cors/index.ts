@@ -19,7 +19,7 @@ Deno.serve(async (_req) => {
           {
             AllowedHeaders: ["*"],
             AllowedMethods: ["PUT", "POST", "GET"],
-            AllowedOrigins: ["http://localhost:3000", "http://localhost:5173", "https://SEU_DOMINIO_DE_PRODUCAO.com"], // IMPORTANTE: Adicione seu domínio de produção aqui
+            AllowedOrigins: ["http://localhost:3000", "http://localhost:5173", "https://diy-pay-lovable-start.lovable.app", "https://diypay.com.br"],
             ExposeHeaders: ["ETag"],
             MaxAgeSeconds: 3000,
           },
