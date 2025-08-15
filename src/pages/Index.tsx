@@ -12,6 +12,7 @@ import {
   ArrowRight 
 } from "lucide-react";
 import Header from "@/components/Header";
+import { R2TestUpload } from "@/components/core/R2TestUpload";
 
 const Index = () => {
   const features = [
@@ -105,6 +106,23 @@ const Index = () => {
                 </Button>
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* R2 Test Section - Temporário */}
+      <section className="py-20 bg-yellow-50 border-t-4 border-yellow-400">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-yellow-800 mb-2">
+              🧪 Teste R2 Upload (Desenvolvimento)
+            </h2>
+            <p className="text-yellow-700">
+              Esta seção é para testar a integração com Cloudflare R2
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <R2TestUpload />
           </div>
         </div>
       </section>
