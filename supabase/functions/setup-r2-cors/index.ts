@@ -1,4 +1,3 @@
-// Forçando o redeploy para carregar os novos secrets do R2.
 import { AwsV4Signer } from "https://esm.sh/aws4fetch@1.0.17";
 import { corsHeaders } from '../_shared/cors.ts';
 
@@ -18,13 +17,20 @@ const corsConfigXml = (allowedOrigins: string[]) => `
 
 Deno.serve(async (_req) => {
   try {
-    // CORREÇÃO: Adicionado .trim() para limpar os secrets de caracteres invisíveis.
-    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")!.trim();
-    const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")!.trim();
-    const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")!.trim();
-    const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")!.trim();
+    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")?.trim() || '';
+    const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")?.trim() || '';
+    const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")?.trim() || '';
+    const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")?.trim() || '';
 
-    const url = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/?cors`;
+    // --- INÍCIO DO BLOCO DE DIAGNÓSTICO FINAL ---
+    console.log(`[DIAGNÓSTICO] accountId: '${accountId}'`);
+    console.log(`[DIAGNÓSTICO] bucketName: '${bucketName}'`);
+    console.log(`[DIAGNÓSTICO] accessKeyId (primeiros 4 chars): '${accessKeyId.substring(0, 4)}...'`);
+    const finalUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/?cors`;
+    console.log(`[DIAGNÓSTICO] URL Final Construída: '${finalUrl}'`);
+    // --- FIM DO BLOCO DE DIAGNÓSTICO FINAL ---
+
+    const url = new URL(finalUrl); // Usar o construtor de URL para validar
     
     const allowedOrigins = ["http://localhost:5173", "https://diy-pay-lovable-start.lovable.app", "https://diypay.com.br"];
     const corsXmlBody = corsConfigXml(allowedOrigins);
@@ -38,9 +44,7 @@ Deno.serve(async (_req) => {
 
     const request = new Request(url, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/xml',
-      },
+      headers: { 'Content-Type': 'application/xml' },
       body: corsXmlBody,
     });
     
