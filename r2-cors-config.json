@@ -1,0 +1,21 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://diy-pay-lovable-start.lovable.app",
+      "https://diypay.com.br",
+      "http://localhost:5173"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "PUT",
+      "POST"
+    ],
+    "AllowedHeaders": [
+      "*"
+    ],
+    "ExposeHeaders": [
+      "ETag"
+    ],
+    "MaxAgeSeconds": 3000
+  }
+]
