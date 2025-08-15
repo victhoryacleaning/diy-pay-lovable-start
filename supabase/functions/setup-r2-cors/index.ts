@@ -1,3 +1,4 @@
+// Forçando o redeploy para carregar os novos secrets do R2.
 import { AwsV4Signer } from "https://esm.sh/aws4fetch@1.0.17";
 import { corsHeaders } from '../_shared/cors.ts';
 
