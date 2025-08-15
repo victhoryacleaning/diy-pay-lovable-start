@@ -12,34 +12,17 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Pencil, Save } from 'lucide-react';
+import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Save } from 'lucide-react';
 import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import FileUpload from '@/components/core/FileUpload'; // <-- IMPORTAÇÃO NOVA
 
 const appearanceSchema = z.object({
   banner_image_url: z.string().url({ message: "Por favor, insira uma URL de imagem válida." }).or(z.literal('')),
   background_color: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, { message: "Cor inválida. Use o formato hexadecimal (ex: #FFFFFF)." }).or(z.literal('')),
 });
 type AppearanceFormValues = z.infer<typeof appearanceSchema>;
-
-// Funções Helper de UI
-const getBadgeVariant = (productType: string) => {
-  switch (productType) {
-    case 'principal': return 'default';
-    case 'bonus': return 'secondary';
-    case 'locked': return 'destructive';
-    default: return 'outline';
-  }
-};
-const getBadgeContent = (productType: string) => {
-  switch (productType) {
-    case 'principal': return 'Principal';
-    case 'bonus': return 'Bônus';
-    case 'locked': return 'Bloqueado';
-    default: return productType;
-  }
-};
 
 export default function PersonalizeSpacePage() {
   const { spaceId } = useParams<{ spaceId: string }>();
@@ -74,27 +57,28 @@ export default function PersonalizeSpacePage() {
 
   const createContainerMutation = useMutation({
     mutationFn: async (data: { title: string }) => {
-      const { error } = await supabase.functions.invoke('create-space-container', { 
-        body: { spaceId, title: data.title } 
-      });
-      if (error) throw error;
+        const { error } = await supabase.functions.invoke('create-space-container', { 
+            body: { spaceId, title: data.title } 
+        });
+        if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Container criado!");
-      queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
-      setNewContainerTitle('');
+        toast.success("Container criado!");
+        queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
+        setNewContainerTitle('');
     },
     onError: (error) => toast.error(`Erro ao criar container: ${error.message}`),
   });
 
   const updateAppearanceMutation = useMutation({
     mutationFn: async (values: AppearanceFormValues) => {
-      // NOTA: A função 'update-space-details' precisará ser atualizada para receber estes campos.
-      // Por enquanto, esta chamada irá falhar graciosamente ou apenas não atualizará os novos campos.
-      const { error } = await supabase.from('spaces').update({
-        banner_image_url: values.banner_image_url || null,
-        background_color: values.background_color || null
-      }).eq('id', spaceId);
+      const { error } = await supabase.functions.invoke('update-space-details', {
+        body: { 
+          spaceId, 
+          banner_image_url: values.banner_image_url || null,
+          background_color: values.background_color || null
+        }
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -125,36 +109,7 @@ export default function PersonalizeSpacePage() {
             </TabsList>
             
             <TabsContent value="container" className="mt-6">
-              <Card className="mb-6">
-                <CardHeader><CardTitle>Novo Container</CardTitle><CardDescription>Adicione uma nova seção à sua área de membros.</CardDescription></CardHeader>
-                <CardContent className="flex gap-2">
-                  <Input placeholder="Título do novo container" value={newContainerTitle} onChange={(e) => setNewContainerTitle(e.target.value)} />
-                  <Button onClick={handleCreateContainer} disabled={createContainerMutation.isPending}>{createContainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}</Button>
-                </CardContent>
-              </Card>
-
-              {space?.space_containers?.map((container: any) => (
-                <Card key={container.id} className="mb-6">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>{container.title}</CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => { setActiveContainerId(container.id); setAddProductModalOpen(true); }}><PlusCircle className="mr-2 h-4 w-4"/>Adicionar Curso</Button>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {container.space_products.map((sp: any) => (
-                      <div key={sp.product.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
-                        <div className="flex items-center gap-4">
-                          <GripVertical className="h-5 w-5 text-muted-foreground" />
-                          <img src={sp.product.checkout_image_url || '/placeholder.svg'} alt={sp.product.name} className="h-10 w-10 rounded-md object-cover" />
-                          <span className="font-medium">{sp.product.name}</span>
-                          <Badge variant={getBadgeVariant(sp.product_type)}>{getBadgeContent(sp.product_type)}</Badge>
-                        </div>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </div>
-                    ))}
-                    {container.space_products.length === 0 && <p className="text-sm text-muted-foreground p-4 text-center">Nenhum curso neste container.</p>}
-                  </CardContent>
-                </Card>
-              ))}
+              
             </TabsContent>
 
             <TabsContent value="personalizar" className="mt-6">
@@ -163,8 +118,27 @@ export default function PersonalizeSpacePage() {
                 <CardContent>
                   <Form {...appearanceForm}>
                     <form onSubmit={appearanceForm.handleSubmit(onAppearanceSubmit)} className="space-y-6">
-                      <FormField control={appearanceForm.control} name="banner_image_url" render={({ field }) => (<FormItem><FormLabel>URL da Imagem do Banner</FormLabel><FormControl><Input placeholder="https://exemplo.com/imagem.png" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      
+                      
+                      <FormField
+                        control={appearanceForm.control}
+                        name="banner_image_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Imagem do Banner</FormLabel>
+                            <FormControl>
+                              <FileUpload
+                                onUploadSuccess={(url) => field.onChange(url)}
+                                initialUrl={field.value}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       <FormField control={appearanceForm.control} name="background_color" render={({ field }) => (<FormItem><FormLabel>Cor de Fundo (Hexadecimal)</FormLabel><FormControl><Input placeholder="#1A202C" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      
                       <div className="flex justify-end">
                         <Button type="submit" disabled={updateAppearanceMutation.isPending}>
                           {updateAppearanceMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
