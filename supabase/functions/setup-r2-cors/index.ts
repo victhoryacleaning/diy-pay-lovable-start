@@ -1,19 +1,17 @@
-import { AwsV4Signer } from "https://esm.sh/aws4fetch@1.0.17";
+import { S3Client, PutBucketCorsCommand } from "npm:@aws-sdk/client-s3@3.583.0";
 import { corsHeaders } from '../_shared/cors.ts';
 
-const corsConfigXml = (allowedOrigins: string[]) => `
-<CORSConfiguration>
-  <CORSRule>
-    <AllowedOrigin>${allowedOrigins.join('</AllowedOrigin><AllowedOrigin>')}</AllowedOrigin>
-    <AllowedMethod>PUT</AllowedMethod>
-    <AllowedMethod>POST</AllowedMethod>
-    <AllowedMethod>GET</AllowedMethod>
-    <AllowedHeader>*</AllowedHeader>
-    <ExposeHeader>ETag</ExposeHeader>
-    <MaxAgeSeconds>3000</MaxAgeSeconds>
-  </CORSRule>
-</CORSConfiguration>
-`.trim();
+const corsConfig = (allowedOrigins: string[]) => ({
+  CORSRules: [
+    {
+      AllowedOrigins: allowedOrigins,
+      AllowedMethods: ['PUT', 'POST', 'GET', 'HEAD'],
+      AllowedHeaders: ['*'],
+      ExposeHeaders: ['ETag'],
+      MaxAgeSeconds: 3000,
+    }
+  ]
+});
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,32 +30,27 @@ Deno.serve(async (req) => {
 
     const allowedOrigins = [
       "http://localhost:5173", 
-      "https://diy-pay-lovable-start.lovable.app", 
-      "https://diypay.com.br",
-      "https://*.lovableproject.com"
+      "https://*.lovableproject.com",
+      "https://diypay.com.br"
     ];
     
-    const corsXmlBody = corsConfigXml(allowedOrigins);
-    const bucketUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/?cors`;
-
-    const signer = new AwsV4Signer({
-      url: bucketUrl,
-      accessKeyId,
-      secretAccessKey,
-      region: 'auto',
+    const r2Client = new S3Client({
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
     });
 
-    const response = await signer.fetch(bucketUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/xml' },
-      body: corsXmlBody,
+    const corsConfiguration = corsConfig(allowedOrigins);
+    
+    const command = new PutBucketCorsCommand({
+      Bucket: bucketName,
+      CORSConfiguration: corsConfiguration,
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("Erro da API do R2:", errorBody);
-      throw new Error(`Falha ao configurar CORS: ${response.status} ${response.statusText} - ${errorBody}`);
-    }
+    await r2Client.send(command);
 
     return new Response(JSON.stringify({ message: "Configuração de CORS do R2 atualizada com sucesso!" }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

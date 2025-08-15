@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
 
     const objectKey = `uploads/${user.id}/${Date.now()}-${decodeURIComponent(fileName)}`;
     const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME");
-    const publicUrl = `https://pub-45cfd9014cd74b73af1cd35f4428f005.r2.dev/${objectKey}`; // Use seu domínio público R2 aqui
+    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID");
+    const publicUrl = `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${objectKey}`;
 
     const command = new PutObjectCommand({
       Bucket: Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME"),
