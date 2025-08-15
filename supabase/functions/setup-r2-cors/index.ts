@@ -18,19 +18,11 @@ const corsConfigXml = (allowedOrigins: string[]) => `
 
 Deno.serve(async (_req) => {
   try {
-    console.log("Iniciando a função setup-r2-cors...");
-
-    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")!;
-    const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")!;
-    const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")!;
-    const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")!;
-
-    // --- INÍCIO DO BLOCO DE DEBUG ---
-    console.log(`Debug Secrets: ACCOUNT_ID Encontrado: ${!!accountId}`);
-    console.log(`Debug Secrets: ACCESS_KEY_ID Encontrado: ${!!accessKeyId}`);
-    console.log(`Debug Secrets: SECRET_ACCESS_KEY Encontrado: ${!!secretAccessKey}`);
-    console.log(`Debug Secrets: BUCKET_NAME Encontrado: ${!!bucketName}`);
-    // --- FIM DO BLOCO DE DEBUG ---
+    // CORREÇÃO: Adicionado .trim() para limpar os secrets de caracteres invisíveis.
+    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")!.trim();
+    const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")!.trim();
+    const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")!.trim();
+    const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")!.trim();
 
     const url = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/?cors`;
     
