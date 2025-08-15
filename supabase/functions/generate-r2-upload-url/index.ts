@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3@3.583.0";
+import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.583.0";
 import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
@@ -10,9 +11,8 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado.');
 
-    const file = await req.arrayBuffer();
-    const contentType = req.headers.get('content-type') || 'application/octet-stream';
-    const fileName = req.headers.get('x-file-name') || `file-${Date.now()}`;
+    const { fileName, contentType } = await req.json();
+    if (!fileName || !contentType) throw new Error("fileName e contentType são obrigatórios.");
     
     const r2Client = new S3Client({
       region: "auto",
@@ -24,26 +24,22 @@ Deno.serve(async (req) => {
     });
 
     const objectKey = `uploads/${user.id}/${Date.now()}-${decodeURIComponent(fileName)}`;
-    
+    const publicUrl = `https://<SEU_DOMINIO_PUBLICO_R2>/${objectKey}`; // IMPORTANTE: Substitua pelo seu domínio R2 público.
+
     const command = new PutObjectCommand({
       Bucket: Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME"),
       Key: objectKey,
-      Body: new Uint8Array(file),
       ContentType: contentType,
     });
 
-    await r2Client.send(command);
+    const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 600 }); // URL válida por 10 minutos
 
-    // IMPORTANTE: O domínio público do R2 precisará ser configurado e esta URL ajustada.
-    const publicUrl = `https://pub-your-public-r2-domain.r2.dev/${objectKey}`; 
-
-    return new Response(JSON.stringify({ publicUrl }), {
+    return new Response(JSON.stringify({ uploadUrl, publicUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-
   } catch (error) {
-    console.error("[ERRO NO UPLOAD PROXY]", error);
+    console.error("[ERRO AO GERAR URL]", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
