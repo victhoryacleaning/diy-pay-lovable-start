@@ -18,12 +18,20 @@ const corsConfigXml = (allowedOrigins: string[]) => `
 
 Deno.serve(async (_req) => {
   try {
+    console.log("Iniciando a função setup-r2-cors...");
+
     const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")!;
     const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")!;
     const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")!;
     const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")!;
 
-    // URL CORRIGIDA: Aponta para o endpoint da conta, com o bucket no path.
+    // --- INÍCIO DO BLOCO DE DEBUG ---
+    console.log(`Debug Secrets: ACCOUNT_ID Encontrado: ${!!accountId}`);
+    console.log(`Debug Secrets: ACCESS_KEY_ID Encontrado: ${!!accessKeyId}`);
+    console.log(`Debug Secrets: SECRET_ACCESS_KEY Encontrado: ${!!secretAccessKey}`);
+    console.log(`Debug Secrets: BUCKET_NAME Encontrado: ${!!bucketName}`);
+    // --- FIM DO BLOCO DE DEBUG ---
+
     const url = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/?cors`;
     
     const allowedOrigins = ["http://localhost:5173", "https://diy-pay-lovable-start.lovable.app", "https://diypay.com.br"];
@@ -46,7 +54,6 @@ Deno.serve(async (_req) => {
     
     const signedRequest = await signer.sign(request);
     
-    // Opcional mas recomendado: Adiciona o hash MD5 do corpo
     const bodyDigest = await crypto.subtle.digest('MD5', new TextEncoder().encode(corsXmlBody));
     signedRequest.headers.set('Content-MD5', btoa(String.fromCharCode(...new Uint8Array(bodyDigest))));
 
