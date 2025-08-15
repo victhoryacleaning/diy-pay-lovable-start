@@ -17,41 +17,31 @@ const corsConfigXml = (allowedOrigins: string[]) => `
 
 Deno.serve(async (_req) => {
   try {
-    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")?.trim() || '';
-    const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")?.trim() || '';
-    const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")?.trim() || '';
-    const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")?.trim() || '';
-
-    // --- INÍCIO DO BLOCO DE DIAGNÓSTICO FINAL ---
-    console.log(`[DIAGNÓSTICO] accountId: '${accountId}'`);
-    console.log(`[DIAGNÓSTICO] bucketName: '${bucketName}'`);
-    console.log(`[DIAGNÓSTICO] accessKeyId (primeiros 4 chars): '${accessKeyId.substring(0, 4)}...'`);
-    const finalUrl = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/?cors`;
-    console.log(`[DIAGNÓSTICO] URL Final Construída: '${finalUrl}'`);
-    // --- FIM DO BLOCO DE DIAGNÓSTICO FINAL ---
-
-    const url = new URL(finalUrl); // Usar o construtor de URL para validar
+    const accountId = Deno.env.get("CLOUDFLARE_R2_ACCOUNT_ID")!.trim();
+    const accessKeyId = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")!.trim();
+    const secretAccessKey = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")!.trim();
+    const bucketName = Deno.env.get("CLOUDFLARE_R2_BUCKET_NAME")!.trim();
     
+    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`;
     const allowedOrigins = ["http://localhost:5173", "https://diy-pay-lovable-start.lovable.app", "https://diypay.com.br"];
-    const corsXmlBody = corsConfigXml(allowedOrigins);
+    
+    // CORREÇÃO FINAL: Construindo a requisição de forma mais robusta
+    const url = new URL(`/${bucketName}/?cors`, endpoint);
+    const body = corsConfigXml(allowedOrigins);
 
     const signer = new AwsV4Signer({
-        accessKeyId,
-        secretAccessKey,
-        region: 'auto',
-        service: 's3',
+      accessKeyId,
+      secretAccessKey,
+      region: 'auto',
     });
 
     const request = new Request(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/xml' },
-      body: corsXmlBody,
+      body: body,
     });
     
     const signedRequest = await signer.sign(request);
-    
-    const bodyDigest = await crypto.subtle.digest('MD5', new TextEncoder().encode(corsXmlBody));
-    signedRequest.headers.set('Content-MD5', btoa(String.fromCharCode(...new Uint8Array(bodyDigest))));
 
     const response = await fetch(signedRequest);
 
