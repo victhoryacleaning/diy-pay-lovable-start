@@ -29,13 +29,18 @@ const FileUpload = ({ onUploadSuccess, initialUrl = '' }: FileUploadProps) => {
         setProgress((prev) => (prev >= 95 ? 95 : prev + 5));
       }, 300);
 
+      // --- INÍCIO DA CORREÇÃO ---
+      // Converte o arquivo para ArrayBuffer antes de enviar
+      const fileBuffer = await file.arrayBuffer(); 
+
       const { data, error } = await supabase.functions.invoke('upload-file-to-r2', {
-        body: file,
+        body: fileBuffer, // <-- Envia o buffer de dados brutos
         headers: {
           'content-type': file.type,
           'x-file-name': file.name,
         }
       });
+      // --- FIM DA CORREÇÃO ---
 
       clearInterval(progressInterval);
       setProgress(100);
