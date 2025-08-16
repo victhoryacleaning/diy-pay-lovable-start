@@ -70,3 +70,6 @@ verify_jwt = true
 [functions.setup-r2-cors]
 verify_jwt = false
 
+[functions.test-r2-connectivity]
+verify_jwt = false
+
