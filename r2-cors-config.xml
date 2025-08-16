@@ -1,14 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+```3.  O arquivo final deve ficar assim:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
 <CORSConfiguration>
-    <CORSRule>
-        <AllowedOrigin>https://diy-pay-lovable-start.lovable.app</AllowedOrigin>
-        <AllowedOrigin>https://diypay.com.br</AllowedOrigin>
-        <AllowedOrigin>http://localhost:5173</AllowedOrigin>
-        <AllowedOrigin>https://*.lovableproject.com</AllowedOrigin>
-        <AllowedMethod>PUT</AllowedMethod>
-        <AllowedMethod>POST</AllowedMethod>
-        <AllowedMethod>GET</AllowedMethod>
-        <AllowedHeader>*</AllowedHeader>
-        <ExposeHeader>ETag</ExposeHeader>
-        <MaxAgeSeconds>3000</MaxAgeSeconds>
-    </CORSRule>
+  <CORSRule>
+    <AllowedOrigin>https://diy-pay-lovable-start.lovable.app</AllowedOrigin>
+    <AllowedOrigin>https://diypay.com.br</AllowedOrigin>
+    <AllowedOrigin>http://localhost:5173</AllowedOrigin>
+    <AllowedOrigin>https://*.lovableproject.com</AllowedOrigin>
+    <AllowedMethod>PUT</AllowedMethod>
+    <AllowedMethod>POST</AllowedMethod>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <ExposeHeader>ETag</ExposeHeader>
+    <MaxAgeSeconds>3000</MaxAgeSeconds>
+  </CORSRule>
 </CORSConfiguration>
