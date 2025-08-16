@@ -456,6 +456,7 @@ export type Database = {
           checkout_background_color: string | null
           checkout_image_url: string | null
           checkout_link_slug: string | null
+          cover_image_url: string | null
           created_at: string
           description: string | null
           donation_description: string | null
@@ -481,6 +482,7 @@ export type Database = {
           checkout_background_color?: string | null
           checkout_image_url?: string | null
           checkout_link_slug?: string | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           donation_description?: string | null
@@ -506,6 +508,7 @@ export type Database = {
           checkout_background_color?: string | null
           checkout_image_url?: string | null
           checkout_link_slug?: string | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           donation_description?: string | null

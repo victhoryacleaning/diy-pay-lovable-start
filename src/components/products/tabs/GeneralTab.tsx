@@ -5,13 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ProductCoverUpload } from "../ProductCoverUpload";
 
 interface GeneralTabProps {
   formData: any;
   onInputChange: (field: string, value: any) => void;
+  userId?: string;
 }
 
-const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
+const GeneralTab = ({ formData, onInputChange, userId }: GeneralTabProps) => {
   const isPriceDisabled = formData.product_type === 'donation';
   const isDonation = formData.product_type === 'donation';
   const isSubscription = formData.product_type === 'subscription';
@@ -70,6 +72,20 @@ const GeneralTab = ({ formData, onInputChange }: GeneralTabProps) => {
         <Label htmlFor="description">Descrição do Produto</Label>
         <Textarea id="description" value={formData.description} onChange={(e) => onInputChange('description', e.target.value)} placeholder="Descreva seu produto..." rows={4} />
       </div>
+
+      {userId && (
+        <div className="space-y-2">
+          <Label>Imagem de Capa do Produto</Label>
+          <ProductCoverUpload
+            onUploadSuccess={(url) => onInputChange('cover_image_url', url)}
+            initialUrl={formData.cover_image_url}
+            userId={userId}
+          />
+          <p className="text-sm text-muted-foreground">
+            Faça upload de uma imagem que representa seu produto (opcional)
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="delivery_type">Forma de Entrega do Conteúdo</Label>
