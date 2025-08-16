@@ -67,6 +67,6 @@ verify_jwt = true
 [functions.generate-r2-upload-url]
 verify_jwt = true
 
-[functions.generate-upload-url]
-verify_jwt = true
+[functions.setup-r2-cors]
+verify_jwt = false
 
