@@ -1,4 +1,4 @@
-// src/components/products/ProductForm.tsx
+// src/components/products/ProductForm.tsx (NOVA VERSÃO)
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -20,6 +20,7 @@ import SubscriptionsTab from './tabs/SubscriptionsTab';
 interface ProductFormData {
   name: string;
   description: string;
+  cover_image_url: string; // <-- NOVO CAMPO
   price: string;
   file_url_or_access_info: string;
   max_installments_allowed: number;
@@ -63,6 +64,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
+    cover_image_url: '', // <-- VALOR PADRÃO
     price: '',
     file_url_or_access_info: '',
     max_installments_allowed: 1,
@@ -108,6 +110,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       setFormData({
         name: product.name,
         description: product.description || '',
+        cover_image_url: product.cover_image_url || '', // <-- CARREGAR VALOR EXISTENTE
         price: (product.price_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
@@ -142,6 +145,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       const productData = {
         name: data.name,
         description: data.description || null,
+        cover_image_url: data.cover_image_url || null, // <-- INCLUIR NO PAYLOAD
         price_cents: priceCents,
         file_url_or_access_info: data.file_url_or_access_info || null,
         max_installments_allowed: data.max_installments_allowed,
@@ -262,7 +266,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
             
             <div className="mt-6">
               <TabsContent value="geral" className="space-y-6">
-                <GeneralTab formData={formData} onInputChange={handleInputChange} />
+                <GeneralTab formData={formData} onInputChange={handleInputChange} userId={user?.id} />
                 {mode === 'edit' && (
                   <div className="flex justify-start pt-4 border-t">
                     <Button variant="destructive" onClick={handleDelete} disabled={deleteProductMutation.isPending} className="flex items-center gap-2">
