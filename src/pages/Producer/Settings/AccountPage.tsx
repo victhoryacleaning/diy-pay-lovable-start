@@ -637,36 +637,6 @@ const AccountPage = () => {
         )}
       </div>
 
-      {/* NOVO CARD PARA CONFIGURAÇÃO DO R2 - INÍCIO */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Configurações de Armazenamento</CardTitle>
-          <CardDescription>
-            Execute esta ação uma única vez para configurar e permitir uploads de arquivos para o novo sistema de armazenamento (Cloudflare R2).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={async () => {
-              toast.info("Iniciando configuração do R2...");
-              try {
-                const { data, error } = await supabase.functions.invoke('setup-r2-cors');
-                if (error) throw error;
-                toast.success("Sucesso! O armazenamento R2 foi configurado corretamente.");
-                console.log(data);
-              } catch (err: any) {
-                toast.error("Falha na configuração do R2.", {
-                  description: err.message,
-                });
-              }
-            }}
-          >
-            Configurar Armazenamento R2
-          </Button>
-        </CardContent>
-      </Card>
-      {/* NOVO CARD PARA CONFIGURAÇÃO DO R2 - FIM */}
-      
       {/* Seção de Status de Verificação - Centralizada abaixo da grade */}
       <div className="flex justify-center">
         <Card className="w-full max-w-md">

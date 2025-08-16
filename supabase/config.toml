@@ -63,13 +63,3 @@ verify_jwt = true
 
 [functions.create-lesson]
 verify_jwt = true
-
-[functions.generate-r2-upload-url]
-verify_jwt = true
-
-[functions.setup-r2-cors]
-verify_jwt = false
-
-[functions.test-r2-connectivity]
-verify_jwt = false
-

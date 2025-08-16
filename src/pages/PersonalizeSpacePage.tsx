@@ -12,11 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Save } from 'lucide-react';
+import { Loader2, PlusCircle, GripVertical, MoreHorizontal, Pencil, Save } from 'lucide-react';
 import { AddProductToSpaceModal } from '@/components/spaces/AddProductToSpaceModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
-import FileUpload from '@/components/core/FileUpload';
 
 const appearanceSchema = z.object({
   banner_image_url: z.string().url({ message: "Por favor, insira uma URL de imagem válida." }).or(z.literal('')),
@@ -28,13 +27,17 @@ type AppearanceFormValues = z.infer<typeof appearanceSchema>;
 const getBadgeVariant = (productType: string) => {
   switch (productType) {
     case 'principal': return 'default';
-    default: return 'secondary';
+    case 'bonus': return 'secondary';
+    case 'locked': return 'destructive';
+    default: return 'outline';
   }
 };
 const getBadgeContent = (productType: string) => {
   switch (productType) {
     case 'principal': return 'Principal';
-    default: return 'Bônus';
+    case 'bonus': return 'Bônus';
+    case 'locked': return 'Bloqueado';
+    default: return productType;
   }
 };
 
@@ -70,8 +73,10 @@ export default function PersonalizeSpacePage() {
   }, [space, appearanceForm]);
 
   const createContainerMutation = useMutation({
-    mutationFn: async (title: string) => {
-      const { error } = await supabase.functions.invoke('create-space-container', { body: { spaceId, title } });
+    mutationFn: async (data: { title: string }) => {
+      const { error } = await supabase.functions.invoke('create-space-container', { 
+        body: { spaceId, title: data.title } 
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -79,28 +84,27 @@ export default function PersonalizeSpacePage() {
       queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
       setNewContainerTitle('');
     },
-    onError: (error) => toast.error(`Erro: ${error.message}`),
+    onError: (error) => toast.error(`Erro ao criar container: ${error.message}`),
   });
-  
+
   const updateAppearanceMutation = useMutation({
     mutationFn: async (values: AppearanceFormValues) => {
-      const { error } = await supabase.functions.invoke('update-space-details', {
-        body: { 
-          spaceId, 
-          banner_image_url: values.banner_image_url || null,
-          background_color: values.background_color || null
-        }
-      });
+      // NOTA: A função 'update-space-details' precisará ser atualizada para receber estes campos.
+      // Por enquanto, esta chamada irá falhar graciosamente ou apenas não atualizará os novos campos.
+      const { error } = await supabase.from('spaces').update({
+        banner_image_url: values.banner_image_url || null,
+        background_color: values.background_color || null
+      }).eq('id', spaceId);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Aparência atualizada!");
       queryClient.invalidateQueries({ queryKey: ['space-details', spaceId] });
     },
-    onError: (error) => toast.error(`Erro: ${error.message}`),
+    onError: (error) => toast.error(`Erro ao salvar: ${error.message}`),
   });
 
-  const handleCreateContainer = () => { if (newContainerTitle.trim()) createContainerMutation.mutate(newContainerTitle.trim()); };
+  const handleCreateContainer = () => { if (newContainerTitle.trim()) createContainerMutation.mutate({ title: newContainerTitle.trim() }); };
   const onAppearanceSubmit = (values: AppearanceFormValues) => updateAppearanceMutation.mutate(values);
 
   if (isLoading) return <ProducerLayout><div className="p-8"><Skeleton className="h-96 w-full" /></div></ProducerLayout>;
@@ -159,22 +163,7 @@ export default function PersonalizeSpacePage() {
                 <CardContent>
                   <Form {...appearanceForm}>
                     <form onSubmit={appearanceForm.handleSubmit(onAppearanceSubmit)} className="space-y-6">
-                      <FormField
-                        control={appearanceForm.control}
-                        name="banner_image_url"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Imagem do Banner</FormLabel>
-                            <FormControl>
-                              <FileUpload
-                                onUploadSuccess={(url) => field.onChange(url)}
-                                initialUrl={field.value}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <FormField control={appearanceForm.control} name="banner_image_url" render={({ field }) => (<FormItem><FormLabel>URL da Imagem do Banner</FormLabel><FormControl><Input placeholder="https://exemplo.com/imagem.png" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={appearanceForm.control} name="background_color" render={({ field }) => (<FormItem><FormLabel>Cor de Fundo (Hexadecimal)</FormLabel><FormControl><Input placeholder="#1A202C" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <div className="flex justify-end">
                         <Button type="submit" disabled={updateAppearanceMutation.isPending}>
