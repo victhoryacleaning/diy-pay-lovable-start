@@ -16,77 +16,36 @@ const FileUpload = ({ onUploadSuccess, initialUrl = '' }: FileUploadProps) => {
   const [progress, setProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string>(initialUrl);
 
-  const uploadToSupabaseStorage = async (file: File) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `uploads/${fileName}`;
-
-    const { data, error } = await supabase.storage
-      .from('uploads')
-      .upload(filePath, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('uploads')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  };
-
   const onDrop = async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
 
     setUploading(true);
     setProgress(0);
-    const toastId = toast.loading('Iniciando upload...');
+    const toastId = toast.loading('Fazendo upload...');
 
     try {
-      // Primeira tentativa: R2 via Edge Function
-      try {
-        const { data: presignData, error: presignError } = await supabase.functions.invoke('generate-r2-upload-url', {
-          body: { fileName: file.name, contentType: file.type }
-        });
-        
-        if (presignError) throw presignError;
-        
-        const { uploadUrl, publicUrl } = presignData;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
 
-        // Upload direto para R2
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-          },
-        });
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file);
 
-        if (!uploadResponse.ok) {
-          throw new Error(`Upload R2 falhou: ${uploadResponse.status}`);
-        }
+      if (error) throw error;
 
-        setUploadedUrl(publicUrl);
-        onUploadSuccess(publicUrl);
-        toast.success('Upload realizado via R2!', { id: toastId });
-        setProgress(100);
-        return;
+      const { data: { publicUrl } } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
 
-      } catch (r2Error) {
-        console.warn('R2 falhou, tentando Supabase Storage:', r2Error);
-        toast.loading('R2 indisponível, usando Supabase Storage...', { id: toastId });
-      }
-
-      // Fallback: Supabase Storage
-      const publicUrl = await uploadToSupabaseStorage(file);
-      
       setUploadedUrl(publicUrl);
       onUploadSuccess(publicUrl);
-      toast.success('Upload realizado via Supabase Storage!', { id: toastId });
+      toast.success('Upload concluído!', { id: toastId });
       setProgress(100);
 
     } catch (err: any) {
-      toast.error('Falha em ambos os métodos de upload.', { id: toastId, description: err.message });
+      toast.error('Erro no upload', { id: toastId, description: err.message });
       console.error('Upload error:', err);
     } finally {
       setUploading(false);
@@ -120,7 +79,7 @@ const FileUpload = ({ onUploadSuccess, initialUrl = '' }: FileUploadProps) => {
         <UploadCloud className="h-10 w-10" />
         {uploading ? (
           <div className="w-full text-center mt-2">
-            <p className="text-sm">Enviando... {progress}%</p>
+            <p className="text-sm">Uploading... {progress}%</p>
             <Progress value={progress} className="w-full h-2 mt-1" />
           </div>
         ) : (
