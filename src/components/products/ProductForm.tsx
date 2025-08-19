@@ -47,7 +47,7 @@ interface ProductFormProps {
 const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient(); // Adicionar QueryClient
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   
   const initialTab = searchParams.get('tab') || 'geral';
@@ -117,13 +117,12 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     return `${baseSlug}-${timestamp}`;
   };
 
-  // --- INÍCIO DA CORREÇÃO CRÍTICA ---
   const saveProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      // 1. Limpar e converter os dados primeiro
+      // --- INÍCIO DA CORREÇÃO CRÍTICA ---
       const priceInCents = data.product_type === 'donation'
         ? 0
-        : Math.round(parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100);
+        : Math.round(parseFloat(String(data.price).replace(/\./g, '').replace(',', '.')) * 100);
 
       const productDataForApi = {
         name: data.name,
@@ -144,13 +143,13 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         is_email_optional: data.is_email_optional,
         require_email_confirmation: data.require_email_confirmation,
         producer_assumes_installments: data.producer_assumes_installments,
-        delivery_type: data.delivery_type,
+        // O campo 'delivery_type' já está no formData, mas o backend não o usa diretamente
       };
+      // --- FIM DA CORREÇÃO CRÍTICA ---
 
-      // 2. Chamar a função correta com os dados limpos
       if (mode === 'create') {
         const { data: result, error } = await supabase.functions.invoke('create-product', {
-          body: { ...productDataForApi, checkout_link_slug: generateSlug(data.name) }
+          body: { ...productDataForApi, delivery_type: data.delivery_type, checkout_link_slug: generateSlug(data.name) }
         });
         if (error) throw error;
         return result;
@@ -163,9 +162,9 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       }
     },
     onSuccess: () => {
-      toast.success(mode === 'create' ? 'Produto criado!' : 'Produto atualizado!');
-      queryClient.invalidateQueries({ queryKey: ['products'] }); // Invalida a lista de produtos
-      queryClient.invalidateQueries({ queryKey: ['product', productId] }); // Invalida o cache deste produto
+      toast.success(mode === 'create' ? 'Produto criado com sucesso!' : 'Produto atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
       navigate('/products');
     },
     onError: (error: any) => {
@@ -174,18 +173,21 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       toast.error(errorMessage);
     }
   });
-  // --- FIM DA CORREÇÃO CRÍTICA ---
 
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
+      if (!productId) throw new Error("ID do produto não encontrado para exclusão.");
       const { error } = await supabase.from('products').delete().eq('id', productId);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Produto excluído!');
+      toast.success('Produto excluído com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       navigate('/products');
     },
-    onError: (error) => toast.error('Erro ao excluir produto')
+    onError: (error) => {
+      toast.error('Erro ao excluir produto');
+    }
   });
 
   const handleInputChange = (field: keyof ProductFormData, value: any) => {
@@ -194,8 +196,8 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
   const handleSubmit = () => {
     if (!formData.name.trim()) { toast.error('Nome do produto é obrigatório'); return; }
-    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price.replace(/\./g, '').replace(',', '.')) < 0)) {
-      toast.error('O valor do produto não pode ser negativo.'); return;
+     if (formData.product_type !== 'donation' && (!formData.price || parseFloat(String(formData.price).replace(/\./g, '').replace(',', '.')) < 0)) {
+        toast.error('O valor do produto não pode ser negativo.'); return;
     }
     saveProductMutation.mutate(formData);
   };
@@ -233,7 +235,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
           <p className="text-muted-foreground">{mode === 'create' ? 'Preencha as informações do seu produto' : 'Altere as informações do produto'}</p>
         </div>
       </div>
-
       <Card className="w-full bg-card shadow-sm">
         <CardHeader><CardTitle className="text-card-foreground">Configurações do Produto</CardTitle></CardHeader>
         <CardContent>
@@ -246,7 +247,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
               {shouldShowTicketsTab && (<TabsTrigger value="ingressos" disabled={mode === 'create'}>Ingressos</TabsTrigger>)}
               {shouldShowSubscriptionsTab && (<TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>)}
             </TabsList>
-            
             <div className="mt-6">
               <TabsContent value="geral">
                 <GeneralTab formData={formData} onInputChange={handleInputChange} userId={user?.id} />
@@ -266,7 +266,6 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
               {shouldShowSubscriptionsTab && (<TabsContent value="assinaturas"><SubscriptionsTab productId={productId} /></TabsContent>)}
             </div>
           </Tabs>
-
           <div className="flex justify-end pt-6 mt-6 border-t">
             <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={saveProductMutation.isPending}>
               {saveProductMutation.isPending ? 'Salvando...' : mode === 'create' ? 'Criar Produto' : 'Salvar Alterações'}
