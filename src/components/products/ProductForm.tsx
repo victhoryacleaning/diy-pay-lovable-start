@@ -173,9 +173,13 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         if (error) throw error;
         return result;
       } else {
-        const { data: result, error } = await supabase.from('products').update(productData).eq('id', productId).select().single();
+        // *** INÍCIO DA CORREÇÃO ***
+        const { data: result, error } = await supabase.functions.invoke('update-product', {
+          body: { productId, productData }
+        });
         if (error) throw error;
         return result;
+        // *** FIM DA CORREÇÃO ***
       }
     },
     onSuccess: () => {

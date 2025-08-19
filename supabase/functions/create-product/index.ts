@@ -12,7 +12,15 @@ Deno.serve(async (req) => {
     const { delivery_type, ...productData } = await req.json();
 
     // 1. Criar o Produto
-    const { data: newProduct, error: productError } = await serviceClient.from('products').insert({ ...productData, producer_id: user.id }).select().single();
+    const { data: newProduct, error: productError } = await serviceClient
+      .from('products')
+      .insert({ 
+        ...productData, 
+        producer_id: user.id,
+        cover_image_url: productData.cover_image_url || null
+      })
+      .select()
+      .single();
     if (productError) throw productError;
 
     if (delivery_type === 'members_area') {
