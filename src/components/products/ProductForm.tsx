@@ -97,7 +97,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         is_active: product.is_active,
         product_type: product.product_type || 'single_payment',
         subscription_frequency: product.subscription_frequency || '',
-        allowed_payment_methods: Array.isArray(product.allowed_payment_methods) ? product.allowed_payment_methods : getDefaultPaymentMethods(product.product_type),
+        allowed_payment_methods: Array.isArray(product.allowed_payment_methods) ? product.allowed_payment_methods.map(method => String(method)) : getDefaultPaymentMethods(product.product_type),
         show_order_summary: product.show_order_summary ?? true,
         donation_title: product.donation_title || '',
         donation_description: product.donation_description || '',
