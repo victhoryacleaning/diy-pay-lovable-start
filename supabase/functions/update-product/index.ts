@@ -14,18 +14,26 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const token = req.headers.get('Authorization')!.replace('Bearer ', '');
-    const { data: { user } } = await serviceClient.auth.getUser(token);
-    if (!user) throw new Error('Unauthorized');
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Token de autorização não fornecido');
+    }
+
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('Usuário não autorizado');
+    }
 
     const { productId, productData } = await req.json();
 
     if (!productId) {
-      throw new Error('productId é obrigatório.');
+      throw new Error('productId é obrigatório');
     }
 
-    // CORREÇÃO: Removido um nível de desestruturação desnecessário. 
-    // A função agora usa 'productData' diretamente, que já vem limpo do frontend.
+    if (!productData || typeof productData !== 'object') {
+      throw new Error('productData é obrigatório e deve ser um objeto');
+    }
+
     const { data: updatedProduct, error } = await serviceClient
       .from('products')
       .update(productData)

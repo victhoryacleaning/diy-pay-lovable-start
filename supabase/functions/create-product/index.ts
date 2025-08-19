@@ -2,67 +2,93 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const token = req.headers.get('Authorization')!.replace('Bearer ', '');
-    const { data: { user } } = await serviceClient.auth.getUser(token);
-    if (!user) throw new Error('Unauthorized');
-    
-    const { delivery_type, ...productData } = await req.json();
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Token de autorização não fornecido');
+    }
+
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('Usuário não autorizado');
+    }
+
+    const requestBody = await req.json();
+    const { delivery_type, checkout_link_slug, ...productData } = requestBody;
+
+    // Validações básicas
+    if (!productData.name || typeof productData.name !== 'string') {
+      throw new Error('Nome do produto é obrigatório');
+    }
+
+    if (typeof productData.price_cents !== 'number' || productData.price_cents < 0) {
+      throw new Error('Preço deve ser um número válido e não negativo');
+    }
+
+    // Preparar dados para inserção
+    const insertData = {
+      name: productData.name.trim(),
+      description: productData.description || null,
+      cover_image_url: productData.cover_image_url || null,
+      price_cents: productData.price_cents,
+      file_url_or_access_info: productData.file_url_or_access_info || null,
+      max_installments_allowed: productData.max_installments_allowed || 1,
+      is_active: productData.is_active ?? true,
+      product_type: productData.product_type || 'single_payment',
+      subscription_frequency: productData.subscription_frequency || null,
+      allowed_payment_methods: productData.allowed_payment_methods || ['credit_card', 'pix', 'bank_slip'],
+      show_order_summary: productData.show_order_summary ?? true,
+      donation_title: productData.donation_title || null,
+      donation_description: productData.donation_description || null,
+      checkout_image_url: productData.checkout_image_url || null,
+      checkout_background_color: productData.checkout_background_color || '#F3F4F6',
+      is_email_optional: productData.is_email_optional ?? false,
+      require_email_confirmation: productData.require_email_confirmation ?? true,
+      producer_assumes_installments: productData.producer_assumes_installments ?? false,
+      producer_id: user.id,
+      checkout_link_slug: checkout_link_slug || `product-${Date.now()}`
+    };
 
     // 1. Criar o Produto
     const { data: newProduct, error: productError } = await serviceClient
       .from('products')
-      .insert({ 
-        ...productData, 
-        producer_id: user.id,
-        cover_image_url: productData.cover_image_url || null
-      })
+      .insert(insertData)
       .select()
       .single();
-    if (productError) throw productError;
 
+    if (productError) {
+      console.error('Erro ao criar produto:', productError);
+      throw new Error(`Erro ao criar produto: ${productError.message}`);
+    }
+
+    // Se o delivery_type for 'members_area', criar a estrutura do espaço
     if (delivery_type === 'members_area') {
-      // 2. Criar o Space
-      const { data: newSpace, error: spaceError } = await serviceClient.from('spaces').insert({ producer_id: user.id, name: newProduct.name, slug: newProduct.checkout_link_slug }).select('id').single();
-      if (spaceError) throw spaceError;
-
-      // 3. Criar o Container Padrão
-      const { data: newContainer, error: containerError } = await serviceClient.from('space_containers').insert({ space_id: newSpace.id, title: 'Sejam bem-vindos', display_order: 0 }).select('id').single();
-      if (containerError) throw containerError;
-
-      // 4. Associar o Produto Principal ao Container
-      const { error: spError } = await serviceClient.from('space_products').insert({ space_id: newSpace.id, product_id: newProduct.id, product_type: 'principal', container_id: newContainer.id });
-      if (spError) throw spError;
-
-      // 5. Criar a Turma Padrão
-      const { data: newCohort, error: cohortError } = await serviceClient.from('cohorts').insert({ space_id: newSpace.id, name: 'Turma 01', is_active: true }).select('id').single();
-      if (cohortError) throw cohortError;
-
-      // 6. (NOVO) Criar o Módulo Padrão
-      const { data: newModule, error: moduleError } = await serviceClient.from('modules').insert({ product_id: newProduct.id, title: 'Bem-vindo', display_order: 0 }).select('id').single();
-      if (moduleError) throw moduleError;
-
-      // 7. (NOVO) Criar a Aula Padrão
-      const { error: lessonError } = await serviceClient.from('lessons').insert({
-        module_id: newModule.id,
-        title: 'Aula demonstração',
-        content_type: 'video',
-        content_url: 'https://www.youtube.com/watch?v=5mGuCdlCcNM',
-        display_order: 0,
-      });
-      if (lessonError) throw lessonError;
-
-      // 8. (NOVO E CRUCIAL) Matricular o Produtor como o primeiro aluno
-      const { error: enrollmentError } = await serviceClient.from('enrollments').insert({
-        user_id: user.id,
-        product_id: newProduct.id,
-        cohort_id: newCohort.id,
-      });
-      if (enrollmentError) {
-        // Log o erro, mas não quebre a criação do produto se a matrícula falhar
-        console.error(`Falha ao auto-matricular produtor: ${enrollmentError.message}`);
+      try {
+        const { data: newSpace, error: spaceError } = await serviceClient.from('spaces').insert({ producer_id: user.id, name: newProduct.name, slug: newProduct.checkout_link_slug }).select('id').single();
+        if (spaceError) throw spaceError;
+        const { data: newContainer, error: containerError } = await serviceClient.from('space_containers').insert({ space_id: newSpace.id, title: 'Sejam bem-vindos', display_order: 0 }).select('id').single();
+        if (containerError) throw containerError;
+        const { error: spError } = await serviceClient.from('space_products').insert({ space_id: newSpace.id, product_id: newProduct.id, product_type: 'principal', container_id: newContainer.id });
+        if (spError) throw spError;
+        const { data: newCohort, error: cohortError } = await serviceClient.from('cohorts').insert({ space_id: newSpace.id, name: 'Turma 01', is_active: true }).select('id').single();
+        if (cohortError) throw cohortError;
+        const { data: newModule, error: moduleError } = await serviceClient.from('modules').insert({ product_id: newProduct.id, title: 'Bem-vindo', display_order: 0 }).select('id').single();
+        if (moduleError) throw moduleError;
+        const { error: lessonError } = await serviceClient.from('lessons').insert({ module_id: newModule.id, title: 'Aula demonstração', content_type: 'video', content_url: 'https://www.youtube.com/watch?v=5mGuCdlCcNM', display_order: 0 });
+        if (lessonError) throw lessonError;
+        const { error: enrollmentError } = await serviceClient.from('enrollments').insert({ user_id: user.id, product_id: newProduct.id, cohort_id: newCohort.id });
+        if (enrollmentError) console.error(`Falha ao auto-matricular produtor: ${enrollmentError.message}`);
+      } catch (membersAreaError) {
+        console.error('Erro ao criar estrutura de members_area:', membersAreaError);
       }
     }
     
