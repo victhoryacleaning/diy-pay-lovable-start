@@ -124,6 +124,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         ? 0
         : Math.round(parseFloat(String(data.price).replace(/\./g, '').replace(',', '.')) * 100);
 
+      // Cria um objeto limpo, apenas com os campos que o backend espera.
       const productDataForApi = {
         name: data.name,
         description: data.description || null,
@@ -143,18 +144,19 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         is_email_optional: data.is_email_optional,
         require_email_confirmation: data.require_email_confirmation,
         producer_assumes_installments: data.producer_assumes_installments,
-        // O campo 'delivery_type' já está no formData, mas o backend não o usa diretamente
       };
       // --- FIM DA CORREÇÃO CRÍTICA ---
 
       if (mode === 'create') {
         const { data: result, error } = await supabase.functions.invoke('create-product', {
+          // Envia o objeto limpo + os campos extras que a função de criação precisa
           body: { ...productDataForApi, delivery_type: data.delivery_type, checkout_link_slug: generateSlug(data.name) }
         });
         if (error) throw error;
         return result;
       } else {
         const { data: result, error } = await supabase.functions.invoke('update-product', {
+          // Envia o objeto limpo para a função de atualização
           body: { productId, productData: productDataForApi }
         });
         if (error) throw error;
