@@ -1,8 +1,8 @@
-// src/components/products/ProductForm.tsx (NOVA VERSÃO)
+// src/components/products/ProductForm.tsx (VERSÃO COMPLETA E CORRIGIDA)
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +20,7 @@ import SubscriptionsTab from './tabs/SubscriptionsTab';
 interface ProductFormData {
   name: string;
   description: string;
-  cover_image_url: string; // <-- NOVO CAMPO
+  cover_image_url: string;
   price: string;
   file_url_or_access_info: string;
   max_installments_allowed: number;
@@ -47,6 +47,7 @@ interface ProductFormProps {
 const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient(); // Adicionar QueryClient
   const [searchParams] = useSearchParams();
   
   const initialTab = searchParams.get('tab') || 'geral';
@@ -55,39 +56,22 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const productTypeFromUrl = searchParams.get('type') || 'single_payment';
   
   const getDefaultPaymentMethods = (productType: string) => {
-    if (productType === 'subscription') {
-      return ['credit_card'];
-    }
+    if (productType === 'subscription') return ['credit_card'];
     return ['credit_card', 'pix', 'bank_slip'];
   };
   
   const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    description: '',
-    cover_image_url: '', // <-- VALOR PADRÃO
-    price: '',
-    file_url_or_access_info: '',
-    max_installments_allowed: 1,
-    is_active: true,
-    product_type: productTypeFromUrl,
-    subscription_frequency: '',
-    allowed_payment_methods: getDefaultPaymentMethods(productTypeFromUrl),
-    show_order_summary: true,
-    donation_title: '',
-    donation_description: '',
-    checkout_image_url: '',
-    checkout_background_color: '#F3F4F6',
-    is_email_optional: false,
-    require_email_confirmation: true,
-    producer_assumes_installments: false,
-    delivery_type: 'members_area'
+    name: '', description: '', cover_image_url: '', price: '', file_url_or_access_info: '',
+    max_installments_allowed: 1, is_active: true, product_type: productTypeFromUrl,
+    subscription_frequency: '', allowed_payment_methods: getDefaultPaymentMethods(productTypeFromUrl),
+    show_order_summary: true, donation_title: '', donation_description: '', checkout_image_url: '',
+    checkout_background_color: '#F3F4F6', is_email_optional: false, require_email_confirmation: true,
+    producer_assumes_installments: false, delivery_type: 'members_area'
   });
 
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-    }
+    if (tabFromUrl) setActiveTab(tabFromUrl);
   }, [searchParams]);
 
   const { data: product, isLoading } = useQuery({
@@ -103,21 +87,17 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
 
   useEffect(() => {
     if (product && mode === 'edit') {
-      const allowedPaymentMethods = Array.isArray(product.allowed_payment_methods) 
-        ? product.allowed_payment_methods as string[]
-        : ['credit_card', 'pix', 'bank_slip'];
-
       setFormData({
         name: product.name,
         description: product.description || '',
-        cover_image_url: product.cover_image_url || '', // <-- CARREGAR VALOR EXISTENTE
+        cover_image_url: product.cover_image_url || '',
         price: (product.price_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
         is_active: product.is_active,
         product_type: product.product_type || 'single_payment',
         subscription_frequency: product.subscription_frequency || '',
-        allowed_payment_methods: allowedPaymentMethods,
+        allowed_payment_methods: Array.isArray(product.allowed_payment_methods) ? product.allowed_payment_methods : getDefaultPaymentMethods(product.product_type),
         show_order_summary: product.show_order_summary ?? true,
         donation_title: product.donation_title || '',
         donation_description: product.donation_description || '',
@@ -137,20 +117,22 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
     return `${baseSlug}-${timestamp}`;
   };
 
+  // --- INÍCIO DA CORREÇÃO CRÍTICA ---
   const saveProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const priceValue = data.product_type === 'donation' ? 0 : parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100;
-      const priceCents = Math.round(priceValue);
-      
-      const productData = {
+      // 1. Limpar e converter os dados primeiro
+      const priceInCents = data.product_type === 'donation'
+        ? 0
+        : Math.round(parseFloat(data.price.replace(/\./g, '').replace(',', '.')) * 100);
+
+      const productDataForApi = {
         name: data.name,
         description: data.description || null,
-        cover_image_url: data.cover_image_url || null, // <-- INCLUIR NO PAYLOAD
-        price_cents: priceCents,
+        cover_image_url: data.cover_image_url || null,
+        price_cents: priceInCents,
         file_url_or_access_info: data.file_url_or_access_info || null,
         max_installments_allowed: data.max_installments_allowed,
         is_active: data.is_active,
-        producer_id: user?.id,
         product_type: data.product_type,
         subscription_frequency: data.product_type === 'subscription' ? data.subscription_frequency : null,
         allowed_payment_methods: data.allowed_payment_methods,
@@ -165,31 +147,34 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         delivery_type: data.delivery_type,
       };
 
+      // 2. Chamar a função correta com os dados limpos
       if (mode === 'create') {
-        const slug = generateSlug(data.name);
         const { data: result, error } = await supabase.functions.invoke('create-product', {
-          body: { ...productData, checkout_link_slug: slug }
+          body: { ...productDataForApi, checkout_link_slug: generateSlug(data.name) }
         });
         if (error) throw error;
         return result;
       } else {
-        // *** INÍCIO DA CORREÇÃO ***
         const { data: result, error } = await supabase.functions.invoke('update-product', {
-          body: { productId, productData }
+          body: { productId, productData: productDataForApi }
         });
         if (error) throw error;
         return result;
-        // *** FIM DA CORREÇÃO ***
       }
     },
     onSuccess: () => {
-      toast.success(mode === 'create' ? 'Produto criado com sucesso!' : 'Produto atualizado com sucesso!');
+      toast.success(mode === 'create' ? 'Produto criado!' : 'Produto atualizado!');
+      queryClient.invalidateQueries({ queryKey: ['products'] }); // Invalida a lista de produtos
+      queryClient.invalidateQueries({ queryKey: ['product', productId] }); // Invalida o cache deste produto
       navigate('/products');
     },
-    onError: (error) => {
-      toast.error('Erro ao salvar produto');
+    onError: (error: any) => {
+      const functionError = error.context?.error;
+      const errorMessage = functionError?.message || error.message || 'Erro ao salvar produto';
+      toast.error(errorMessage);
     }
   });
+  // --- FIM DA CORREÇÃO CRÍTICA ---
 
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
@@ -197,12 +182,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Produto excluído com sucesso!');
+      toast.success('Produto excluído!');
       navigate('/products');
     },
-    onError: (error) => {
-      toast.error('Erro ao excluir produto');
-    }
+    onError: (error) => toast.error('Erro ao excluir produto')
   });
 
   const handleInputChange = (field: keyof ProductFormData, value: any) => {
@@ -210,13 +193,9 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   };
 
   const handleSubmit = () => {
-    if (!formData.name.trim()) {
-      toast.error('Nome do produto é obrigatório');
-      return;
-    }
-    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price.replace(/\./g, '').replace(',', '.')) <= 0)) {
-      toast.error('Valor do produto deve ser maior que zero');
-      return;
+    if (!formData.name.trim()) { toast.error('Nome do produto é obrigatório'); return; }
+    if (formData.product_type !== 'donation' && (!formData.price || parseFloat(formData.price.replace(/\./g, '').replace(',', '.')) < 0)) {
+      toast.error('O valor do produto não pode ser negativo.'); return;
     }
     saveProductMutation.mutate(formData);
   };
@@ -269,10 +248,10 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
             </TabsList>
             
             <div className="mt-6">
-              <TabsContent value="geral" className="space-y-6">
+              <TabsContent value="geral">
                 <GeneralTab formData={formData} onInputChange={handleInputChange} userId={user?.id} />
                 {mode === 'edit' && (
-                  <div className="flex justify-start pt-4 border-t">
+                  <div className="flex justify-start pt-6 mt-6 border-t">
                     <Button variant="destructive" onClick={handleDelete} disabled={deleteProductMutation.isPending} className="flex items-center gap-2">
                       <Trash2 className="h-4 w-4" />
                       {deleteProductMutation.isPending ? 'Excluindo...' : 'Excluir Produto'}
@@ -280,11 +259,11 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
                   </div>
                 )}
               </TabsContent>
-              <TabsContent value="configuracao" className="space-y-6"><ConfigurationTab formData={formData} onInputChange={handleInputChange} /></TabsContent>
-              <TabsContent value="checkout" className="space-y-6"><CheckoutTab formData={formData} onInputChange={handleInputChange} /></TabsContent>
-              <TabsContent value="links" className="space-y-6"><LinksTab productId={productId} checkoutSlug={product?.checkout_link_slug} /></TabsContent>
-              {shouldShowTicketsTab && (<TabsContent value="ingressos" className="space-y-6"><TicketsTab productId={productId} /></TabsContent>)}
-              {shouldShowSubscriptionsTab && (<TabsContent value="assinaturas" className="space-y-6"><SubscriptionsTab productId={productId} /></TabsContent>)}
+              <TabsContent value="configuracao"><ConfigurationTab formData={formData} onInputChange={handleInputChange} /></TabsContent>
+              <TabsContent value="checkout"><CheckoutTab formData={formData} onInputChange={handleInputChange} /></TabsContent>
+              <TabsContent value="links"><LinksTab productId={productId} checkoutSlug={product?.checkout_link_slug} /></TabsContent>
+              {shouldShowTicketsTab && (<TabsContent value="ingressos"><TicketsTab productId={productId} /></TabsContent>)}
+              {shouldShowSubscriptionsTab && (<TabsContent value="assinaturas"><SubscriptionsTab productId={productId} /></TabsContent>)}
             </div>
           </Tabs>
 
