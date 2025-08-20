@@ -25,10 +25,10 @@ export const CheckoutImageUpload = ({ onUploadSuccess, initialUrl = '', userId }
     const file = acceptedFiles[0];
     if (!file || !userId) return;
 
-    // Validação de tamanho: máximo 500KB
-    const maxSizeInBytes = 500 * 1024; // 500KB
+    // Validação de tamanho: máximo 300KB
+    const maxSizeInBytes = 300 * 1024; // 300KB
     if (file.size > maxSizeInBytes) {
-      toast.error('Arquivo muito grande. O tamanho máximo permitido é 500KB.');
+      toast.error('Arquivo muito grande. O tamanho máximo permitido é 300KB.');
       return;
     }
 
