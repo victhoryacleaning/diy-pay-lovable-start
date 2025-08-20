@@ -71,11 +71,11 @@ const Checkout = () => {
       <div className="max-w-6xl mx-auto px-4">
         {/* Imagem personalizada do checkout */}
         {product.checkout_image_url && (
-          <div className="mb-8 text-center">
+          <div className="max-w-2xl mx-auto mb-8 lg:max-w-none">
             <img 
               src={product.checkout_image_url} 
               alt={product.name}
-              className="max-w-full h-auto mx-auto rounded-lg shadow-md max-h-64 object-cover"
+              className="w-full h-auto object-cover rounded-lg shadow-md"
             />
           </div>
         )}

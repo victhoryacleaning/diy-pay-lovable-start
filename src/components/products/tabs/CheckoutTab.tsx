@@ -1,6 +1,8 @@
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { CheckoutImageUpload } from "../CheckoutImageUpload"; // Importa o novo componente
+import { useAuth } from "@/hooks/useAuth";
 
 interface CheckoutTabProps {
   formData: any;
@@ -8,6 +10,8 @@ interface CheckoutTabProps {
 }
 
 const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
+  const { user } = useAuth();
+
   return (
     <div className="space-y-6">
       <div>
@@ -16,17 +20,31 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
       </div>
 
       <div className="space-y-6">
+        {/* NOVO CAMPO DE UPLOAD */}
         <div className="space-y-2">
-          <Label htmlFor="checkout_image_url">URL da Imagem do Checkout</Label>
+          <Label>Imagem do Checkout</Label>
+          {user?.id ? (
+            <CheckoutImageUpload
+              userId={user.id}
+              initialUrl={formData.checkout_image_url}
+              onUploadSuccess={(url) => onInputChange('checkout_image_url', url)}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          )}
+          <p className="text-xs text-gray-500">
+            Faça o upload da imagem que será exibida no topo do checkout.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="checkout_image_url">OU Cole a URL da Imagem</Label>
           <Input
             id="checkout_image_url"
             value={formData.checkout_image_url}
             onChange={(e) => onInputChange('checkout_image_url', e.target.value)}
             placeholder="https://exemplo.com/imagem.jpg"
           />
-          <p className="text-xs text-gray-500">
-            Imagem exibida no topo da página de checkout
-          </p>
         </div>
 
         <div className="space-y-2">
@@ -35,18 +53,18 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
             <Input
               type="color"
               className="w-16 h-10 p-1 border"
-              value={formData.checkout_background_color}
+              value={formData.checkout_background_color || '#F3F4F6'}
               onChange={(e) => onInputChange('checkout_background_color', e.target.value)}
             />
             <Input
               id="checkout_background_color"
-              value={formData.checkout_background_color}
+              value={formData.checkout_background_color || '#F3F4F6'}
               onChange={(e) => onInputChange('checkout_background_color', e.target.value)}
               placeholder="#F3F4F6"
             />
           </div>
           <p className="text-xs text-gray-500">
-            Cor de fundo da página de checkout (formato HEX)
+            Cor de fundo da página de checkout (formato HEX).
           </p>
         </div>
       </div>
