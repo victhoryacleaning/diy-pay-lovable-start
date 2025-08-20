@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -18,6 +18,11 @@ const MAX_DIMENSION_PX = 500;
 export const ProductCoverUpload = ({ onUploadSuccess, initialUrl = '', userId }: ProductCoverUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState<string>(initialUrl);
+
+  // Sincroniza o estado interno com mudanças no initialUrl
+  useEffect(() => {
+    setUploadedUrl(initialUrl);
+  }, [initialUrl]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
