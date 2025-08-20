@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -71,11 +70,11 @@ const Checkout = () => {
       <div className="max-w-6xl mx-auto px-4">
         {/* Imagem personalizada do checkout */}
         {product.checkout_image_url && (
-          <div className="max-w-2xl mx-auto mb-8 lg:max-w-none">
+          <div className="max-w-2xl mx-auto mb-8 lg:max-w-none flex justify-center">
             <img 
               src={product.checkout_image_url} 
               alt={product.name}
-              className="w-full h-auto object-cover rounded-lg shadow-md"
+              className="max-w-full h-auto rounded-lg shadow-md"
             />
           </div>
         )}
