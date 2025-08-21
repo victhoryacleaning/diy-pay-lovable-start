@@ -272,6 +272,42 @@ export type Database = {
           },
         ]
       }
+      pages: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string
+          featured_image_url: string | null
+          id: string
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          featured_image_url?: string | null
+          id?: string
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          featured_image_url?: string | null
+          id?: string
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
       payment_gateways: {
         Row: {
           created_at: string | null
@@ -940,6 +976,10 @@ export type Database = {
       get_students_with_progress: {
         Args: { p_product_id: string }
         Returns: Json
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       set_active_cohort_for_space: {
         Args: { p_cohort_id_to_activate: string; p_space_id: string }
