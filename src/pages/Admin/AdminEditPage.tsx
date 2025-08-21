@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 
 const pageSchema = z.object({
   title: z.string().min(3, "O título é obrigatório."),
@@ -48,6 +48,8 @@ const AdminEditPage = () => {
     resolver: zodResolver(pageSchema),
     defaultValues: { title: '', slug: '', content: '', status: 'draft' },
   });
+  
+  const slugValue = form.watch('slug');
 
   useEffect(() => {
     if (pageData) {
@@ -112,6 +114,15 @@ const AdminEditPage = () => {
                 <FormItem>
                   <FormLabel>URL (Slug)</FormLabel>
                   <FormControl><Input {...field} /></FormControl>
+                  {slugValue && (
+                    <div className="text-sm text-muted-foreground mt-2">
+                      <span>URL Final: </span>
+                      <a href={`/p/${slugValue}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                        {`${window.location.origin}/p/${slugValue}`}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}/>
