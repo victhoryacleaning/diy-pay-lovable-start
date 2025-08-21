@@ -1,4 +1,3 @@
-
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -70,7 +69,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                   value={field.value}
                   onChange={field.onChange}
                 >
-                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" />}
+                  {(inputProps: any) => <Input {...inputProps} placeholder="(11) 99999-9999" className="placeholder:text-sm" />}
                 </InputMask>
               </FormControl>
               <FormMessage />
@@ -93,6 +92,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
                     field.onChange(formattedValue);
                   }}
                   onBlur={field.onBlur}
+                  className="placeholder:text-sm"
                 />
               </FormControl>
               <FormMessage />
