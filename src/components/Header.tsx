@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CreditCard, LogOut, Menu, User, Settings } from "lucide-react";
@@ -41,7 +40,7 @@ const Header = ({
   const getRoleDashboardLink = (role: string) => {
     switch (role) {
       case 'producer': return '/producer-dashboard';
-      case 'admin': return '/admin-dashboard';
+      case 'admin': return '/admin/dashboard'; // CORREÇÃO APLICADA AQUI
       default: return '/member-area';
     }
   };
