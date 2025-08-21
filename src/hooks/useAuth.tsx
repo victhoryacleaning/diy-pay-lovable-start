@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useNavigate, useLocation } from 'react-router-dom'; // 1. Importar hooks de navegação
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -58,15 +58,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>('producer');
-  const navigate = useNavigate(); // 2. Inicializar o hook de navegação
+  const navigate = useNavigate();
   const location = useLocation();
 
   const isGoogleUser = user?.app_metadata?.provider === 'google';
 
-  // 3. Efeito para redirecionar o admin após o login
+  // Efeito para redirecionar o usuário após o login, se necessário
   useEffect(() => {
-    if (!loading && profile?.role === 'admin' && location.pathname === '/login') {
-      navigate('/admin/dashboard', { replace: true });
+    if (!loading && profile && (location.pathname === '/login' || location.pathname === '/register')) {
+      const roleRedirects = {
+        'producer': '/dashboard',
+        'admin': '/admin/dashboard',
+        'user': '/members'
+      };
+      navigate(roleRedirects[profile.role] || '/', { replace: true });
     }
   }, [profile, loading, location, navigate]);
 
