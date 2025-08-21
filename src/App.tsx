@@ -71,7 +71,7 @@ const App = () => {
 
               {/* Producer Routes */}
               <Route path="/complete-producer-profile" element={<ProtectedRoute requiredView="producer"><CompleteProducerProfile /></ProtectedRoute>} />
-              <Route path="/producer-dashboard" element={<ProtectedRoute requiredView="producer"><ProducerDashboard /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute requiredView="producer"><ProducerDashboard /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute requiredView="producer"><ProductsPage /></ProtectedRoute>} />
               <Route path="/products/new" element={<ProtectedRoute requiredView="producer"><CreateProductPage /></ProtectedRoute>} />
               <Route path="/products/edit/:id" element={<ProtectedRoute requiredView="producer"><EditProductPage /></ProtectedRoute>} />
@@ -93,15 +93,8 @@ const App = () => {
               <Route path="/members/courses/:productId" element={<ProtectedRoute requiredView="student"><MembersCoursePlayerPage /></ProtectedRoute>} />
               <Route path="/members/spaces/:spaceId" element={<ProtectedRoute requiredView="student"><MembersHubPage /></ProtectedRoute>} />
 
-              {/* === ADMIN ROUTES REFACTORED === */}
-              <Route 
-                path="/admin" 
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AdminLayout />
-                  </ProtectedRoute>
-                }
-              >
+              {/* Admin Routes */}
+              <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="producers" element={<AdminProducersPage />} />
                 <Route path="financials" element={<AdminFinancialsPage />} />
