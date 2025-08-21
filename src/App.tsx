@@ -29,6 +29,8 @@ import AdminFinancialsPage from "./pages/Admin/AdminFinancialsPage";
 import AdminFeesPage from "./pages/Admin/AdminFeesPage";
 import AdminGatewaysPage from "./pages/Admin/AdminGatewaysPage";
 import VerificationPage from "./pages/Admin/VerificationPage";
+import AdminPagesPage from "./pages/Admin/AdminPagesPage"; // Import new page
+import AdminEditPage from "./pages/Admin/AdminEditPage"; // Import new page
 import SettingsHubPage from "./pages/Producer/SettingsHubPage";
 import AccountPage from "./pages/Producer/Settings/AccountPage";
 import WebhooksPage from "./pages/Producer/Settings/WebhooksPage";
@@ -294,6 +296,20 @@ const App = () => {
                 }
               >
                 <Route index element={<VerificationPage />} />
+              </Route>
+              
+              {/* New Admin Pages Routes */}
+              <Route 
+                path="/admin-pages" 
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminPagesPage />} />
+                <Route path="new" element={<AdminEditPage />} />
+                <Route path="edit/:pageId" element={<AdminEditPage />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

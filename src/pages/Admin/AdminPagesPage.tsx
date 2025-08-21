@@ -56,7 +56,7 @@ const AdminPagesPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Gerenciamento de Páginas</h1>
           <Button asChild>
-            <Link to="/admin/pages/new">
+            <Link to="/admin-pages/new">
               <PlusCircle className="mr-2 h-4 w-4" />
               Criar Nova Página
             </Link>
@@ -90,7 +90,7 @@ const AdminPagesPage = () => {
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" asChild>
-                        <Link to={`/admin/pages/edit/${page.id}`}>
+                        <Link to={`/admin-pages/edit/${page.id}`}>
                           <Edit className="mr-2 h-3 w-3" /> Editar
                         </Link>
                       </Button>
