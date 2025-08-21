@@ -31,6 +31,7 @@ import AdminGatewaysPage from "./pages/Admin/AdminGatewaysPage";
 import VerificationPage from "./pages/Admin/VerificationPage";
 import AdminPagesPage from "./pages/Admin/AdminPagesPage"; // Import new page
 import AdminEditPage from "./pages/Admin/AdminEditPage"; // Import new page
+import PublicPage from "./pages/PublicPage"; // Import new public page
 import SettingsHubPage from "./pages/Producer/SettingsHubPage";
 import AccountPage from "./pages/Producer/Settings/AccountPage";
 import WebhooksPage from "./pages/Producer/Settings/WebhooksPage";
@@ -61,11 +62,13 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <Routes>
+              {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/checkout/:slug" element={<Checkout />} />
               <Route path="/payment-confirmation/:saleId" element={<PaymentConfirmation />} />
+              <Route path="/p/:slug" element={<PublicPage />} /> {/* Add new public page route */}
               
               {/* Producer Routes */}
               <Route 
