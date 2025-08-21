@@ -40,8 +40,10 @@ const PublicPage = () => {
   return (
     <div className="bg-gray-50 min-h-screen py-8 md:py-16">
       <main className="max-w-4xl mx-auto bg-white p-6 sm:p-8 md:p-12 rounded-lg shadow-md">
+        <h1 className="text-3xl md:text-5xl font-bold text-center mb-8 md:mb-12">
+          {page.title}
+        </h1>
         <article className="prose lg:prose-xl max-w-none">
-          <h1>{page.title}</h1>
           {page.featured_image_url && (
             <img src={page.featured_image_url} alt={page.title} className="w-full rounded-lg mb-8" />
           )}
