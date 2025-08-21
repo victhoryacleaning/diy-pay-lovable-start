@@ -1,9 +1,8 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { validateCPFOrCNPJ } from '@/lib/utils';
+import { useNavigate, useLocation } from 'react-router-dom'; // 1. Importar hooks de navegação
 
 interface Profile {
   id: string;
@@ -16,23 +15,18 @@ interface Profile {
   iugu_customer_id: string | null;
   created_at: string;
   updated_at: string;
-  // Novos campos KYC/KYB
   verification_status: 'pending_submission' | 'pending_approval' | 'approved' | 'rejected';
   person_type: 'PF' | 'PJ' | null;
-  // Campos PF
   cpf: string | null;
   birth_date: string | null;
-  // Campos PJ
   cnpj: string | null;
   company_name: string | null;
   trading_name: string | null;
   opening_date: string | null;
   company_phone: string | null;
-  // Responsável PJ
   responsible_name: string | null;
   responsible_cpf: string | null;
   responsible_birth_date: string | null;
-  // URLs de documentos
   document_front_url: string | null;
   document_back_url: string | null;
   selfie_url: string | null;
@@ -64,26 +58,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>('producer');
-  
-  // Check if user signed up with Google
+  const navigate = useNavigate(); // 2. Inicializar o hook de navegação
+  const location = useLocation();
+
   const isGoogleUser = user?.app_metadata?.provider === 'google';
 
+  // 3. Efeito para redirecionar o admin após o login
   useEffect(() => {
-    // Set up auth state listener
+    if (!loading && profile?.role === 'admin' && location.pathname === '/login') {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [profile, loading, location, navigate]);
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Check if this is a new Google signup
           if (event === 'SIGNED_IN' && session.user.app_metadata.provider === 'google') {
-            // Extract Google profile data
             const googleFullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
             const googleAvatarUrl = session.user.user_metadata?.avatar_url;
             const googleEmail = session.user.email;
 
-            // Check if profile already exists
             const { data: existingProfile } = await supabase
               .from('profiles')
               .select('id')
@@ -91,7 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               .single();
 
             if (!existingProfile && googleEmail) {
-              // Create profile with Google data
               const { error: profileError } = await supabase
                 .from('profiles')
                 .upsert({
@@ -108,7 +105,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          // Fetch user profile
           setTimeout(async () => {
             await fetchUserProfile(session.user.id);
           }, 0);
@@ -120,7 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -150,7 +145,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Type assertion to ensure specific fields are one of the allowed values
       const profileData: Profile = {
         ...data,
         role: data.role as 'user' | 'producer' | 'admin',
@@ -160,7 +154,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setProfile(profileData);
       
-      // Set initial active view based on role
       if (profileData.role === 'producer') {
         setActiveView('producer');
       } else {
@@ -191,7 +184,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: error.message };
       }
 
-      // If user is created, create profile with full_name and email
       if (data.user) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -215,7 +207,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`
@@ -275,7 +267,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: error.message };
       }
 
-      // Refresh profile data
       await fetchUserProfile(user.id);
       return {};
     } catch (error: any) {
