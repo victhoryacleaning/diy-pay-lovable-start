@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreditCardForm } from "./CreditCardForm";
 import { PixPaymentInfo } from "./PixPaymentInfo";
@@ -85,7 +84,7 @@ export const PaymentMethodTabs = ({
       <TabsTrigger 
         key={method} 
         value={method} 
-        className="flex-1 flex items-center justify-center space-x-2 py-4 px-6 text-sm font-medium transition-all duration-200 border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:border-gray-900"
+        className="flex-1 flex items-center justify-center space-x-2 py-3 px-2 sm:py-4 sm:px-4 text-sm font-medium transition-all duration-200 border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:border-gray-900"
       >
         {getMethodIcon(method)}
         <span>{getMethodLabel(method)}</span>
@@ -146,7 +145,7 @@ export const PaymentMethodTabs = ({
       </div>
       
       <Tabs value={paymentMethod} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full h-auto bg-transparent p-0 space-x-2" style={{ gridTemplateColumns: `repeat(${allowedMethods.length}, 1fr)` }}>
+        <TabsList className="grid w-full h-auto bg-transparent p-0 gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${allowedMethods.length}, 1fr)` }}>
           {getTabTriggers()}
         </TabsList>
 
