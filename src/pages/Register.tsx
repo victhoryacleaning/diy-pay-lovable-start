@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { AuthFooter } from "@/components/core/AuthFooter";
@@ -91,10 +91,8 @@ const Register = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <CreditCard className="h-12 w-12 text-primary" />
+            <img src="/logo-diypay.png" alt="Logo DiyPay" className="w-40 mx-auto" />
           </Link>
-          <h1 className="text-3xl font-bold text-foreground mt-4">DiyPay</h1>
-          <p className="text-muted-foreground mt-2">Comece a usar o DiyPay hoje</p>
         </div>
 
         <Card className="shadow-lg border-0 bg-card/95 backdrop-blur-sm">
