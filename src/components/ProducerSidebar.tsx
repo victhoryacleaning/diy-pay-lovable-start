@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducerFinancialsStore } from '@/stores/producer-financials-store';
@@ -32,7 +31,7 @@ import {
 const menuItems = [
   {
     title: "Dashboard",
-    url: "/producer-dashboard",
+    url: "/dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -42,7 +41,7 @@ const menuItems = [
   },
   {
     title: "Vendas",
-    url: "/sales", // Future implementation
+    url: "/sales",
     icon: ShoppingCart,
   },
   {
@@ -73,8 +72,8 @@ export function ProducerSidebar() {
   const { financialData: dashboardData, isLoading } = useProducerFinancialsStore();
 
   const isActive = (url: string) => {
-    if (url === "/producer-dashboard") {
-      return location.pathname === url || location.pathname === "/";
+    if (url === "/dashboard") {
+      return location.pathname === url;
     }
     return location.pathname.startsWith(url);
   };
@@ -93,7 +92,6 @@ export function ProducerSidebar() {
           <div className="text-lg font-bold text-white">DiyPay</div>
         </div>
         
-        {/* Progress Bar Section */}
         <div className="px-2 pb-4">
           {isLoading ? (
             <div className="p-3 rounded-lg bg-[#4d0782]">
