@@ -67,7 +67,8 @@ const AdminEditPage = () => {
     onSuccess: () => {
       toast({ title: 'Sucesso!', description: `Página ${isEditing ? 'atualizada' : 'criada'} com sucesso.` });
       queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
-      navigate('/admin-pages');
+      // === A CORREÇÃO ESTÁ AQUI ===
+      navigate('/admin/pages');
     },
     onError: (error) => {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
@@ -92,7 +93,7 @@ const AdminEditPage = () => {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">{isEditing ? 'Editar Página' : 'Criar Nova Página'}</h1>
             <div className="flex gap-2">
-              <Button type="button" variant="ghost" onClick={() => navigate('/admin-pages')}>Cancelar</Button>
+              <Button type="button" variant="ghost" onClick={() => navigate('/admin/pages')}>Cancelar</Button>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar
@@ -129,7 +130,7 @@ const AdminEditPage = () => {
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValue-change={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="draft">Rascunho</SelectItem>
