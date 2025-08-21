@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, CreditCard, Users, DollarSign, Percent, Menu, X, UserCheck } from 'lucide-react';
+import { BarChart3, CreditCard, Users, DollarSign, Percent, Menu, X, UserCheck, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -29,6 +29,11 @@ const AdminSidebar = () => {
       title: 'Financeiro',
       href: '/admin-financials',
       icon: DollarSign,
+    },
+    {
+      title: 'Páginas',
+      href: '/admin-pages',
+      icon: FileText,
     },
     {
       title: 'Taxas e Prazos',
