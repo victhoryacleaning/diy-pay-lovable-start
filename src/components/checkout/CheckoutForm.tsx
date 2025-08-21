@@ -486,7 +486,7 @@ export const CheckoutForm = ({ product, onDonationAmountChange, onEventQuantityC
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card className="border-gray-200 shadow-lg bg-white">
+      <Card className="bg-white rounded-none border-0 shadow-none lg:rounded-lg lg:border lg:border-gray-200 lg:shadow-lg">
         <CardContent className="px-4 sm:px-8 pb-6 pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
