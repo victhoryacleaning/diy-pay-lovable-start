@@ -59,18 +59,18 @@ const Checkout = () => {
   if (!product) {
     return null;
   }
-
-  // Aplicar cor de fundo personalizada se definida
+  
+  // O background personalizado agora é aplicado aqui
   const backgroundStyle = product.checkout_background_color 
     ? { backgroundColor: product.checkout_background_color }
     : {};
 
   return (
-    <div className="min-h-screen py-8" style={backgroundStyle}>
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-white lg:bg-gray-50 py-4 lg:py-8" style={backgroundStyle}>
+      <div className="max-w-6xl mx-auto px-0 lg:px-4">
         {/* Imagem personalizada do checkout */}
         {product.checkout_image_url && (
-          <div className="max-w-2xl mx-auto mb-8 lg:max-w-none flex justify-center">
+          <div className="max-w-2xl mx-auto mb-8 lg:max-w-none flex justify-center px-4 lg:px-0">
             <img 
               src={product.checkout_image_url} 
               alt={product.name}
@@ -80,10 +80,10 @@ const Checkout = () => {
         )}
 
         {product.show_order_summary ? (
-          // Layout com flexbox responsivo
-          <div className="flex flex-col-reverse lg:flex-row gap-8">
+          // Layout com flexbox responsivo (sem 'reverse' para ordem natural no mobile)
+          <div className="flex flex-col lg:flex-row gap-8">
             {/* Product Info Sidebar */}
-            <div className="w-full lg:w-1/4">
+            <div className="w-full lg:w-1/4 px-4 lg:px-0">
               <ProductInfo 
                 product={product} 
                 donationAmount={donationAmount}
