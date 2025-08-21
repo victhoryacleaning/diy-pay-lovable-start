@@ -67,7 +67,6 @@ const AdminEditPage = () => {
     onSuccess: () => {
       toast({ title: 'Sucesso!', description: `Página ${isEditing ? 'atualizada' : 'criada'} com sucesso.` });
       queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
-      // === A CORREÇÃO ESTÁ AQUI ===
       navigate('/admin/pages');
     },
     onError: (error) => {
@@ -130,7 +129,8 @@ const AdminEditPage = () => {
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
-                  <Select onValue-change={field.onChange} defaultValue={field.value}>
+                  {/* === A CORREÇÃO ESTÁ AQUI === */}
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="draft">Rascunho</SelectItem>
