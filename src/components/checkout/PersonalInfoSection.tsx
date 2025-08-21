@@ -45,6 +45,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
       <FormField
         control={form.control}
         name="fullName"
+        rules={{ required: "Obrigatório" }}
         render={({ field }) => (
           <FormItem className="min-h-[70px]">
             <FormLabel>Nome completo *</FormLabel>
@@ -60,6 +61,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         <FormField
           control={form.control}
           name="phone"
+          rules={isPhoneRequired ? { required: "Obrigatório" } : undefined}
           render={({ field }) => (
             <FormItem className="min-h-[70px]">
               <FormLabel>Celular{isPhoneRequired ? " *" : ""}</FormLabel>
@@ -80,6 +82,7 @@ export const PersonalInfoSection = ({ form, isPhoneRequired = false }: PersonalI
         <FormField
           control={form.control}
           name="cpfCnpj"
+          rules={{ required: "Obrigatório" }}
           render={({ field }) => (
             <FormItem className="min-h-[70px]">
               <FormLabel>CPF/CNPJ *</FormLabel>
