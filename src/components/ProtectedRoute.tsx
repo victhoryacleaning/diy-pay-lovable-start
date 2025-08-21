@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -29,22 +28,23 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Handle role-based restrictions (for admin routes)
+  // Handle role-based restrictions
   if (requiredRole && profile.role !== requiredRole) {
-    if (profile.role !== 'producer' && requiredRole === 'producer') {
-      return <Navigate to="/members" replace />;
+    // Se a rota exige admin mas o usuário não é, redireciona para o dashboard apropriado
+    if (profile.role === 'producer') {
+      return <Navigate to="/dashboard" replace />;
     }
-    if (profile.role !== 'admin' && requiredRole === 'admin') {
-      return <Navigate to="/members" replace />;
-    }
+    return <Navigate to="/members" replace />;
   }
 
   // Handle view-based restrictions
   if (requiredView && activeView !== requiredView) {
-    if (profile.role !== 'producer' && requiredView === 'producer') {
+    // Se a rota exige a visão de produtor e o usuário não é um, não tem acesso
+    if (requiredView === 'producer' && profile.role !== 'producer') {
       return <Navigate to="/members" replace />;
     }
-    const viewDashboard = activeView === 'producer' ? '/producer-dashboard' : '/members';
+    // Se a visão ativa não corresponde à exigida, redireciona para a home da visão correta
+    const viewDashboard = activeView === 'producer' ? '/dashboard' : '/members';
     return <Navigate to={viewDashboard} replace />;
   }
 
