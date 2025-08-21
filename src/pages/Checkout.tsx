@@ -80,10 +80,10 @@ const Checkout = () => {
         )}
 
         {product.show_order_summary ? (
-          // Layout com grid quando resumo está visível
-          <div className="grid lg:grid-cols-4 gap-8">
+          // Layout com flexbox responsivo
+          <div className="flex flex-col-reverse lg:flex-row gap-8">
             {/* Product Info Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="w-full lg:w-1/4">
               <ProductInfo 
                 product={product} 
                 donationAmount={donationAmount}
@@ -92,7 +92,7 @@ const Checkout = () => {
             </div>
 
             {/* Checkout Form */}
-            <div className="lg:col-span-3">
+            <div className="w-full lg:w-3/4">
               <CheckoutForm 
                 product={product}
                 onDonationAmountChange={setDonationAmount}
