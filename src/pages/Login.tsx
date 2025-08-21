@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { CreditCard, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { AuthFooter } from "@/components/core/AuthFooter";
 
 const Login = () => {
   const { signIn, signInWithGoogle, user, profile } = useAuth();
@@ -72,13 +73,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted/20 to-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Branding */}
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-block">
             <CreditCard className="h-12 w-12 text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">DiyPay</h1>
+          </Link>
+          <h1 className="text-3xl font-bold text-foreground mt-4">DiyPay</h1>
           <p className="text-muted-foreground mt-2">Bem-vindo de volta</p>
         </div>
 
@@ -191,20 +191,20 @@ const Login = () => {
                 )}
               </Button>
 
-              <div className="text-center space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  Não tem uma conta?{" "}
-                  <Link
-                    to="/register"
-                    className="text-primary hover:text-primary/90 hover:underline font-medium"
-                  >
-                    Cadastre-se
-                  </Link>
-                </div>
+              <div className="text-center text-sm text-muted-foreground">
+                Não tem uma conta?{" "}
+                <Link
+                  to="/register"
+                  className="text-primary hover:text-primary/90 hover:underline font-medium"
+                >
+                  Cadastre-se
+                </Link>
               </div>
             </form>
           </CardContent>
         </Card>
+        
+        <AuthFooter />
       </div>
     </div>
   );
