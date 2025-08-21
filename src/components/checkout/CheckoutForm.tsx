@@ -34,11 +34,11 @@ interface CheckoutFormProps {
   onEventQuantityChange?: (quantity: number) => void;
 }
 
-// Base schema for all product types
+// Base schema for all product types with updated validation messages
 const baseSchema = {
-  fullName: z.string().min(2, "Nome completo é obrigatório"),
+  fullName: z.string().min(1, "Obrigatório"),
   cpfCnpj: z.string()
-    .min(1, "CPF/CNPJ é obrigatório")
+    .min(1, "Obrigatório")
     .transform(val => val.replace(/\D/g, '')) // Remove caracteres não numéricos
     .refine(value => {
       return value.length === 11 || value.length === 14;
@@ -57,16 +57,16 @@ const baseSchema = {
 // Schema for donations
 const donationSchema = z.object({
   ...baseSchema,
-  donationAmount: z.string().min(1, "Valor da doação é obrigatório"),
+  donationAmount: z.string().min(1, "Obrigatório"),
 });
 
 // Schema for events
 const eventSchema = z.object({
   ...baseSchema,
-  quantity: z.string().min(1, "Quantidade é obrigatória"),
+  quantity: z.string().min(1, "Obrigatório"),
   attendees: z.array(z.object({
-    name: z.string().min(2, "Nome do participante é obrigatório"),
-    email: z.string().email("Email inválido")
+    name: z.string().min(1, "Obrigatório"),
+    email: z.string().min(1, "Obrigatório").email("Email inválido")
   })).min(1, "Pelo menos um participante é obrigatório"),
 });
 
@@ -99,8 +99,8 @@ const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isE
     if (requireEmailConfirmation) {
       return schema.extend({
         phone: phoneSchema,
-        email: z.string().email("Email inválido"),
-        confirmEmail: z.string().email("Email inválido"),
+        email: z.string().min(1, "Obrigatório").email("Email inválido"),
+        confirmEmail: z.string().min(1, "Obrigatório").email("Email inválido"),
       }).refine((data) => data.email === data.confirmEmail, {
         message: "Os emails devem ser iguais",
         path: ["confirmEmail"],
@@ -108,7 +108,7 @@ const createCheckoutSchema = (isEmailOptional: boolean, isDonation: boolean, isE
     } else {
       return schema.extend({
         phone: phoneSchema,
-        email: z.string().email("Email inválido"),
+        email: z.string().min(1, "Obrigatório").email("Email inválido"),
         confirmEmail: z.string().optional(),
       });
     }
