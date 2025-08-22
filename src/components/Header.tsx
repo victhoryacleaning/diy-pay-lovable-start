@@ -1,4 +1,3 @@
-// File: src/components/Header.tsx
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, User, Settings, Bell } from "lucide-react";
@@ -23,7 +22,7 @@ const navLinks = [
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
-  const location = useLocation(); // 1. Hook para saber a rota atual
+  const location = useLocation();
   
   const isLoggedIn = !!user;
   const currentRole = profile?.role ?? 'user';
@@ -38,7 +37,6 @@ const Header = () => {
     }
   };
 
-  // 2. Lógica para determinar o link ativo
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -49,14 +47,22 @@ const Header = () => {
             <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-12" />
           </Link>
 
-          {/* 3. Navegação com espaçamento aumentado (gap-10) e botões estilizados */}
-          <nav className="hidden md:flex items-center gap-10">
+          {/* === NAVEGAÇÃO CORRIGIDA AQUI === */}
+          <nav className="hidden md:flex items-center gap-4">
             {navLinks.map((link) => (
-              <Button key={link.label} asChild variant={isActive(link.href) ? "secondary" : "ghost"}>
-                <Link to={link.href} className="font-bold text-base text-violet-700">
-                  {link.label}
-                </Link>
-              </Button>
+              <Link
+                key={link.label}
+                to={link.href}
+                className={`
+                  font-bold text-base rounded-md px-4 py-2 transition-colors
+                  ${isActive(link.href)
+                    ? 'bg-slate-100 text-slate-900' // Estilo de botão ativo
+                    : 'text-violet-700 hover:bg-slate-50' // Estilo de link inativo
+                  }
+                `}
+              >
+                {link.label}
+              </Link>
             ))}
           </nav>
 
@@ -71,7 +77,6 @@ const Header = () => {
                 </Button>
               </>
             ) : (
-              // 4. Componente de Perfil (estilo do Dashboard adaptado para fundo claro)
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon">
                   <Bell className="h-5 w-5 text-slate-600" />
@@ -139,4 +144,4 @@ const Header = () => {
   );
 };
 
-export default Header;```
+export default Header;
