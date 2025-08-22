@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+// File: src/components/Header.tsx
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, User, Settings, Bell } from "lucide-react"; // Adicionado 'Bell'
+import { LogOut, Menu, User, Settings, Bell } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Adicionado Avatar
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { formatUserName } from "@/lib/utils";
 
@@ -22,11 +23,12 @@ const navLinks = [
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
+  const location = useLocation(); // 1. Hook para saber a rota atual
   
   const isLoggedIn = !!user;
   const currentRole = profile?.role ?? 'user';
   const displayName = profile?.full_name ? formatUserName(profile.full_name) : 'Usuário';
-  const userInitial = displayName.charAt(0).toUpperCase(); // Lógica para a inicial do Avatar
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   const getRoleDashboardLink = (role: string) => {
     switch (role) {
@@ -36,6 +38,9 @@ const Header = () => {
     }
   };
 
+  // 2. Lógica para determinar o link ativo
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,11 +49,14 @@ const Header = () => {
             <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-12" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
+          {/* 3. Navegação com espaçamento aumentado (gap-10) e botões estilizados */}
+          <nav className="hidden md:flex items-center gap-10">
             {navLinks.map((link) => (
-              <Link key={link.label} to={link.href} className="font-bold text-base text-violet-700 hover:text-violet-900 transition-colors">
-                {link.label}
-              </Link>
+              <Button key={link.label} asChild variant={isActive(link.href) ? "secondary" : "ghost"}>
+                <Link to={link.href} className="font-bold text-base text-violet-700">
+                  {link.label}
+                </Link>
+              </Button>
             ))}
           </nav>
 
@@ -63,20 +71,20 @@ const Header = () => {
                 </Button>
               </>
             ) : (
-              // === A MUDANÇA ESTÁ AQUI ===
+              // 4. Componente de Perfil (estilo do Dashboard adaptado para fundo claro)
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon">
-                  <Bell className="h-5 w-5" />
+                  <Bell className="h-5 w-5 text-slate-600" />
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2 p-2 h-11 rounded-full hover:bg-slate-100">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-violet-100 text-violet-800 text-sm font-semibold">
+                    <Button variant="ghost" className="flex items-center gap-2 p-2 h-12 rounded-lg hover:bg-slate-100">
+                      <Avatar className="w-9 h-9">
+                        <AvatarFallback className="bg-violet-100 text-violet-800 font-bold">
                           {userInitial}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-semibold text-sm text-slate-800">{displayName}</span>
+                      <span className="font-bold text-sm text-slate-800">{displayName}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
@@ -101,9 +109,7 @@ const Header = () => {
           {/* Menu Mobile */}
           <div className="md:hidden">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon"><Menu className="h-6 w-6" /></Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><Menu className="h-6 w-6" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 {navLinks.map((link) => (
                   <DropdownMenuItem key={link.label} asChild>
@@ -111,7 +117,6 @@ const Header = () => {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                
                 {!isLoggedIn ? (
                   <>
                     <DropdownMenuItem asChild><Link to="/login">Entrar</Link></DropdownMenuItem>
@@ -134,4 +139,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default Header;```
