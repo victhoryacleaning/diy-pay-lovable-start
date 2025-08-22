@@ -1,154 +1,149 @@
+// File: src/pages/Index.tsx
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
-import { ArrowRight, ShoppingCart, Tv, Store } from "lucide-react";
+import { ArrowRight, ShoppingCart, Tv, Store, BarChart, Shield, Repeat, Facebook, Instagram, Youtube } from "lucide-react";
+
+// Componente para Card de Benefício (para reutilização e clareza)
+const BenefitCard = ({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) => (
+  <div className="bg-slate-800/50 border border-slate-700 p-8 rounded-2xl text-center transition-transform duration-300 hover:-translate-y-2">
+    <div className="inline-block p-4 bg-violet-600/20 rounded-xl mb-4 border border-violet-500/30">
+      {icon}
+    </div>
+    <h3 className="text-xl font-bold mb-3">{title}</h3>
+    <p className="text-slate-400">{children}</p>
+  </div>
+);
 
 const Index = () => {
   return (
     <div className="bg-slate-900 text-white">
+      {/* O Header precisa ser adaptado para um fundo escuro, ou usamos uma versão específica aqui */}
       <Header />
 
       <main>
         {/* === Seção Hero === */}
         <section 
           className="relative min-h-screen flex items-center bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')" }}
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=1974&auto=format&fit=crop')" }}
         >
-          <div className="absolute inset-0 bg-slate-900/40"></div>
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
           <div className="relative container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-            {/* Coluna de Texto */}
             <div className="text-center lg:text-left">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
-                Transforme suas ideias em <span className="text-violet-400">lucro</span>.
+                Sua plataforma para <span className="text-violet-400">criar, vender e crescer.</span>
               </h1>
               <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl mx-auto lg:mx-0">
-                Tudo para você vender mais na internet e faturar como nunca.
+                Menos burocracia, mais vendas. Acelere seu negócio digital com as ferramentas que você realmente precisa.
               </p>
             </div>
-            {/* Card Flutuante */}
-            <div className="flex justify-center relative z-10">
-              <div className="bg-white text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
+            <div className="flex justify-center">
+              <div className="bg-white/90 backdrop-blur-lg text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
                 <h2 className="text-2xl font-bold mb-4">Venda tudo na internet com a DiyPay.</h2>
-                <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base relative z-10">
-                  <Link to="/register">Cadastre-se agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base">
+                  <Link to="/register">Comece agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
               </div>
             </div>
           </div>
         </section>
-
-        {/* === Seção "Venda o que quiser" === */}
+        
+        {/* === Seção "Liberdade para Criar" === */}
         <section className="py-20 lg:py-28">
           <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-violet-600/20 border border-violet-500/30 p-6 rounded-2xl text-center">
-                <ShoppingCart className="h-10 w-10 mx-auto mb-4 text-violet-400" />
-                <h3 className="font-bold text-lg">Produtos Físicos</h3>
-              </div>
-              <div className="bg-violet-600/20 border border-violet-500/30 p-6 rounded-2xl text-center">
-                <Tv className="h-10 w-10 mx-auto mb-4 text-violet-400" />
-                <h3 className="font-bold text-lg">Produtos Digitais</h3>
-              </div>
-              <div className="bg-violet-600/20 border border-violet-500/30 p-6 rounded-2xl text-center col-span-2">
-                <Store className="h-10 w-10 mx-auto mb-4 text-violet-400" />
-                <h3 className="font-bold text-lg">Eventos e Ingressos</h3>
-              </div>
+                <div className="bg-violet-900/30 p-6 rounded-2xl text-center border border-violet-700"><ShoppingCart className="h-10 w-10 mx-auto mb-4 text-violet-400" /><h3 className="font-bold text-lg">Produtos Físicos</h3></div>
+                <div className="bg-violet-900/30 p-6 rounded-2xl text-center border border-violet-700"><Tv className="h-10 w-10 mx-auto mb-4 text-violet-400" /><h3 className="font-bold text-lg">Produtos Digitais</h3></div>
+                <div className="bg-violet-900/30 p-6 rounded-2xl text-center col-span-2 border border-violet-700"><Store className="h-10 w-10 mx-auto mb-4 text-violet-400" /><h3 className="font-bold text-lg">Eventos e Assinaturas</h3></div>
             </div>
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Venda o que quiser no digital.</h2>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Liberdade para criar. Poder para vender.</h2>
               <p className="text-slate-300 text-lg">
-                Seja você produtor, coprodutor ou gerente de afiliados, nossa plataforma oferece infinitas oportunidades para monetizar seus produtos e serviços.
+                De cursos online a eventos presenciais, nossa plataforma oferece as ferramentas para você monetizar qualquer tipo de produto ou serviço, sem limites.
               </p>
             </div>
           </div>
         </section>
 
-        {/* === Seção "Tecnologia" === */}
-        <section 
-          className="py-20 lg:py-32 bg-cover bg-center bg-fixed"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1618172193622-ae2d025f4032?q=80&w=2070&auto=format&fit=crop')" }}
-        >
-          <div className="absolute inset-0 bg-slate-900/80"></div>
-          <div className="relative container mx-auto px-6 text-center">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Tecnologia que te faz vender mais.</h2>
-            <p className="text-xl text-slate-300 mb-12">Do primeiro passo ao sucesso milionário.</p>
+        {/* === Seção "Tecnologia Confiável" === */}
+        <section className="py-20 lg:py-28">
+          <div className="container mx-auto px-6 text-center">
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Tecnologia Confiável.</h2>
+            <p className="text-xl text-slate-300 mb-16 max-w-3xl mx-auto">Do checkout à gestão financeira, nossa infraestrutura trabalha para que você nunca perca uma venda.</p>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl">Maior conversão, maior faturamento.</div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl">Escala e recuperação de vendas.</div>
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl">Mais vendas com afiliados e influencers.</div>
+                <BenefitCard icon={<BarChart className="h-8 w-8 text-violet-400" />} title="Checkout de Alta Conversão">
+                    Recursos como compra com 1 clique, recuperação de carrinho e order bump para maximizar seu faturamento.
+                </BenefitCard>
+                <BenefitCard icon={<Shield className="h-8 w-8 text-violet-400" />} title="Segurança de Ponta">
+                    Sistema antifraude robusto e integração com os maiores gateways para garantir transações seguras.
+                </BenefitCard>
+                <BenefitCard icon={<Repeat className="h-8 w-8 text-violet-400" />} title="Gestão de Assinaturas">
+                    Controle total sobre sua receita recorrente com dashboards inteligentes e gerenciamento de inadimplência.
+                </BenefitCard>
             </div>
           </div>
         </section>
 
-        {/* === Seção "Tudo na palma da mão" === */}
+        {/* === Seção Depoimentos === */}
         <section className="py-20 lg:py-28">
             <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <h2 className="text-3xl lg:text-4xl font-bold mb-4">Como um clique, tenha tudo na palma da mão.</h2>
-                    <p className="text-slate-300 text-lg mb-6">
-                        Para garantir uma jornada de milhões, integre processos e ferramentas, gerencie resultados em tempo real por meio de um Dashboard completo, painéis personalizados e relatórios.
-                    </p>
-                    <Link to="/features" className="text-violet-400 font-semibold hover:text-violet-300">
-                        Conheça todas as funcionalidades <ArrowRight className="inline h-5 w-5" />
-                    </Link>
-                </div>
-                <div>
-                    <img src="/placeholder-dashboard-mobile.png" alt="Dashboard DiyPay no celular" className="rounded-2xl shadow-2xl" />
-                </div>
-            </div>
-        </section>
-        
-        {/* === Seção Depoimentos === */}
-        <section className="py-20 lg:py-28 bg-slate-800/50">
-            <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop" alt="Produtor de sucesso" className="rounded-2xl shadow-2xl object-cover h-full w-full" />
-                </div>
-                <div>
-                    <h2 className="text-3xl lg:text-4xl font-bold mb-4">Vibramos com suas conquistas.</h2>
+                <div className="order-2 lg:order-1">
+                    <h2 className="text-3xl lg:text-4xl font-bold mb-4">Vibramos com as suas conquistas.</h2>
                     <p className="text-slate-300 text-lg mb-8">
-                        Estamos ao seu lado para te apoiar na rota dos milhões. Quanto mais faturamento, maior seu reconhecimento.
+                        Seu sucesso é o nosso sucesso. Estamos ao seu lado para apoiar sua jornada com tecnologia e suporte de verdade.
                     </p>
-                    <div className="bg-violet-600/20 border border-violet-500/30 p-8 rounded-2xl">
-                        <p className="text-lg italic mb-6">"Eu já recebi convite de várias plataformas, mas ninguém tem o atendimento da DiyPay. Sempre tem uma solução para qualquer coisa e eu sinto uma evolução mensal no atendimento."</p>
-                        <p className="font-bold">Luan Aires</p>
-                        <p className="text-violet-400">Produtor fatura + de R$ 3 mi em 1 ano</p>
+                    <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                        <p className="text-lg italic text-slate-300 mb-6">"O checkout de alta conversão da DiyPay foi um divisor de águas. Aumentei minha taxa de conversão em 20% no primeiro mês, sem precisar de um time de tecnologia."</p>
+                        <p className="font-bold">Ana Júlia S.</p>
+                        <p className="text-violet-400">Produtora de Infoprodutos</p>
                     </div>
                 </div>
+                <div className="order-1 lg:order-2">
+                    <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1974&auto=format&fit=crop" alt="Produtora de sucesso" className="rounded-2xl shadow-2xl object-cover h-full w-full" />
+                </div>
             </div>
         </section>
+
       </main>
 
-      {/* === Rodapé === */}
+      {/* === Rodapé Profissional === */}
       <footer className="bg-slate-900 border-t border-slate-800">
-        <div className="container mx-auto px-6 py-12">
-            <div className="grid md:grid-cols-4 gap-8 mb-8">
+        <div className="container mx-auto px-6 pt-16 pb-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
+                <div className="lg:col-span-2">
+                    <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-10 mb-4" />
+                    <p className="text-slate-400 max-w-sm mb-6">
+                        A plataforma completa para criadores de conteúdo e empreendedores digitais.
+                    </p>
+                </div>
                 <div>
-                    <h3 className="font-bold text-lg mb-4">DIYPAY</h3>
-                    <ul className="space-y-2 text-slate-400">
-                        <li><Link to="/about" className="hover:text-white">A empresa</Link></li>
-                        <li><Link to="/affiliates" className="hover:text-white">Seja um Afiliado</Link></li>
-                        <li><Link to="/support" className="hover:text-white">Suporte</Link></li>
+                    <h3 className="font-bold text-lg mb-4 text-white">Soluções</h3>
+                     <ul className="space-y-3 text-slate-400">
+                        <li><Link to="/features/digital-products" className="hover:text-violet-400">Produto Digital</Link></li>
+                        <li><Link to="/features/subscriptions" className="hover:text-violet-400">Assinaturas</Link></li>
+                        <li><Link to="/features/events" className="hover:text-violet-400">Eventos</Link></li>
                     </ul>
                 </div>
                 <div>
-                    <h3 className="font-bold text-lg mb-4">SOLUÇÕES</h3>
-                     <ul className="space-y-2 text-slate-400">
-                        <li><Link to="/features/digital-products" className="hover:text-white">Produto Digital</Link></li>
-                        <li><Link to="/features/subscriptions" className="hover:text-white">Assinaturas</Link></li>
-                        <li><Link to="/features/events" className="hover:text-white">Eventos</Link></li>
+                    <h3 className="font-bold text-lg mb-4 text-white">Institucional</h3>
+                    <ul className="space-y-3 text-slate-400">
+                        <li><Link to="/p/politicas-de-privacidade" className="hover:text-violet-400">Política de privacidade</Link></li>
+                        <li><Link to="/p/termos-de-uso" className="hover:text-violet-400">Termos de uso</Link></li>
+                        <li><Link to="/p/contato" className="hover:text-violet-400">Contato</Link></li>
                     </ul>
                 </div>
                 <div>
-                    <h3 className="font-bold text-lg mb-4">POLÍTICA E TERMOS</h3>
-                    <ul className="space-y-2 text-slate-400">
-                        <li><Link to="/p/politicas-de-privacidade" className="hover:text-white">Política de privacidade</Link></li>
-                        <li><Link to="/p/termos-de-uso" className="hover:text-white">Termos e condições de uso</Link></li>
-                    </ul>
+                    <h3 className="font-bold text-lg mb-4 text-white">Acompanhe</h3>
+                    <div className="flex space-x-4">
+                        <a href="#" className="text-slate-400 hover:text-violet-400"><Instagram /></a>
+                        <a href="#" className="text-slate-400 hover:text-violet-400"><Facebook /></a>
+                        <a href="#" className="text-slate-400 hover:text-violet-400"><Youtube /></a>
+                    </div>
                 </div>
             </div>
             <div className="border-t border-slate-800 pt-8 text-center text-slate-500 text-sm">
                 <p>Copyright © DiyPay 2025. Todos os direitos reservados.</p>
+                <p className="mt-1">DiyPay Pagamentos Online LTDA - 23.055.665/0001-06</p>
             </div>
         </div>
       </footer>
