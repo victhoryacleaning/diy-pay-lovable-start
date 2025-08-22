@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, User, Settings } from "lucide-react";
+import { LogOut, Menu, User, Settings, Bell } from "lucide-react"; // Adicionado 'Bell'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Adicionado Avatar
 import { useAuth } from "@/hooks/useAuth";
 import { formatUserName } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ const Header = () => {
   const isLoggedIn = !!user;
   const currentRole = profile?.role ?? 'user';
   const displayName = profile?.full_name ? formatUserName(profile.full_name) : 'Usuário';
+  const userInitial = displayName.charAt(0).toUpperCase(); // Lógica para a inicial do Avatar
 
   const getRoleDashboardLink = (role: string) => {
     switch (role) {
@@ -38,12 +40,10 @@ const Header = () => {
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
-          {/* Logo */}
           <Link to="/" className="flex items-center">
             <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-12" />
           </Link>
 
-          {/* Navegação Principal (Desktop) */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link key={link.label} to={link.href} className="font-bold text-base text-violet-700 hover:text-violet-900 transition-colors">
@@ -52,7 +52,6 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Ações do Usuário (Desktop) */}
           <div className="hidden md:flex items-center gap-3">
             {!isLoggedIn ? (
               <>
@@ -64,28 +63,38 @@ const Header = () => {
                 </Button>
               </>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2">
-                    <User className="h-5 w-5" />
-                    <span className="font-bold">{displayName}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link to={getRoleDashboardLink(currentRole)} className="flex items-center">
-                      Painel {profile?.role === 'producer' ? 'Produtor' : 'Membro'}
-                    </Link>
-                  </DropdownMenuItem>
-                  {currentRole === 'producer' && (
+              // === A MUDANÇA ESTÁ AQUI ===
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon">
+                  <Bell className="h-5 w-5" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 p-2 h-11 rounded-full hover:bg-slate-100">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="bg-violet-100 text-violet-800 text-sm font-semibold">
+                          {userInitial}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-semibold text-sm text-slate-800">{displayName}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
-                      <Link to="/settings" className="flex items-center"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
+                      <Link to={getRoleDashboardLink(currentRole)}>
+                        Painel {profile?.role === 'producer' ? 'Produtor' : 'Membro'}
+                      </Link>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="text-red-600"><LogOut className="mr-2 h-4 w-4" />Sair</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {currentRole === 'producer' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" className="flex items-center"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut} className="text-red-600"><LogOut className="mr-2 h-4 w-4" />Sair</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
           </div>
 
