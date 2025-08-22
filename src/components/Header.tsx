@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CreditCard, LogOut, Menu, User, Settings } from "lucide-react";
+import { LogOut, Menu, User, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { formatUserName } from "@/lib/utils";
 
-// 1. Definição dos links de navegação para facilitar a manutenção
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "#", label: "Taxa" },
@@ -36,31 +35,31 @@ const Header = () => {
   };
 
   return (
-    <header className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
+    <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-9" />
+            <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-12" />
           </Link>
 
           {/* Navegação Principal (Desktop) */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <Link key={link.label} to={link.href} className="text-sm font-medium text-gray-600 hover:text-violet-600 transition-colors">
+              <Link key={link.label} to={link.href} className="font-bold text-base text-violet-700 hover:text-violet-900 transition-colors">
                 {link.label}
               </Link>
             ))}
           </nav>
 
           {/* Ações do Usuário (Desktop) */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
             {!isLoggedIn ? (
               <>
-                <Button asChild variant="ghost">
+                <Button asChild variant="ghost" className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold">
                   <Link to="/login">Entrar</Link>
                 </Button>
-                <Button asChild className="bg-violet-600 hover:bg-violet-700">
+                <Button asChild className="bg-violet-600 hover:bg-violet-700 font-bold">
                   <Link to="/register">Cadastrar-se</Link>
                 </Button>
               </>
@@ -68,8 +67,8 @@ const Header = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>{displayName}</span>
+                    <User className="h-5 w-5" />
+                    <span className="font-bold">{displayName}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -94,10 +93,9 @@ const Header = () => {
           <div className="md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon"><Menu className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon"><Menu className="h-6 w-6" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {/* Links de navegação para mobile */}
                 {navLinks.map((link) => (
                   <DropdownMenuItem key={link.label} asChild>
                     <Link to={link.href}>{link.label}</Link>
