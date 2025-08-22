@@ -14,7 +14,7 @@ const Index = () => {
           className="relative min-h-screen flex items-center bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')" }}
         >
-          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
+          <div className="absolute inset-0 bg-slate-900/40"></div>
           <div className="relative container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
             {/* Coluna de Texto */}
             <div className="text-center lg:text-left">
@@ -26,10 +26,10 @@ const Index = () => {
               </p>
             </div>
             {/* Card Flutuante */}
-            <div className="flex justify-center">
+            <div className="flex justify-center relative z-10">
               <div className="bg-white text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
                 <h2 className="text-2xl font-bold mb-4">Venda tudo na internet com a DiyPay.</h2>
-                <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base">
+                <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base relative z-10">
                   <Link to="/register">Cadastre-se agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
               </div>
