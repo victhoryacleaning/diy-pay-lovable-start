@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import { ShieldCheck, Zap, LineChart, ArrowRight } from "lucide-react";
 
