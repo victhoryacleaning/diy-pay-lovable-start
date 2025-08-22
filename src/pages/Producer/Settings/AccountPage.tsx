@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ProducerLayout } from '@/components/ProducerLayout';
+import { AvatarUploader } from '@/components/core/AvatarUploader';
 
 // Schemas de validação
 const basicFormSchema = z.object({
@@ -320,6 +321,11 @@ const AccountPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Avatar Section */}
+            <div className="flex justify-center pt-2 pb-6 border-b">
+              <AvatarUploader />
+            </div>
+            
             <div>
               <Label htmlFor="full_name">Nome Completo</Label>
               <Input
