@@ -253,6 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
+      navigate('/login', { replace: true }); // CORREÇÃO AQUI: Garante o redirecionamento
       toast.success('Logout realizado com sucesso!');
     } catch (error) {
       console.error('Error signing out:', error);

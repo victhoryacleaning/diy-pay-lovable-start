@@ -40,7 +40,7 @@ const Header = ({
     switch (role) {
       case 'producer': return '/dashboard';
       case 'admin': return '/admin/dashboard';
-      default: return '/member-area';
+      default: return '/members'; // CORREÇÃO AQUI: de /member-area para /members
     }
   };
 
@@ -53,23 +53,20 @@ const Header = ({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <CreditCard className="h-8 w-8 text-diypay-600" />
-            <span className="text-2xl font-bold text-diypay-700">DIYPay</span>
+            <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-8" />
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
             {!isLoggedIn ? (
               <>
-                <Link to="/about" className="text-gray-600 hover:text-diypay-600 transition-colors">Sobre</Link>
-                <Link to="/pricing" className="text-gray-600 hover:text-diypay-600 transition-colors">Preços</Link>
-                <Link to="/login"><Button variant="ghost" className="text-diypay-600">Entrar</Button></Link>
-                <Link to="/register"><Button className="gradient-bg text-white hover:opacity-90">Cadastrar-se</Button></Link>
+                <Link to="/login"><Button variant="ghost">Entrar</Button></Link>
+                <Link to="/register"><Button>Cadastrar-se</Button></Link>
               </>
             ) : (
               <>
                 <Link 
                   to={getRoleDashboardLink(currentRole)} 
-                  className="text-gray-600 hover:text-diypay-600 transition-colors"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                 >
                   Painel {getRoleDisplayName(currentRole)}
                 </Link>
@@ -82,9 +79,12 @@ const Header = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile" className="flex items-center"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
-                    </DropdownMenuItem>
+                    {/* CORREÇÃO AQUI: Link de configurações contextual */}
+                    {currentRole === 'producer' && (
+                       <DropdownMenuItem asChild>
+                        <Link to="/settings" className="flex items-center"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
+                      </DropdownMenuItem>
+                    )}
                     {currentRole === 'producer' && (
                       <DropdownMenuItem asChild>
                         <Link to="/complete-producer-profile" className="flex items-center"><CreditCard className="mr-2 h-4 w-4" />Dados Bancários</Link>
@@ -100,20 +100,19 @@ const Header = ({
 
           <div className="md:hidden">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Menu className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><Menu className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 {!isLoggedIn ? (
                   <>
-                    <DropdownMenuItem asChild><Link to="/about">Sobre</Link></DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link to="/pricing">Preços</Link></DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild><Link to="/login">Entrar</Link></DropdownMenuItem>
                     <DropdownMenuItem asChild><Link to="/register">Cadastrar-se</Link></DropdownMenuItem>
                   </>
                 ) : (
                   <>
                     <DropdownMenuItem asChild><Link to={getRoleDashboardLink(currentRole)}>Painel {getRoleDisplayName(currentRole)}</Link></DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link to="/profile">Configurações</Link></DropdownMenuItem>
+                    {currentRole === 'producer' && (
+                      <DropdownMenuItem asChild><Link to="/settings">Configurações</Link></DropdownMenuItem>
+                    )}
                     {currentRole === 'producer' && (
                       <DropdownMenuItem asChild><Link to="/complete-producer-profile">Dados Bancários</Link></DropdownMenuItem>
                     )}
