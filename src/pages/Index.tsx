@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
+import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 import { ArrowRight, ShoppingCart, Tv, Store, BarChart, Shield, Repeat, Facebook, Instagram, Youtube } from "lucide-react";
 
 // Componente para Card de Benefício (para reutilização e clareza)
@@ -22,23 +23,24 @@ const Index = () => {
       <Header />
 
       <main>
-        {/* === Seção Hero === */}
-        <section 
-          className="relative min-h-screen flex items-center bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=1974&auto=format&fit=crop')" }}
-        >
-          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
-          <div className="relative container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+        {/* === Seção Hero com Background Beams === */}
+        <BackgroundBeamsWithCollision className="min-h-screen bg-slate-900">
+          <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center z-10">
+            {/* Coluna de Texto */}
             <div className="text-center lg:text-left">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
-                Sua plataforma para <span className="text-violet-400">criar, vender e crescer.</span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight text-white">
+                Sua plataforma para{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500">
+                  criar, vender e crescer.
+                </span>
               </h1>
               <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl mx-auto lg:mx-0">
                 Menos burocracia, mais vendas. Acelere seu negócio digital com as ferramentas que você realmente precisa.
               </p>
             </div>
+            {/* Card Flutuante */}
             <div className="flex justify-center">
-              <div className="bg-white/90 backdrop-blur-lg text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
+              <div className="bg-white text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm relative z-20">
                 <h2 className="text-2xl font-bold mb-4">Venda tudo na internet com a DiyPay.</h2>
                 <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base">
                   <Link to="/register">Comece agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
@@ -46,7 +48,7 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </section>
+        </BackgroundBeamsWithCollision>
         
         {/* === Seção "Liberdade para Criar" === */}
         <section className="py-20 lg:py-28">
