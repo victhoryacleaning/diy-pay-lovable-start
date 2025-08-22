@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
-import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 import { ArrowRight, ShoppingCart, Tv, Store, BarChart, Shield, Repeat, Facebook, Instagram, Youtube } from "lucide-react";
 
 // Componente para Card de Benefício (para reutilização e clareza)
@@ -23,22 +22,31 @@ const Index = () => {
       <Header />
 
       <main>
-        {/* === Seção Hero com Background Beams === */}
-        <BackgroundBeamsWithCollision className="min-h-screen">
-          <div className="text-center relative z-20">
-            <h2 className="text-2xl md:text-4xl lg:text-6xl font-bold text-black mb-4 font-sans tracking-tight">
-              Sua plataforma para
-            </h2>
-            <div className="relative mx-auto inline-block w-max [filter:drop-shadow(0px_1px_3px_rgba(27,_37,_80,_0.14))]">
-              <div className="relative bg-clip-text text-transparent bg-no-repeat bg-gradient-to-r from-purple-500 via-violet-500 to-pink-500 text-xl md:text-3xl lg:text-5xl font-bold mb-8">
-                <span>criar, vender e crescer.</span>
+        {/* === Seção Hero === */}
+        <section 
+          className="relative min-h-screen flex items-center bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=1974&auto=format&fit=crop')" }}
+        >
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
+          <div className="relative container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
+                Sua plataforma para <span className="text-violet-400">criar, vender e crescer.</span>
+              </h1>
+              <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl mx-auto lg:mx-0">
+                Menos burocracia, mais vendas. Acelere seu negócio digital com as ferramentas que você realmente precisa.
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <div className="bg-white/90 backdrop-blur-lg text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
+                <h2 className="text-2xl font-bold mb-4">Venda tudo na internet com a DiyPay.</h2>
+                <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base">
+                  <Link to="/register">Comece agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                </Button>
               </div>
             </div>
-            <Button asChild size="lg" className="bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-8 text-base">
-              <Link to="/register">Comece agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
-            </Button>
           </div>
-        </BackgroundBeamsWithCollision>
+        </section>
         
         {/* === Seção "Liberdade para Criar" === */}
         <section className="py-20 lg:py-28">
