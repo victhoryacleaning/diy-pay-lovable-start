@@ -1,144 +1,155 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
-import { ShieldCheck, Zap, LineChart, ArrowRight } from "lucide-react";
+import { ArrowRight, ShoppingCart, Tv, Store } from "lucide-react";
 
 const Index = () => {
   return (
-    <div className="bg-white text-gray-800">
+    <div className="bg-slate-900 text-white">
       <Header />
 
       <main>
         {/* === Seção Hero === */}
-        <section className="bg-violet-600 text-white">
-          <div className="container mx-auto px-6 py-20 lg:py-32 grid lg:grid-cols-2 gap-12 items-center">
+        <section 
+          className="relative min-h-screen flex items-center bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')" }}
+        >
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
+          <div className="relative container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
             {/* Coluna de Texto */}
             <div className="text-center lg:text-left">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                Transforme suas ideias em lucro.
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
+                Transforme suas ideias em <span className="text-violet-400">lucro</span>.
               </h1>
-              <p className="text-lg md:text-xl text-violet-200 mb-8 max-w-xl mx-auto lg:mx-0">
-                Tudo para você vender mais na internet. Crie, gerencie e escale seu negócio digital sem complicações.
+              <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl mx-auto lg:mx-0">
+                Tudo para você vender mais na internet e faturar como nunca.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button asChild size="lg" className="bg-white text-violet-600 hover:bg-violet-100 px-8 py-3 text-base font-semibold">
-                  <Link to="/register">Criar minha conta grátis</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-violet-600 px-8 py-3 text-base font-semibold">
-                  <Link to="/features">Ver funcionalidades</Link>
+            </div>
+            {/* Card Flutuante */}
+            <div className="flex justify-center">
+              <div className="bg-white text-slate-900 p-8 rounded-2xl shadow-2xl text-center max-w-sm">
+                <h2 className="text-2xl font-bold mb-4">Venda tudo na internet com a DiyPay.</h2>
+                <Button asChild size="lg" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base">
+                  <Link to="/register">Cadastre-se agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
               </div>
-            </div>
-            {/* Coluna da Imagem */}
-            <div className="flex justify-center">
-              <img 
-                src="https://img.freepik.com/fotos-premium/a-mao-de-uma-mulher-esta-segurando-um-cartao-de-credito-na-frente-de-um-laptop_902848-89.jpg" 
-                alt="Dashboard do DiyPay"
-                className="rounded-lg shadow-2xl w-full max-w-md"
-              />
             </div>
           </div>
         </section>
 
-        {/* === Seção de Parceiros (Opcional, mas recomendado) === */}
-        <div className="py-8 bg-slate-50">
-            <div className="container mx-auto px-6">
-                <p className="text-center text-sm text-slate-500 font-semibold uppercase tracking-wider">
-                    Integrado com os melhores gateways do mercado
-                </p>
-                <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 mt-4 opacity-60">
-                    {/* Substituir pelos logos reais dos seus gateways */}
-                    <p className="font-bold text-xl">Asaas</p>
-                    <p className="font-bold text-xl">Iugu</p>
-                    <p className="font-bold text-xl">Stripe</p>
-                </div>
-            </div>
-        </div>
-
-        {/* === Seção de Benefícios Chave === */}
+        {/* === Seção "Venda o que quiser" === */}
         <section className="py-20 lg:py-28">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                Nossos Benefícios Chave
-              </h2>
+          <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-violet-600/20 border border-violet-500/30 p-6 rounded-2xl text-center">
+                <ShoppingCart className="h-10 w-10 mx-auto mb-4 text-violet-400" />
+                <h3 className="font-bold text-lg">Produtos Físicos</h3>
+              </div>
+              <div className="bg-violet-600/20 border border-violet-500/30 p-6 rounded-2xl text-center">
+                <Tv className="h-10 w-10 mx-auto mb-4 text-violet-400" />
+                <h3 className="font-bold text-lg">Produtos Digitais</h3>
+              </div>
+              <div className="bg-violet-600/20 border border-violet-500/30 p-6 rounded-2xl text-center col-span-2">
+                <Store className="h-10 w-10 mx-auto mb-4 text-violet-400" />
+                <h3 className="font-bold text-lg">Eventos e Ingressos</h3>
+              </div>
             </div>
-            <div className="grid md:grid-cols-3 gap-10">
-              {/* Benefício 1 */}
-              <div className="text-center">
-                <div className="inline-block p-4 bg-violet-100 rounded-full mb-4">
-                  <LineChart className="h-8 w-8 text-violet-600" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Venda o que quiser, como quiser</h3>
-                <p className="text-gray-600">
-                  Cursos, eventos, assinaturas ou doações. Crie seu produto e comece a vender em minutos com nosso checkout de alta conversão.
-                </p>
-              </div>
-              {/* Benefício 2 */}
-              <div className="text-center">
-                <div className="inline-block p-4 bg-violet-100 rounded-full mb-4">
-                  <ShieldCheck className="h-8 w-8 text-violet-600" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Segurança e Estabilidade</h3>
-                <p className="text-gray-600">
-                  Processamento de pagamentos robusto com os maiores gateways do mercado, garantindo que você nunca perca uma venda.
-                </p>
-              </div>
-              {/* Benefício 3 */}
-              <div className="text-center">
-                <div className="inline-block p-4 bg-violet-100 rounded-full mb-4">
-                  <Zap className="h-8 w-8 text-violet-600" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Tudo na palma da sua mão</h3>
-                <p className="text-gray-600">
-                  Gerencie suas vendas, assinaturas e finanças em um dashboard simples e poderoso, acessível de qualquer lugar.
-                </p>
-              </div>
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Venda o que quiser no digital.</h2>
+              <p className="text-slate-300 text-lg">
+                Seja você produtor, coprodutor ou gerente de afiliados, nossa plataforma oferece infinitas oportunidades para monetizar seus produtos e serviços.
+              </p>
             </div>
           </div>
+        </section>
+
+        {/* === Seção "Tecnologia" === */}
+        <section 
+          className="py-20 lg:py-32 bg-cover bg-center bg-fixed"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1618172193622-ae2d025f4032?q=80&w=2070&auto=format&fit=crop')" }}
+        >
+          <div className="absolute inset-0 bg-slate-900/80"></div>
+          <div className="relative container mx-auto px-6 text-center">
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Tecnologia que te faz vender mais.</h2>
+            <p className="text-xl text-slate-300 mb-12">Do primeiro passo ao sucesso milionário.</p>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl">Maior conversão, maior faturamento.</div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl">Escala e recuperação de vendas.</div>
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl">Mais vendas com afiliados e influencers.</div>
+            </div>
+          </div>
+        </section>
+
+        {/* === Seção "Tudo na palma da mão" === */}
+        <section className="py-20 lg:py-28">
+            <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <h2 className="text-3xl lg:text-4xl font-bold mb-4">Como um clique, tenha tudo na palma da mão.</h2>
+                    <p className="text-slate-300 text-lg mb-6">
+                        Para garantir uma jornada de milhões, integre processos e ferramentas, gerencie resultados em tempo real por meio de um Dashboard completo, painéis personalizados e relatórios.
+                    </p>
+                    <Link to="/features" className="text-violet-400 font-semibold hover:text-violet-300">
+                        Conheça todas as funcionalidades <ArrowRight className="inline h-5 w-5" />
+                    </Link>
+                </div>
+                <div>
+                    <img src="/placeholder-dashboard-mobile.png" alt="Dashboard DiyPay no celular" className="rounded-2xl shadow-2xl" />
+                </div>
+            </div>
+        </section>
+        
+        {/* === Seção Depoimentos === */}
+        <section className="py-20 lg:py-28 bg-slate-800/50">
+            <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop" alt="Produtor de sucesso" className="rounded-2xl shadow-2xl object-cover h-full w-full" />
+                </div>
+                <div>
+                    <h2 className="text-3xl lg:text-4xl font-bold mb-4">Vibramos com suas conquistas.</h2>
+                    <p className="text-slate-300 text-lg mb-8">
+                        Estamos ao seu lado para te apoiar na rota dos milhões. Quanto mais faturamento, maior seu reconhecimento.
+                    </p>
+                    <div className="bg-violet-600/20 border border-violet-500/30 p-8 rounded-2xl">
+                        <p className="text-lg italic mb-6">"Eu já recebi convite de várias plataformas, mas ninguém tem o atendimento da DiyPay. Sempre tem uma solução para qualquer coisa e eu sinto uma evolução mensal no atendimento."</p>
+                        <p className="font-bold">Luan Aires</p>
+                        <p className="text-violet-400">Produtor fatura + de R$ 3 mi em 1 ano</p>
+                    </div>
+                </div>
+            </div>
         </section>
       </main>
 
-      {/* === Novo Rodapé === */}
-      <footer className="bg-gray-900 text-white">
+      {/* === Rodapé === */}
+      <footer className="bg-slate-900 border-t border-slate-800">
         <div className="container mx-auto px-6 py-12">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Coluna da Logo e Newsletter */}
-            <div className="lg:col-span-2">
-              <img src="/logo-diypay.png" alt="Logo DiyPay" className="h-10 mb-4" />
-              <p className="text-gray-400 max-w-sm mb-6">
-                Junte-se a nossa newsletter para receber as últimas notícias e atualizações.
-              </p>
-              <form className="flex">
-                <Input type="email" placeholder="Seu email" className="bg-gray-800 border-gray-700 text-white rounded-r-none" />
-                <Button type="submit" className="bg-violet-600 hover:bg-violet-700 rounded-l-none">
-                  Inscrever-se
-                </Button>
-              </form>
+            <div className="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h3 className="font-bold text-lg mb-4">DIYPAY</h3>
+                    <ul className="space-y-2 text-slate-400">
+                        <li><Link to="/about" className="hover:text-white">A empresa</Link></li>
+                        <li><Link to="/affiliates" className="hover:text-white">Seja um Afiliado</Link></li>
+                        <li><Link to="/support" className="hover:text-white">Suporte</Link></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 className="font-bold text-lg mb-4">SOLUÇÕES</h3>
+                     <ul className="space-y-2 text-slate-400">
+                        <li><Link to="/features/digital-products" className="hover:text-white">Produto Digital</Link></li>
+                        <li><Link to="/features/subscriptions" className="hover:text-white">Assinaturas</Link></li>
+                        <li><Link to="/features/events" className="hover:text-white">Eventos</Link></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 className="font-bold text-lg mb-4">POLÍTICA E TERMOS</h3>
+                    <ul className="space-y-2 text-slate-400">
+                        <li><Link to="/p/politicas-de-privacidade" className="hover:text-white">Política de privacidade</Link></li>
+                        <li><Link to="/p/termos-de-uso" className="hover:text-white">Termos e condições de uso</Link></li>
+                    </ul>
+                </div>
             </div>
-            {/* Coluna de Menu */}
-            <div>
-              <h3 className="font-semibold mb-4">Menu</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/features" className="hover:text-white">Funcionalidades</Link></li>
-                <li><Link to="/pricing" className="hover:text-white">Preços</Link></li>
-                <li><Link to="/login" className="hover:text-white">Login</Link></li>
-              </ul>
+            <div className="border-t border-slate-800 pt-8 text-center text-slate-500 text-sm">
+                <p>Copyright © DiyPay 2025. Todos os direitos reservados.</p>
             </div>
-            {/* Coluna de Ajuda */}
-            <div>
-              <h3 className="font-semibold mb-4">Ajuda</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/p/termos-de-uso" className="hover:text-white">Termos de Uso</Link></li>
-                <li><Link to="/p/politicas-de-privacidade" className="hover:text-white">Políticas de Privacidade</Link></li>
-                <li><Link to="/p/contato" className="hover:text-white">Contato</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500">
-            <p>Copyright © DiyPay 2025</p>
-          </div>
         </div>
       </footer>
     </div>
