@@ -200,9 +200,8 @@ const ProducerSalesPage = () => {
 
   return (
     <ProducerLayout>
-      <div className="p-6 space-y-6">
         {/* Header */}
-        <div>
+        <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Suas Vendas</h1>
           <p className="text-muted-foreground">
             Acompanhe o desempenho das suas vendas e analise seus resultados
@@ -210,7 +209,7 @@ const ProducerSalesPage = () => {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
           {/* Valor Líquido Total */}
           <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -249,7 +248,7 @@ const ProducerSalesPage = () => {
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filtrar Vendas</CardTitle>
             <CardDescription>
@@ -490,7 +489,6 @@ const ProducerSalesPage = () => {
             )}
           </CardContent>
         </Card>
-      </div>
     </ProducerLayout>
   )
 }

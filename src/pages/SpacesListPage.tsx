@@ -55,7 +55,6 @@ export default function SpacesListPage() {
   }
   return (
     <ProducerLayout>
-      <div className="p-4 md:p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Suas Áreas de Membros</h1>
           <Button onClick={handleToggleView}><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Button>
@@ -80,7 +79,6 @@ export default function SpacesListPage() {
             </Card>
           ))}
         </div>
-      </div>
     </ProducerLayout>
   );
 }

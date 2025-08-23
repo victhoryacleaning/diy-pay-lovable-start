@@ -524,8 +524,8 @@ export default function EditSpacePage() {
     }
   };
 
-  if (isLoading) return <ProducerLayout><div className="p-8"><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></div></ProducerLayout>;
-  if (isError) return <ProducerLayout><div className="p-8 text-red-500">Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}</div></ProducerLayout>;
+  if (isLoading) return <ProducerLayout><Skeleton className="h-10 w-1/3 mb-4" /><Skeleton className="h-6 w-1/2" /></ProducerLayout>;
+  if (isError) return <ProducerLayout><div className="text-red-500">Erro: {error instanceof Error ? error.message : 'Erro desconhecido'}</div></ProducerLayout>;
 
   return (
     <ProducerLayout>
@@ -535,10 +535,9 @@ export default function EditSpacePage() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="p-4 md:p-8">
-          <h1 className="text-3xl font-bold">Editando: {spaceData?.name}</h1>
-          <p className="text-muted-foreground mt-2">URL: diypay.com.br/members/{spaceData?.slug}</p>
-          <Tabs defaultValue="content" className="mt-8">
+        <h1 className="text-3xl font-bold mb-2">Editando: {spaceData?.name}</h1>
+        <p className="text-muted-foreground">URL: diypay.com.br/members/{spaceData?.slug}</p>
+        <Tabs defaultValue="content" className="mt-8">
             <TabsList>
               <TabsTrigger value="content">Conteúdo</TabsTrigger>
               <TabsTrigger value="students">Alunos</TabsTrigger>
@@ -590,7 +589,6 @@ export default function EditSpacePage() {
               <CohortsTab spaceId={spaceId!} />
             </TabsContent>
           </Tabs>
-        </div>
       </DndContext>
 
       {isLessonEditorOpen && currentModuleId && (

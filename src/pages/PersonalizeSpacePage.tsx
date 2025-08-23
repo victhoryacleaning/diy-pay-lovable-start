@@ -107,12 +107,11 @@ export default function PersonalizeSpacePage() {
   const handleCreateContainer = () => { if (newContainerTitle.trim()) createContainerMutation.mutate({ title: newContainerTitle.trim() }); };
   const onAppearanceSubmit = (values: AppearanceFormValues) => updateAppearanceMutation.mutate(values);
 
-  if (isLoading) return <ProducerLayout><div className="p-8"><Skeleton className="h-96 w-full" /></div></ProducerLayout>;
+  if (isLoading) return <ProducerLayout><Skeleton className="h-96 w-full" /></ProducerLayout>;
 
   return (
     <>
       <ProducerLayout>
-        <div className="p-4 md:p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold">{space?.name || 'Carregando...'}</h1>
             <p className="text-muted-foreground">Personalize a estrutura e aparência da sua área de membros.</p>
@@ -177,7 +176,6 @@ export default function PersonalizeSpacePage() {
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
       </ProducerLayout>
 
       <AddProductToSpaceModal isOpen={isAddProductModalOpen} onClose={() => setAddProductModalOpen(false)} spaceId={spaceId!} containerId={activeContainerId} />
