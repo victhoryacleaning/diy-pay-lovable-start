@@ -2,6 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CheckoutImageUpload } from "../CheckoutImageUpload"; // Importa o novo componente
+import { ColorPicker } from "@/components/ui/color-picker";
 import { useAuth } from "@/hooks/useAuth";
 
 interface CheckoutTabProps {
@@ -64,20 +65,11 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
 
         <div className="space-y-2">
           <Label htmlFor="checkout_background_color">Cor de Fundo do Checkout</Label>
-          <div className="flex gap-2">
-            <Input
-              type="color"
-              className="w-16 h-10 p-1 border"
-              value={formData.checkout_background_color || '#F3F4F6'}
-              onChange={(e) => onInputChange('checkout_background_color', e.target.value)}
-            />
-            <Input
-              id="checkout_background_color"
-              value={formData.checkout_background_color || '#F3F4F6'}
-              onChange={(e) => onInputChange('checkout_background_color', e.target.value)}
-              placeholder="#F3F4F6"
-            />
-          </div>
+          <ColorPicker
+            value={formData.checkout_background_color || '#F3F4F6'}
+            onChange={(color) => onInputChange('checkout_background_color', color)}
+            placeholder="#F3F4F6"
+          />
           <p className="text-xs text-gray-500">
             Cor de fundo da página de checkout (formato HEX).
           </p>
