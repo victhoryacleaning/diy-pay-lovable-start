@@ -1,5 +1,5 @@
 // src/pages/SpacesListPage.tsx (Nova Versão)
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProducerLayout } from '@/components/ProducerLayout';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, BookOpen, Copy, Package, Edit, Brush } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const fetchProducerSpaces = async () => {
   const { data, error } = await supabase.functions.invoke('get-producer-spaces');
@@ -14,21 +15,28 @@ const fetchProducerSpaces = async () => {
   return data;
 };
 
-const OnboardingView = () => (
+const OnboardingView = ({ onToggleView }: { onToggleView: () => void }) => (
   <div className="flex flex-col items-center justify-center h-full text-center p-8">
     <div className="bg-muted p-8 rounded-full mb-6">
       <BookOpen className="h-16 w-16 text-primary" />
     </div>
     <h1 className="text-3xl font-bold mb-2">Crie sua primeira Área de Membros</h1>
     <p className="text-muted-foreground mb-6 max-w-md">Organize seu conteúdo, personalize o visual e ofereça uma experiência de consumo incrível para seus alunos.</p>
-    <Button size="lg" asChild>
-      <Link to="/members"><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Link>
+    <Button size="lg" onClick={onToggleView}>
+      <PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno
     </Button>
   </div>
 );
 
 export default function SpacesListPage() {
+  const { toggleView } = useAuth();
+  const navigate = useNavigate();
   const { data: spaces, isLoading, isError, error } = useQuery({ queryKey: ['producer-spaces'], queryFn: fetchProducerSpaces });
+
+  const handleToggleView = () => {
+    toggleView();
+    navigate('/members');
+  };
   if (isLoading) {
     return (
       <ProducerLayout>
@@ -43,14 +51,14 @@ export default function SpacesListPage() {
     return <ProducerLayout><div className="p-8 text-red-500">Erro: {error?.message}</div></ProducerLayout>;
   }
   if (!spaces || spaces.length === 0) {
-    return <ProducerLayout><OnboardingView /></ProducerLayout>;
+    return <ProducerLayout><OnboardingView onToggleView={handleToggleView} /></ProducerLayout>;
   }
   return (
     <ProducerLayout>
       <div className="p-4 md:p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Suas Áreas de Membros</h1>
-          <Button asChild><Link to="/members"><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Link></Button>
+          <Button onClick={handleToggleView}><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {spaces.map((space: any) => (
