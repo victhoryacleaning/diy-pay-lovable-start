@@ -154,11 +154,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (event === 'SIGNED_IN' && newSession?.user) {
+            console.log('✅ User signed in, processing profile...');
             setSession(newSession);
+            
+            // Fetch or create profile for Google users
             fetchUserProfile(newSession.user.id).then(userProfile => {
               if (userProfile) {
+                console.log('✅ Profile loaded:', userProfile.full_name);
                 setProfile(userProfile);
                 setActiveView(userProfile.role === 'producer' ? 'producer' : 'student');
+                
+                // Handle Google Auth redirect
+                const isGoogleProvider = newSession.user.app_metadata?.provider === 'google';
+                if (isGoogleProvider && (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register')) {
+                  console.log('🔀 Redirecting Google user to dashboard');
+                  navigate('/dashboard', { replace: true });
+                }
               }
             });
           }
@@ -242,7 +253,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/` }
+        options: { 
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
       });
       if (error) return { error: error.message };
       return {};
