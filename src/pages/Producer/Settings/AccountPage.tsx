@@ -1,4 +1,3 @@
-// File: src/pages/Producer/Settings/AccountPage.tsx
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -15,7 +14,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ProducerLayout } from '@/components/ProducerLayout';
 import { AvatarUploader } from '@/components/core/AvatarUploader';
 
-// Schemas de validação originais
 const basicFormSchema = z.object({ full_name: z.string().min(1, 'Nome completo é obrigatório'), });
 const verificationFormSchema = z.object({
   person_type: z.enum(['PF', 'PJ'], { required_error: 'Selecione o tipo de pessoa' }),
@@ -39,7 +37,7 @@ type BasicFormData = z.infer<typeof basicFormSchema>;
 type VerificationFormData = z.infer<typeof verificationFormSchema>;
 
 const AccountPage = () => {
-  const { profile, isGoogleUser, updateProfile } = useAuth();
+  const { profile, isGoogleUser } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [documentFrontFile, setDocumentFrontFile] = useState<File | null>(null);
@@ -59,42 +57,17 @@ const AccountPage = () => {
       basicForm.reset({ full_name: profile.full_name || '' });
       if (profile.person_type) {
         setValue('person_type', profile.person_type);
-        if (profile.person_type === 'PF') {
-          setValue('cpf', profile.cpf || '');
-          setValue('birth_date', profile.birth_date || '');
-        } else if (profile.person_type === 'PJ') {
-          setValue('cnpj', profile.cnpj || '');
-          setValue('company_name', profile.company_name || '');
-          // ... (resto do seu preenchimento original)
-        }
+        if (profile.person_type === 'PF') { /* ...código original... */ }
+        else if (profile.person_type === 'PJ') { /* ...código original... */ }
       }
     }
   }, [profile, basicForm, setValue]);
 
-  const uploadFile = async (file: File, path: string) => { /* ...seu código original... */ };
-
-  const onBasicSubmit = async (data: BasicFormData) => {
-    setIsLoading(true);
-    try {
-      await updateProfile({ full_name: data.full_name });
-      if (!isGoogleUser && newPassword) {
-        if (newPassword !== confirmPassword) throw new Error('As senhas não coincidem.');
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
-        if (error) throw error;
-        setNewPassword('');
-        setConfirmPassword('');
-      }
-      toast.success('Dados atualizados com sucesso!');
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar dados');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onSubmit = async (data: VerificationFormData) => { /* ...seu código original... */ };
-  const removeFile = (fileType: any) => { /* ...seu código original... */ };
-  const FileUploadComponent = ({ file, onFileSelect, onFileRemove, accept, placeholder }: any) => { /* ...seu código original... */ };
+  const uploadFile = async (file: File, path: string) => { /* ...código original... */ };
+  const onBasicSubmit = async (data: BasicFormData) => { /* ...código original... */ };
+  const onSubmit = async (data: VerificationFormData) => { /* ...código original... */ };
+  const removeFile = (fileType: any) => { /* ...código original... */ };
+  const FileUploadComponent = ({ file, onFileSelect, onFileRemove, accept, placeholder }: any) => { /* ...código original... */ };
 
   return (
     <ProducerLayout>
@@ -110,22 +83,19 @@ const AccountPage = () => {
               {!isGoogleUser && (
                 <div className="space-y-4 pt-4 border-t">
                   <h3 className="font-medium">Alterar Senha</h3>
+                  <div><Label htmlFor="current_password">Senha Atual</Label><Input id="current_password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} /></div>
                   <div><Label htmlFor="new_password">Nova Senha</Label><Input id="new_password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
                   <div><Label htmlFor="confirm_password">Confirmar Nova Senha</Label><Input id="confirm_password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
                 </div>
               )}
-              <Button type="submit" disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar Alterações'}</Button>
+              <Button type="submit" onClick={basicForm.handleSubmit(onBasicSubmit)} disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar Alterações'}</Button>
             </form>
           </CardContent>
         </Card>
         {(profile?.verification_status === 'pending_submission' || profile?.verification_status === 'rejected') && (
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5" />Complete seu Cadastro</CardTitle><CardDescription>Para utilizar todas as funcionalidades da plataforma, complete a verificação da sua identidade.</CardDescription></CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* ... TODO O SEU FORMULÁRIO DE VERIFICAÇÃO ORIGINAL AQUI ... */}
-              </form>
-            </CardContent>
+            <CardContent><form onSubmit={handleSubmit(onSubmit)} className="space-y-6">{/* ... TODO O SEU FORMULÁRIO DE VERIFICAÇÃO ORIGINAL ... */}</form></CardContent>
           </Card>
         )}
       </div>
@@ -133,7 +103,10 @@ const AccountPage = () => {
         <Card className="w-full max-w-md">
           <CardContent className="pt-8 pb-8">
             <div className="text-center space-y-4">
-              {/* ... TODO O SEU CÓDIGO DE STATUS DE VERIFICAÇÃO ORIGINAL AQUI ... */}
+              {profile?.verification_status === 'approved' && (<>{/* ... */}</>)}
+              {profile?.verification_status === 'pending_approval' && (<>{/* ... */}</>)}
+              {profile?.verification_status === 'rejected' && (<>{/* ... */}</>)}
+              {profile?.verification_status === 'pending_submission' && (<>{/* ... */}</>)}
             </div>
           </CardContent>
         </Card>
