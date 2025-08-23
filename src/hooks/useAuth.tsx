@@ -8,7 +8,6 @@ interface Profile {
   id: string;
   email: string;
   full_name: string | null;
-  avatar_url: string | null; // 1. ADICIONADO AQUI
   cpf_cnpj: string | null;
   phone: string | null;
   instagram_handle: string | null;
@@ -101,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   id: session.user.id,
                   email: googleEmail,
                   full_name: googleFullName,
-                  avatar_url: googleAvatarUrl, // 2. ADICIONADO AQUI
+                  avatar_url: googleAvatarUrl,
                   verification_status: 'pending_submission'
                 });
               
@@ -173,15 +172,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
-          data: { full_name: fullName, email: email }
+          data: {
+            full_name: fullName,
+            email: email
+          }
         }
       });
-      if (error) return { error: error.message };
+
+      if (error) {
+        return { error: error.message };
+      }
+
       if (data.user) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -191,8 +198,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             full_name: fullName,
             verification_status: 'pending_submission'
           });
-        if (profileError) console.error('Error creating profile:', profileError);
+        
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
       }
+
       return {};
     } catch (error: any) {
       return { error: error.message };
@@ -203,9 +214,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/` }
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
       });
-      if (error) return { error: error.message };
+
+      if (error) {
+        return { error: error.message };
+      }
+
       return {};
     } catch (error: any) {
       console.error('Google sign in error:', error);
@@ -215,8 +232,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: error.message };
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
       return {};
     } catch (error: any) {
       return { error: error.message };
@@ -229,7 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
-      navigate('/login', { replace: true });
+      navigate('/login', { replace: true }); // CORREÇÃO AQUI: Garante o redirecionamento
       toast.success('Logout realizado com sucesso!');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -240,19 +264,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return { error: 'Usuário não autenticado' };
 
     try {
-      // 3. ATUALIZADO AQUI
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user.id)
-        .select()
-        .single();
+        .eq('id', user.id);
 
       if (error) {
-        throw new Error(error.message);
+        return { error: error.message };
       }
-      
-      setProfile(data as Profile); // Atualiza o estado local imediatamente
+
+      await fetchUserProfile(user.id);
       return {};
     } catch (error: any) {
       return { error: error.message };
