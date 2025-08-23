@@ -142,7 +142,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (event === 'SIGNED_OUT' || !newSession) {
             clearAuthState();
-            if (location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/') {
+            // Lista de rotas públicas que não devem ser redirecionadas para login
+            const publicRoutes = ['/', '/login', '/register'];
+            const isPublicRoute = publicRoutes.includes(location.pathname) ||
+              location.pathname.startsWith('/checkout/') ||
+              location.pathname.startsWith('/payment-confirmation/') ||
+              location.pathname.startsWith('/p/');
+            
+            if (!isPublicRoute) {
               navigate('/login', { replace: true });
             }
             return;
