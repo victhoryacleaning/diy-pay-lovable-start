@@ -212,36 +212,36 @@ const ProducerSalesPage = () => {
         {/* KPI Cards */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Valor Líquido Total */}
-          <Card className="bg-gradient-to-r from-primary to-primary-glow border-0 text-primary-foreground">
+          <Card className="bg-gradient-to-br from-purple-600 to-purple-800 text-white border-0 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-primary-foreground/80">
+              <CardTitle className="text-sm font-medium text-purple-100">
                 Valor Líquido Total
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-primary-foreground/70" />
+              <DollarSign className="h-4 w-4 text-purple-200" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {isLoading ? 'Carregando...' : formatCurrency(salesData?.kpis?.valorLiquidoTotal || 0)}
               </div>
-              <p className="text-xs text-primary-foreground/70">
+              <p className="text-xs text-purple-100">
                 Receita após taxas da plataforma
               </p>
             </CardContent>
           </Card>
 
           {/* Total de Vendas */}
-          <Card className="border-border">
+          <Card className="bg-white border-0 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-foreground">
+              <CardTitle className="text-sm font-medium text-slate-600">
                 Total de Vendas
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-accent" />
+              <TrendingUp className="h-5 w-5 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-accent">
+              <div className="text-2xl font-bold text-green-500">
                 {isLoading ? 'Carregando...' : (salesData?.kpis?.totalVendas || 0)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-600">
                 Número total de transações
               </p>
             </CardContent>
