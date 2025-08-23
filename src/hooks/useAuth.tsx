@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ interface Profile {
   id: string;
   email: string;
   full_name: string | null;
-  avatar_url: string | null; // ADICIONADO
+  avatar_url: string | null;
   cpf_cnpj: string | null;
   phone: string | null;
   instagram_handle: string | null;
@@ -54,7 +54,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,9 +61,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const user = session?.user ?? null;
   const isGoogleUser = user?.app_metadata?.provider === 'google';
 
-  // Efeito para redirecionar o usuário após o login, se necessário
+  const fetchUserProfile = useCallback(async (userId: string | undefined) => {
+    if (!userId) {
+      setProfile(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      if (error) throw error;
+
+      setProfile(data as Profile);
+      if (data.role === 'producer') {
+        setActiveView('producer');
+      } else {
+        setActiveView('student');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setProfile(null); // Garante que o perfil seja nulo em caso de erro
+    }
+  }, []);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        setLoading(true);
+        setSession(newSession);
+
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          if (newSession.user.app_metadata.provider === 'google') {
+            const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', newSession.user.id).single();
+            if (!existingProfile) {
+              await supabase.from('profiles').upsert({
+                id: newSession.user.id,
+                email: newSession.user.email,
+                full_name: newSession.user.user_metadata?.full_name || newSession.user.user_metadata?.name,
+                avatar_url: newSession.user.user_metadata?.avatar_url,
+                verification_status: 'pending_submission'
+              });
+            }
+          }
+          await fetchUserProfile(newSession.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          navigate('/login', { replace: true });
+        }
+        setLoading(false);
+      }
+    );
+    
+    // Verificação da sessão inicial
+    setLoading(true);
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      await fetchUserProfile(initialSession?.user?.id);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchUserProfile, navigate]);
+
+  // Efeito para redirecionar o usuário APÓS o perfil ser carregado
   useEffect(() => {
     if (!loading && profile && (location.pathname === '/login' || location.pathname === '/register')) {
       const roleRedirects = {
@@ -75,202 +135,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate(roleRedirects[profile.role] || '/', { replace: true });
     }
   }, [profile, loading, location, navigate]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          if (event === 'SIGNED_IN' && session.user.app_metadata.provider === 'google') {
-            const googleFullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
-            const googleAvatarUrl = session.user.user_metadata?.avatar_url;
-            const googleEmail = session.user.email;
-
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('id')
-              .eq('id', session.user.id)
-              .single();
-
-            if (!existingProfile && googleEmail) {
-              const { error: profileError } = await supabase
-                .from('profiles')
-                .upsert({
-                  id: session.user.id,
-                  email: googleEmail,
-                  full_name: googleFullName,
-                  avatar_url: googleAvatarUrl, // MODIFICADO
-                  verification_status: 'pending_submission'
-                });
-              
-              if (profileError) {
-                console.error('Error creating Google profile:', profileError);
-              }
-            }
-          }
-          
-          await fetchUserProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      const profileData: Profile = {
-        ...data,
-        role: data.role as 'user' | 'producer' | 'admin',
-        verification_status: data.verification_status as 'pending_submission' | 'pending_approval' | 'approved' | 'rejected',
-        person_type: data.person_type as 'PF' | 'PJ' | null
-      };
-
-      setProfile(profileData);
-      
-      if (profileData.role === 'producer') {
-        setActiveView('producer');
-      } else {
-        setActiveView('student');
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
-
-  const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: { full_name: fullName, email: email }
-        }
-      });
-      if (error) return { error: error.message };
-      if (data.user) {
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          email: email,
-          full_name: fullName,
-          verification_status: 'pending_submission'
-        });
-      }
-      return {};
-    } catch (error: any) {
-      return { error: error.message };
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/` }
-      });
-      if (error) return { error: error.message };
-      return {};
-    } catch (error: any) {
-      console.error('Google sign in error:', error);
-      return { error: error.message };
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: error.message };
-      return {};
-    } catch (error: any) {
-      return { error: error.message };
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      navigate('/login', { replace: true });
-      toast.success('Logout realizado com sucesso!');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
+  
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: 'Usuário não autenticado' };
-
     try {
-      // MODIFICADO
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setProfile(data as Profile); // Atualiza o estado local imediatamente
+      const { data, error } = await supabase.from('profiles').update(updates).eq('id', user.id).select().single();
+      if (error) throw error;
+      setProfile(data as Profile);
       return {};
     } catch (error: any) {
       return { error: error.message };
     }
   };
-
-  const toggleView = () => {
-    if (profile?.role === 'producer') {
-      setActiveView(prevView => prevView === 'producer' ? 'student' : 'producer');
+  
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error('Erro ao fazer logout.');
+      console.error('Error signing out:', error);
     }
+    // A limpeza de estado e redirecionamento agora é tratada pelo onAuthStateChange
   };
 
+  const signUp = async (email, password, fullName) => { /* ...seu código original... */ };
+  const signInWithGoogle = async () => { /* ...seu código original... */ };
+  const signIn = async (email, password) => { /* ...seu código original... */ };
+  const toggleView = () => { /* ...seu código original... */ };
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      profile,
-      loading,
-      isGoogleUser,
-      activeView,
-      toggleView,
-      signUp,
-      signIn,
-      signInWithGoogle,
-      signOut,
-      updateProfile
-    }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isGoogleUser, activeView, toggleView, signUp, signIn, signInWithGoogle, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -278,8 +171,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   return context;
 };
