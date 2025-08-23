@@ -8,6 +8,7 @@ interface Profile {
   id: string;
   email: string;
   full_name: string | null;
+  avatar_url: string | null; // ADICIONADO
   cpf_cnpj: string | null;
   phone: string | null;
   instagram_handle: string | null;
@@ -100,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   id: session.user.id,
                   email: googleEmail,
                   full_name: googleFullName,
-                  avatar_url: googleAvatarUrl,
+                  avatar_url: googleAvatarUrl, // MODIFICADO
                   verification_status: 'pending_submission'
                 });
               
@@ -110,9 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          setTimeout(async () => {
-            await fetchUserProfile(session.user.id);
-          }, 0);
+          await fetchUserProfile(session.user.id);
         } else {
           setProfile(null);
         }
@@ -124,13 +123,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
       if (session?.user) {
-        setTimeout(async () => {
-          await fetchUserProfile(session.user.id);
-        }, 0);
+        fetchUserProfile(session.user.id);
       }
-      
       setLoading(false);
     });
 
@@ -172,38 +167,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            email: email
-          }
+          data: { full_name: fullName, email: email }
         }
       });
-
-      if (error) {
-        return { error: error.message };
-      }
-
+      if (error) return { error: error.message };
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            email: email,
-            full_name: fullName,
-            verification_status: 'pending_submission'
-          });
-        
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email: email,
+          full_name: fullName,
+          verification_status: 'pending_submission'
+        });
       }
-
       return {};
     } catch (error: any) {
       return { error: error.message };
@@ -214,15 +194,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
+        options: { redirectTo: `${window.location.origin}/` }
       });
-
-      if (error) {
-        return { error: error.message };
-      }
-
+      if (error) return { error: error.message };
       return {};
     } catch (error: any) {
       console.error('Google sign in error:', error);
@@ -232,15 +206,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        return { error: error.message };
-      }
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { error: error.message };
       return {};
     } catch (error: any) {
       return { error: error.message };
@@ -253,7 +220,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
-      navigate('/login', { replace: true }); // CORREÇÃO AQUI: Garante o redirecionamento
+      navigate('/login', { replace: true });
       toast.success('Logout realizado com sucesso!');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -264,16 +231,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return { error: 'Usuário não autenticado' };
 
     try {
-      const { error } = await supabase
+      // MODIFICADO
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
       if (error) {
-        return { error: error.message };
+        throw new Error(error.message);
       }
 
-      await fetchUserProfile(user.id);
+      setProfile(data as Profile); // Atualiza o estado local imediatamente
       return {};
     } catch (error: any) {
       return { error: error.message };
