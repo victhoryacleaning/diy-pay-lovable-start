@@ -81,7 +81,7 @@ const Checkout = () => {
 
         {product.show_order_summary ? (
           // Layout com flexbox responsivo (sem 'reverse' para ordem natural no mobile)
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-4">
             {/* Product Info Sidebar */}
             <div className="w-full lg:w-1/3 px-4 lg:px-0">
               <ProductInfo 
