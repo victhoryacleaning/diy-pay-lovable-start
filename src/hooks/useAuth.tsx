@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,73 +61,132 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>('producer');
+  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const user = session?.user ?? null;
   const isGoogleUser = user?.app_metadata?.provider === 'google';
 
-  // 1. CORREÇÃO: Função de busca memoizada para estabilidade
-  const fetchUserProfile = useCallback(async (userId: string | undefined) => {
-    if (!userId) {
-      setProfile(null);
-      return;
-    }
+  // Função de busca de perfil otimizada
+  const fetchUserProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (error) throw error;
-      setProfile(data as Profile);
-      if (data.role === 'producer') setActiveView('producer');
-      else setActiveView('student');
+      console.log('Fetching profile for user:', userId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      
+      console.log('Profile fetched successfully:', data);
+      return data as Profile;
     } catch (error) {
       console.error('Error fetching profile:', error);
-      setProfile(null);
+      return null;
     }
   }, []);
 
-  // 2. CORREÇÃO: useEffect principal refatorado para ser mais robusto
+  // Inicialização do auth - executado apenas uma vez
   useEffect(() => {
-    setLoading(true);
-    // Primeiro, tenta obter a sessão atual para resolver o F5 rapidamente
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      await fetchUserProfile(initialSession?.user?.id);
-      setLoading(false); // Só termina o loading inicial aqui
-    });
+    let isMounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        // Se um evento de login ou logout acontecer, atualiza tudo
-        setLoading(true);
-        setSession(newSession);
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          if (newSession.user.app_metadata.provider === 'google') {
-            const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', newSession.user.id).single();
-            if (!existingProfile) {
-              await supabase.from('profiles').upsert({
-                id: newSession.user.id,
-                email: newSession.user.email,
-                full_name: newSession.user.user_metadata?.full_name || newSession.user.user_metadata?.name,
-                avatar_url: newSession.user.user_metadata?.avatar_url,
-                verification_status: 'pending_submission'
-              });
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth...');
+        
+        // 1. Primeiro, configurar o listener de mudanças de auth
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, currentSession) => {
+            console.log('Auth state changed:', event, currentSession?.user?.id);
+            
+            if (!isMounted) return;
+
+            if (event === 'SIGNED_OUT') {
+              setSession(null);
+              setProfile(null);
+              setLoading(false);
+              navigate('/login', { replace: true });
+              return;
+            }
+
+            if (currentSession) {
+              setSession(currentSession);
+              
+              // Buscar perfil apenas se mudou de usuário
+              if (currentSession.user) {
+                const userProfile = await fetchUserProfile(currentSession.user.id);
+                if (isMounted) {
+                  setProfile(userProfile);
+                  if (userProfile?.role === 'producer') {
+                    setActiveView('producer');
+                  } else {
+                    setActiveView('student');
+                  }
+                }
+              }
+            } else {
+              setSession(null);
+              setProfile(null);
+            }
+
+            if (isMounted) {
+              setLoading(false);
             }
           }
-          await fetchUserProfile(newSession.user.id);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          navigate('/login', { replace: true });
+        );
+
+        // 2. Depois, buscar a sessão atual
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('Initial session:', initialSession?.user?.id);
+
+        if (isMounted) {
+          if (initialSession) {
+            setSession(initialSession);
+            
+            if (initialSession.user) {
+              const userProfile = await fetchUserProfile(initialSession.user.id);
+              if (isMounted) {
+                setProfile(userProfile);
+                if (userProfile?.role === 'producer') {
+                  setActiveView('producer');
+                } else {
+                  setActiveView('student');
+                }
+              }
+            }
+          }
+          
+          setLoading(false);
+          setInitialized(true);
         }
-        setLoading(false);
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (isMounted) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
-    );
+    };
 
-    return () => subscription.unsubscribe();
-  }, [fetchUserProfile, navigate]);
+    initializeAuth();
 
-  // 3. CORREÇÃO: useEffect de redirecionamento pós-login permanece separado
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Sem dependências para executar apenas uma vez
+
+  // Redirecionamento após login - separado e só executa quando não está loading
   useEffect(() => {
-    if (!loading && profile && (location.pathname === '/login' || location.pathname === '/register')) {
+    if (!loading && initialized && profile && (location.pathname === '/login' || location.pathname === '/register')) {
       const roleRedirects = {
         'producer': '/dashboard',
         'admin': '/admin/dashboard',
@@ -134,7 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       navigate(roleRedirects[profile.role] || '/', { replace: true });
     }
-  }, [profile, loading, location, navigate]);
+  }, [profile, loading, initialized, location.pathname, navigate]);
 
   // SEU CÓDIGO ORIGINAL E COMPLETO, PRESERVADO
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -196,7 +256,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.error('Erro ao fazer logout.');
       console.error('Error signing out:', error);
     }
-    // A limpeza agora é tratada pelo onAuthStateChange
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
