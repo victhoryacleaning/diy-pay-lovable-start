@@ -80,11 +80,41 @@ const AccountPage = () => {
     }
   }, [profile, basicForm, setValue]);
 
-  const uploadFile = async (file: File, path: string) => { /* ...seu código original... */ };
-  const onBasicSubmit = async (data: BasicFormData) => { /* ...seu código original... */ };
-  const onSubmit = async (data: VerificationFormData) => { /* ...seu código original... */ };
-  const removeFile = (fileType: any) => { /* ...seu código original... */ };
-  const FileUploadComponent = ({ file, onFileSelect, onFileRemove, accept, placeholder }: any) => ( /* ...seu código original... */ );
+  const uploadFile = async (file: File, path: string) => {
+    // Implementação do upload de arquivo
+    return null;
+  };
+
+  const onBasicSubmit = async (data: BasicFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: data.full_name })
+        .eq('id', profile?.id);
+      
+      if (error) throw error;
+      toast.success('Informações atualizadas com sucesso!');
+    } catch (error: any) {
+      toast.error('Erro ao atualizar informações: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: VerificationFormData) => {
+    // Implementação do submit de verificação
+    console.log('Dados de verificação:', data);
+  };
+
+  const removeFile = (fileType: string) => {
+    // Implementação da remoção de arquivo
+    console.log('Removendo arquivo:', fileType);
+  };
+
+  const FileUploadComponent = ({ file, onFileSelect, onFileRemove, accept, placeholder }: any) => {
+    return <div>Upload Component Placeholder</div>;
+  };
 
   return (
     <ProducerLayout>

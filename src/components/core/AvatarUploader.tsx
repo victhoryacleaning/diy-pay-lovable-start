@@ -60,9 +60,9 @@ export const AvatarUploader = () => {
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <Avatar className="w-24 h-24 border-2 border-slate-200">
+      <Avatar className="w-24 h-24 border-2 border-border">
         <AvatarImage src={profile?.avatar_url || ''} alt="Avatar do usuário" />
-        <AvatarFallback className="text-3xl bg-slate-100">{userInitial}</AvatarFallback>
+        <AvatarFallback className="text-3xl bg-muted">{userInitial}</AvatarFallback>
       </Avatar>
       <div>
         <Button asChild variant="outline" size="sm" disabled={uploading}>
