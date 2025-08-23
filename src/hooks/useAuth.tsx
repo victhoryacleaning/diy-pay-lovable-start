@@ -97,46 +97,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setActiveView('producer');
   }, []);
 
-  // Função para processar mudanças de auth
-  const handleAuthChange = useCallback(async (event: string, currentSession: Session | null) => {
-    console.log('🔄 Auth state changed:', event, currentSession?.user?.id);
-
-    if (event === 'SIGNED_OUT' || !currentSession) {
-      clearAuthState();
-      setLoading(false);
-      if (location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/') {
-        navigate('/login', { replace: true });
-      }
-      return;
+  // Função simplificada para buscar perfil
+  const loadUserProfile = useCallback(async (userId: string) => {
+    const profile = await fetchUserProfile(userId);
+    if (profile) {
+      setProfile(profile);
+      setActiveView(profile.role === 'producer' ? 'producer' : 'student');
     }
+    return profile;
+  }, [fetchUserProfile]);
 
-    if (event === 'TOKEN_REFRESHED') {
-      console.log('🔄 Token refreshed successfully');
-      setSession(currentSession);
-      return;
-    }
-
-    if (currentSession?.user) {
-      setSession(currentSession);
-      
-      try {
-        const userProfile = await fetchUserProfile(currentSession.user.id);
-        setProfile(userProfile);
-        
-        if (userProfile?.role === 'producer') {
-          setActiveView('producer');
-        } else {
-          setActiveView('student');
-        }
-      } catch (error) {
-        console.error('❌ Error loading profile during auth change:', error);
-      }
-    }
-
-    setLoading(false);
-  }, [fetchUserProfile, clearAuthState, location.pathname, navigate]);
-
-  // Inicialização do auth
+  // Inicialização do auth - versão simplificada
   useEffect(() => {
     let mounted = true;
     let authSubscription: any = null;
@@ -145,46 +116,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         console.log('🚀 Initializing auth system...');
 
-        // 1. Configurar listener de mudanças de auth PRIMEIRO
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
-        authSubscription = subscription;
-
-        // 2. Verificar sessão atual
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        // 1. Buscar sessão atual PRIMEIRO
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          if (mounted) {
-            clearAuthState();
-            setLoading(false);
-            setAuthInitialized(true);
-          }
-          return;
-        }
-
-        console.log('📋 Current session status:', currentSession?.user?.id ? 'authenticated' : 'not authenticated');
+        console.log('📋 Initial session found:', currentSession?.user?.id ? 'authenticated' : 'not authenticated');
 
         if (!mounted) return;
 
+        // 2. Processar sessão inicial se existir
         if (currentSession?.user) {
+          console.log('✅ Restoring session for user:', currentSession.user.id);
           setSession(currentSession);
           
-          try {
-            const userProfile = await fetchUserProfile(currentSession.user.id);
-            if (mounted) {
-              setProfile(userProfile);
-              if (userProfile?.role === 'producer') {
-                setActiveView('producer');
-              } else {
-                setActiveView('student');
-              }
-            }
-          } catch (error) {
-            console.error('❌ Error loading initial profile:', error);
+          const userProfile = await fetchUserProfile(currentSession.user.id);
+          if (mounted && userProfile) {
+            setProfile(userProfile);
+            setActiveView(userProfile.role === 'producer' ? 'producer' : 'student');
+            console.log('✅ Profile restored:', userProfile.full_name);
           }
-        } else {
-          clearAuthState();
         }
+
+        // 3. Configurar listener DEPOIS da sessão inicial
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+          console.log('🔄 Auth change:', event, newSession?.user?.id || 'no user');
+          
+          if (event === 'SIGNED_OUT' || !newSession) {
+            clearAuthState();
+            if (location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/') {
+              navigate('/login', { replace: true });
+            }
+            return;
+          }
+
+          if (event === 'TOKEN_REFRESHED') {
+            setSession(newSession);
+            return;
+          }
+
+          if (event === 'SIGNED_IN' && newSession?.user) {
+            setSession(newSession);
+            fetchUserProfile(newSession.user.id).then(userProfile => {
+              if (userProfile) {
+                setProfile(userProfile);
+                setActiveView(userProfile.role === 'producer' ? 'producer' : 'student');
+              }
+            });
+          }
+        });
+        
+        authSubscription = subscription;
 
         if (mounted) {
           setLoading(false);
@@ -194,7 +174,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error('❌ Auth initialization error:', error);
         if (mounted) {
-          clearAuthState();
           setLoading(false);
           setAuthInitialized(true);
         }
@@ -209,7 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authSubscription.unsubscribe();
       }
     };
-  }, [handleAuthChange, fetchUserProfile, clearAuthState]);
+  }, []);  // Dependências removidas para evitar re-execuções
 
   // Redirecionamento após login - executado apenas quando auth está inicializado
   useEffect(() => {
