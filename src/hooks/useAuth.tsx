@@ -1,11 +1,9 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-// SUA INTERFACE ORIGINAL, PRESERVADA
 interface Profile {
   id: string;
   email: string;
@@ -38,7 +36,6 @@ interface Profile {
 
 type ActiveView = 'producer' | 'student';
 
-// SUA INTERFACE ORIGINAL, PRESERVADA
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -61,17 +58,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>('producer');
-  const [initialized, setInitialized] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const user = session?.user ?? null;
   const isGoogleUser = user?.app_metadata?.provider === 'google';
 
-  // Função de busca de perfil otimizada
-  const fetchUserProfile = useCallback(async (userId: string) => {
+  // Função otimizada para buscar perfil
+  const fetchUserProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
-      console.log('Fetching profile for user:', userId);
+      console.log('🔍 Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -79,100 +77,126 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
       
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Error fetching profile:', error);
         return null;
       }
       
-      console.log('Profile fetched successfully:', data);
+      console.log('✅ Profile fetched successfully:', data);
       return data as Profile;
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('❌ Exception fetching profile:', error);
       return null;
     }
   }, []);
 
-  // Inicialização do auth - executado apenas uma vez
+  // Função para limpar estado completamente
+  const clearAuthState = useCallback(() => {
+    console.log('🧹 Clearing auth state');
+    setSession(null);
+    setProfile(null);
+    setActiveView('producer');
+  }, []);
+
+  // Função para processar mudanças de auth
+  const handleAuthChange = useCallback(async (event: string, currentSession: Session | null) => {
+    console.log('🔄 Auth state changed:', event, currentSession?.user?.id);
+
+    if (event === 'SIGNED_OUT' || !currentSession) {
+      clearAuthState();
+      setLoading(false);
+      if (location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/') {
+        navigate('/login', { replace: true });
+      }
+      return;
+    }
+
+    if (event === 'TOKEN_REFRESHED') {
+      console.log('🔄 Token refreshed successfully');
+      setSession(currentSession);
+      return;
+    }
+
+    if (currentSession?.user) {
+      setSession(currentSession);
+      
+      try {
+        const userProfile = await fetchUserProfile(currentSession.user.id);
+        setProfile(userProfile);
+        
+        if (userProfile?.role === 'producer') {
+          setActiveView('producer');
+        } else {
+          setActiveView('student');
+        }
+      } catch (error) {
+        console.error('❌ Error loading profile during auth change:', error);
+      }
+    }
+
+    setLoading(false);
+  }, [fetchUserProfile, clearAuthState, location.pathname, navigate]);
+
+  // Inicialização do auth
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
+    let authSubscription: any = null;
 
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
+        console.log('🚀 Initializing auth system...');
+
+        // 1. Configurar listener de mudanças de auth PRIMEIRO
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+        authSubscription = subscription;
+
+        // 2. Verificar sessão atual
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
-        // 1. Primeiro, configurar o listener de mudanças de auth
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, currentSession) => {
-            console.log('Auth state changed:', event, currentSession?.user?.id);
-            
-            if (!isMounted) return;
-
-            if (event === 'SIGNED_OUT') {
-              setSession(null);
-              setProfile(null);
-              setLoading(false);
-              navigate('/login', { replace: true });
-              return;
-            }
-
-            if (currentSession) {
-              setSession(currentSession);
-              
-              // Buscar perfil apenas se mudou de usuário
-              if (currentSession.user) {
-                const userProfile = await fetchUserProfile(currentSession.user.id);
-                if (isMounted) {
-                  setProfile(userProfile);
-                  if (userProfile?.role === 'producer') {
-                    setActiveView('producer');
-                  } else {
-                    setActiveView('student');
-                  }
-                }
-              }
-            } else {
-              setSession(null);
-              setProfile(null);
-            }
-
-            if (isMounted) {
-              setLoading(false);
-            }
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          if (mounted) {
+            clearAuthState();
+            setLoading(false);
+            setAuthInitialized(true);
           }
-        );
-
-        // 2. Depois, buscar a sessão atual
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log('Initial session:', initialSession?.user?.id);
-
-        if (isMounted) {
-          if (initialSession) {
-            setSession(initialSession);
-            
-            if (initialSession.user) {
-              const userProfile = await fetchUserProfile(initialSession.user.id);
-              if (isMounted) {
-                setProfile(userProfile);
-                if (userProfile?.role === 'producer') {
-                  setActiveView('producer');
-                } else {
-                  setActiveView('student');
-                }
-              }
-            }
-          }
-          
-          setLoading(false);
-          setInitialized(true);
+          return;
         }
 
-        return () => {
-          subscription.unsubscribe();
-        };
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (isMounted) {
+        console.log('📋 Current session status:', currentSession?.user?.id ? 'authenticated' : 'not authenticated');
+
+        if (!mounted) return;
+
+        if (currentSession?.user) {
+          setSession(currentSession);
+          
+          try {
+            const userProfile = await fetchUserProfile(currentSession.user.id);
+            if (mounted) {
+              setProfile(userProfile);
+              if (userProfile?.role === 'producer') {
+                setActiveView('producer');
+              } else {
+                setActiveView('student');
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error loading initial profile:', error);
+          }
+        } else {
+          clearAuthState();
+        }
+
+        if (mounted) {
           setLoading(false);
-          setInitialized(true);
+          setAuthInitialized(true);
+        }
+
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
+          clearAuthState();
+          setLoading(false);
+          setAuthInitialized(true);
         }
       }
     };
@@ -180,23 +204,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
 
     return () => {
-      isMounted = false;
+      mounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
     };
-  }, []); // Sem dependências para executar apenas uma vez
+  }, [handleAuthChange, fetchUserProfile, clearAuthState]);
 
-  // Redirecionamento após login - separado e só executa quando não está loading
+  // Redirecionamento após login - executado apenas quando auth está inicializado
   useEffect(() => {
-    if (!loading && initialized && profile && (location.pathname === '/login' || location.pathname === '/register')) {
+    if (!authInitialized || loading) return;
+
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+    
+    if (profile && isAuthPage) {
       const roleRedirects = {
         'producer': '/dashboard',
         'admin': '/admin/dashboard',
         'user': '/members'
       };
-      navigate(roleRedirects[profile.role] || '/', { replace: true });
+      
+      const redirectTo = roleRedirects[profile.role] || '/';
+      console.log('🔀 Redirecting authenticated user to:', redirectTo);
+      navigate(redirectTo, { replace: true });
     }
-  }, [profile, loading, initialized, location.pathname, navigate]);
+  }, [profile, location.pathname, navigate, authInitialized, loading]);
 
-  // SEU CÓDIGO ORIGINAL E COMPLETO, PRESERVADO
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -251,26 +284,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      console.log('🚪 Signing out user...');
+      clearAuthState();
+      
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Error signing out:', error);
+        toast.error('Erro ao fazer logout.');
+      } else {
+        console.log('✅ Successfully signed out');
+        toast.success('Logout realizado com sucesso.');
+        navigate('/login', { replace: true });
+      }
+    } catch (error) {
+      console.error('❌ Exception during sign out:', error);
       toast.error('Erro ao fazer logout.');
-      console.error('Error signing out:', error);
     }
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: 'Usuário não autenticado' };
+    
     try {
+      console.log('🔄 Updating profile:', updates);
+      
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id)
         .select()
         .single();
+        
       if (error) throw new Error(error.message);
+      
       setProfile(data as Profile);
+      console.log('✅ Profile updated successfully');
       return {};
     } catch (error: any) {
+      console.error('❌ Error updating profile:', error);
       return { error: error.message };
     }
   };
@@ -278,11 +330,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const toggleView = () => {
     if (profile?.role === 'producer') {
       setActiveView(prevView => prevView === 'producer' ? 'student' : 'producer');
+      console.log('🔄 View toggled to:', activeView === 'producer' ? 'student' : 'producer');
     }
   };
 
+  const contextValue = {
+    user,
+    session,
+    profile,
+    loading,
+    isGoogleUser,
+    activeView,
+    toggleView,
+    signUp,
+    signIn,
+    signInWithGoogle,
+    signOut,
+    updateProfile
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, isGoogleUser, activeView, toggleView, signUp, signIn, signInWithGoogle, signOut, updateProfile }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
