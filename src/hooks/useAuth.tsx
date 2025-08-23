@@ -225,7 +225,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, isGoogleUser, activeView, toggleView, signUp, signIn, signInWithGoogle, signOut, updateProfile }}>
       {children}
-    </Auth-context.Provider>
+    </AuthContext.Provider>
   );
 };
 
