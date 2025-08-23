@@ -127,9 +127,9 @@ const Index = () => {
                 <div>
                     <h3 className="font-bold text-lg mb-4 text-white">Institucional</h3>
                     <ul className="space-y-3 text-slate-400">
-                        <li><a href="https://diypay.com.br/p/politicas-de-privacidade" className="hover:text-violet-400">Política de privacidade</a></li>
-                        <li><a href="https://diypay.com.br/p/termos-de-uso" className="hover:text-violet-400">Termos de uso</a></li>
-                        <li><a href="https://diypay.com.br/p/contato" className="hover:text-violet-400">Contato</a></li>
+                        <li><Link to="/p/politicas-de-privacidade" className="hover:text-violet-400">Política de privacidade</Link></li>
+                        <li><Link to="/p/termos-de-uso" className="hover:text-violet-400">Termos de uso</Link></li>
+                        <li><Link to="/p/contato" className="hover:text-violet-400">Contato</Link></li>
                     </ul>
                 </div>
                 <div>

@@ -158,7 +158,11 @@ const CompleteProducerProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-diypay-50 to-white">
-      <Header />
+      <Header 
+        isAuthenticated={true} 
+        userRole={profile?.role} 
+        userName={profile?.full_name || "Produtor"} 
+      />
       
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
