@@ -70,8 +70,11 @@ export const CheckoutImageUpload = ({ onUploadSuccess, initialUrl = '', userId }
     if (!uploadedUrl) return;
     const toastId = toast.loading('Removendo imagem...');
     try {
-        const oldFilePath = new URL(uploadedUrl).pathname.split(`/${BUCKET_NAME}/`)[1];
-        if(oldFilePath) await supabase.storage.from(BUCKET_NAME).remove([oldFilePath]);
+        // Só remove do storage se for uma imagem do Supabase
+        if (uploadedUrl.includes('supabase.co/storage')) {
+          const oldFilePath = new URL(uploadedUrl).pathname.split(`/${BUCKET_NAME}/`)[1];
+          if(oldFilePath) await supabase.storage.from(BUCKET_NAME).remove([oldFilePath]);
+        }
         setUploadedUrl('');
         onUploadSuccess('');
         toast.success('Imagem removida.', { id: toastId });

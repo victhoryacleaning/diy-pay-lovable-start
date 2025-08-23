@@ -34,7 +34,7 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
           {user?.id ? (
             <CheckoutImageUpload
               userId={user.id}
-              initialUrl={isSupabaseImage ? formData.checkout_image_url : ''}
+              initialUrl={formData.checkout_image_url || ''}
               onUploadSuccess={(url) => onInputChange('checkout_image_url', url)}
             />
           ) : (
@@ -50,36 +50,15 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
           <Label htmlFor="checkout_image_url">OU Cole a URL da Imagem</Label>
           <Input
             id="checkout_image_url"
-            value={isSupabaseImage ? '' : (formData.checkout_image_url || '')}
+            value={formData.checkout_image_url && !isSupabaseImage ? formData.checkout_image_url : ''}
             onChange={(e) => onInputChange('checkout_image_url', e.target.value)}
             placeholder="https://exemplo.com/imagem.jpg"
-            disabled={isSupabaseImage}
+            disabled={!!formData.checkout_image_url}
           />
-          {isSupabaseImage && (
+          {formData.checkout_image_url && (
             <p className="text-xs text-gray-500">
-              Campo desativado. Uma imagem foi enviada para nosso servidor. Para usar uma URL personalizada, remova a imagem acima.
+              Campo desativado. Para inserir uma nova imagem, remova a atual usando o botão "X" acima.
             </p>
-          )}
-          
-          {/* Preview para imagens por URL */}
-          {!isSupabaseImage && formData.checkout_image_url && (
-            <div className="relative w-32 h-20 border rounded-lg overflow-hidden bg-gray-50">
-              <img
-                src={formData.checkout_image_url}
-                alt="Preview"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleRemoveImage}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-              >
-                ×
-              </button>
-            </div>
           )}
         </div>
 
