@@ -60,15 +60,15 @@ const Checkout = () => {
     return null;
   }
   
-  // O background personalizado agora é aplicado aqui
   const backgroundStyle = product.checkout_background_color 
     ? { backgroundColor: product.checkout_background_color }
     : {};
 
+  // ### INÍCIO DA ALTERAÇÃO ###
   return (
     <div className="min-h-screen bg-white lg:bg-gray-50 py-4 lg:py-8" style={backgroundStyle}>
       <div className="max-w-6xl mx-auto px-0 lg:px-4">
-        {/* Imagem personalizada do checkout */}
+        {/* Imagem personalizada do checkout permanece com a largura máxima total */}
         {product.checkout_image_url && (
           <div className="max-w-2xl mx-auto mb-8 lg:max-w-none flex justify-center px-4 lg:px-0">
             <img 
@@ -79,40 +79,46 @@ const Checkout = () => {
           </div>
         )}
 
-        {product.show_order_summary ? (
-          // Layout com flexbox responsivo (sem 'reverse' para ordem natural no mobile)
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-4">
-            {/* Product Info Sidebar */}
-            <div className="w-full lg:w-1/3 px-4 lg:px-0">
-              <ProductInfo 
-                product={product} 
-                donationAmount={donationAmount}
-                eventQuantity={eventQuantity}
-              />
-            </div>
+        {/* Container Adicionado: Define uma largura máxima menor apenas para a seção do formulário/resumo */}
+        <div className="max-w-5xl mx-auto">
+          {product.show_order_summary ? (
+            // Aumentamos o gap para lg:gap-8 para um melhor espaçamento visual no container mais justo
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+              {/* Resumo do Pedido (Product Info Sidebar) */}
+              <div className="w-full lg:w-1/3 px-4 lg:px-0">
+                <ProductInfo 
+                  product={product} 
+                  donationAmount={donationAmount}
+                  eventQuantity={eventQuantity}
+                />
+              </div>
 
-            {/* Checkout Form */}
-            <div className="w-full lg:w-2/3">
+              {/* Formulário de Checkout */}
+              <div className="w-full lg:w-2/3">
+                <CheckoutForm 
+                  product={product}
+                  onDonationAmountChange={setDonationAmount}
+                  onEventQuantityChange={setEventQuantity}
+                />
+              </div>
+            </div>
+          ) : (
+            // Layout centralizado quando resumo está oculto (não precisa do container extra)
+            <div className="max-w-2xl mx-auto">
               <CheckoutForm 
                 product={product}
                 onDonationAmountChange={setDonationAmount}
                 onEventQuantityChange={setEventQuantity}
               />
             </div>
-          </div>
-        ) : (
-          // Layout centralizado quando resumo está oculto
-          <div className="max-w-2xl mx-auto">
-            <CheckoutForm 
-              product={product}
-              onDonationAmountChange={setDonationAmount}
-              onEventQuantityChange={setEventQuantity}
-            />
-          </div>
-        )}
+          )}
+        </div>
+        {/* Fim do Container Adicionado */}
+
       </div>
     </div>
   );
+  // ### FIM DA ALTERAÇÃO ###
 };
 
 export default Checkout;
