@@ -44,16 +44,6 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
             Faça o upload da imagem que será exibida no topo do checkout.
           </p>
           
-          {/* Botão para remover imagem do servidor */}
-          {isSupabaseImage && (
-            <button
-              type="button"
-              onClick={handleRemoveImage}
-              className="text-xs text-red-600 hover:text-red-700 underline"
-            >
-              Remover imagem para usar URL personalizada
-            </button>
-          )}
         </div>
 
         <div className="space-y-2">
@@ -69,6 +59,27 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
             <p className="text-xs text-gray-500">
               Campo desativado. Uma imagem foi enviada para nosso servidor. Para usar uma URL personalizada, remova a imagem acima.
             </p>
+          )}
+          
+          {/* Preview para imagens por URL */}
+          {!isSupabaseImage && formData.checkout_image_url && (
+            <div className="relative w-32 h-20 border rounded-lg overflow-hidden bg-gray-50">
+              <img
+                src={formData.checkout_image_url}
+                alt="Preview"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
           )}
         </div>
 

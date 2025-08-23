@@ -89,7 +89,7 @@ export const CheckoutImageUpload = ({ onUploadSuccess, initialUrl = '', userId }
       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
         <UploadCloud className="h-10 w-10" />
         <p className="text-sm">Arraste uma imagem ou clique aqui para fazer o upload</p>
-        <p className="text-xs">Recomendado: 1280px de largura</p>
+        <p className="text-xs">Recomendado: 670×360px ou 1000×500px</p>
       </div>
     </div>
   );
