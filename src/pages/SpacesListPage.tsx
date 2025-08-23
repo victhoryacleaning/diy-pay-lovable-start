@@ -22,7 +22,7 @@ const OnboardingView = () => (
     <h1 className="text-3xl font-bold mb-2">Crie sua primeira Área de Membros</h1>
     <p className="text-muted-foreground mb-6 max-w-md">Organize seu conteúdo, personalize o visual e ofereça uma experiência de consumo incrível para seus alunos.</p>
     <Button size="lg" asChild>
-      <Link to="/members-area/new"><PlusCircle className="mr-2 h-4 w-4" />Criar Área de Membros</Link>
+      <Link to="/members"><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Link>
     </Button>
   </div>
 );
@@ -50,7 +50,7 @@ export default function SpacesListPage() {
       <div className="p-4 md:p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Suas Áreas de Membros</h1>
-          <Button asChild><Link to="/members-area/new"><PlusCircle className="mr-2 h-4 w-4" />Criar nova Área de Membros</Link></Button>
+          <Button asChild><Link to="/members"><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Link></Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {spaces.map((space: any) => (

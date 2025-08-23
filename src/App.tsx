@@ -17,7 +17,7 @@ import ProducerSalesPage from "./pages/ProducerSalesPage";
 import ProducerSubscriptionsPage from "./pages/ProducerSubscriptionsPage";
 import ProducerFinancialsPage from "./pages/ProducerFinancialsPage";
 import SpacesListPage from "./pages/SpacesListPage";
-import CreateSpacePage from "./pages/CreateSpacePage";
+
 import EditSpacePage from "./pages/EditSpacePage";
 import Checkout from "./pages/Checkout";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
@@ -77,7 +77,7 @@ const App = () => {
               <Route path="/products/edit/:id" element={<ProtectedRoute requiredView="producer"><EditProductPage /></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute requiredView="producer"><ProducerSalesPage /></ProtectedRoute>} />
               <Route path="/members-area" element={<ProtectedRoute requiredView="producer"><SpacesListPage /></ProtectedRoute>} />
-              <Route path="/members-area/new" element={<ProtectedRoute requiredView="producer"><CreateSpacePage /></ProtectedRoute>} />
+              
               <Route path="/spaces/edit/:spaceId" element={<ProtectedRoute requiredView="producer"><EditSpacePage /></ProtectedRoute>} />
               <Route path="/personalize/edit/:spaceId" element={<ProtectedRoute requiredView="producer"><PersonalizeSpacePage /></ProtectedRoute>} />
               <Route path="/producer/subscriptions" element={<ProtectedRoute requiredView="producer"><ProducerSubscriptionsPage /></ProtectedRoute>} />
