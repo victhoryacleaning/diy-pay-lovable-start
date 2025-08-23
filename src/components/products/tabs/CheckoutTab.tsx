@@ -11,6 +11,14 @@ interface CheckoutTabProps {
 
 const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
   const { user } = useAuth();
+  
+  // Detecta se a imagem atual é do Supabase (upload do servidor)
+  const isSupabaseImage = formData.checkout_image_url && 
+    formData.checkout_image_url.includes('supabase.co/storage');
+  
+  const handleRemoveImage = () => {
+    onInputChange('checkout_image_url', '');
+  };
 
   return (
     <div className="space-y-6">
@@ -20,13 +28,13 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
       </div>
 
       <div className="space-y-6">
-        {/* NOVO CAMPO DE UPLOAD */}
+        {/* CAMPO DE UPLOAD */}
         <div className="space-y-2">
           <Label>Imagem do Checkout</Label>
           {user?.id ? (
             <CheckoutImageUpload
               userId={user.id}
-              initialUrl={formData.checkout_image_url}
+              initialUrl={isSupabaseImage ? formData.checkout_image_url : ''}
               onUploadSuccess={(url) => onInputChange('checkout_image_url', url)}
             />
           ) : (
@@ -35,16 +43,33 @@ const CheckoutTab = ({ formData, onInputChange }: CheckoutTabProps) => {
           <p className="text-xs text-gray-500">
             Faça o upload da imagem que será exibida no topo do checkout.
           </p>
+          
+          {/* Botão para remover imagem do servidor */}
+          {isSupabaseImage && (
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="text-xs text-red-600 hover:text-red-700 underline"
+            >
+              Remover imagem para usar URL personalizada
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="checkout_image_url">OU Cole a URL da Imagem</Label>
           <Input
             id="checkout_image_url"
-            value={formData.checkout_image_url}
+            value={isSupabaseImage ? '' : (formData.checkout_image_url || '')}
             onChange={(e) => onInputChange('checkout_image_url', e.target.value)}
             placeholder="https://exemplo.com/imagem.jpg"
+            disabled={isSupabaseImage}
           />
+          {isSupabaseImage && (
+            <p className="text-xs text-gray-500">
+              Campo desativado. Uma imagem foi enviada para nosso servidor. Para usar uma URL personalizada, remova a imagem acima.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
