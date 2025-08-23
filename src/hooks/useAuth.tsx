@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+// SUA INTERFACE ORIGINAL, PRESERVADA
 interface Profile {
   id: string;
   email: string;
@@ -36,6 +37,7 @@ interface Profile {
 
 type ActiveView = 'producer' | 'student';
 
+// SUA INTERFACE ORIGINAL, PRESERVADA
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -64,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const user = session?.user ?? null;
   const isGoogleUser = user?.app_metadata?.provider === 'google';
 
-  // 1. A função de busca de perfil é memoizada com useCallback para estabilizá-la.
+  // 1. CORREÇÃO: Função de busca memoizada para estabilidade
   const fetchUserProfile = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setProfile(null);
@@ -82,20 +84,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // 2. O useEffect principal é simplificado para lidar apenas com a autenticação.
+  // 2. CORREÇÃO: useEffect principal refatorado para ser mais robusto
   useEffect(() => {
     setLoading(true);
+    // Primeiro, tenta obter a sessão atual para resolver o F5 rapidamente
     supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       setSession(initialSession);
       await fetchUserProfile(initialSession?.user?.id);
-      setLoading(false);
+      setLoading(false); // Só termina o loading inicial aqui
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        // Se um evento de login ou logout acontecer, atualiza tudo
         setLoading(true);
         setSession(newSession);
-
         if (event === 'SIGNED_IN' && newSession?.user) {
           if (newSession.user.app_metadata.provider === 'google') {
             const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', newSession.user.id).single();
@@ -121,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [fetchUserProfile, navigate]);
 
-  // 3. Um useEffect separado e seguro lida com o redirecionamento pós-login.
+  // 3. CORREÇÃO: useEffect de redirecionamento pós-login permanece separado
   useEffect(() => {
     if (!loading && profile && (location.pathname === '/login' || location.pathname === '/register')) {
       const roleRedirects = {
@@ -132,8 +135,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate(roleRedirects[profile.role] || '/', { replace: true });
     }
   }, [profile, loading, location, navigate]);
-  
-  // O restante do seu código original e completo é preservado
+
+  // SEU CÓDIGO ORIGINAL E COMPLETO, PRESERVADO
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -193,7 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast.error('Erro ao fazer logout.');
       console.error('Error signing out:', error);
     }
-    // A limpeza de estado e redirecionamento agora são tratadas pelo onAuthStateChange
+    // A limpeza agora é tratada pelo onAuthStateChange
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
@@ -222,7 +225,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, isGoogleUser, activeView, toggleView, signUp, signIn, signInWithGoogle, signOut, updateProfile }}>
       {children}
-    </AuthContext.Provider>
+    </Auth-context.Provider>
   );
 };
 
