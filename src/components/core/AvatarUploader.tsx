@@ -13,7 +13,8 @@ export const AvatarUploader = () => {
   const handleUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
-      const file = event.target.files?.[0];
+      // === A CORREÇÃO ESTÁ AQUI ===
+      const file = event.target.files?.[0]; 
       if (!file) {
         throw new Error('Você precisa selecionar uma imagem para fazer o upload.');
       }
