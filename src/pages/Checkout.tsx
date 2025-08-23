@@ -81,9 +81,9 @@ const Checkout = () => {
 
         {product.show_order_summary ? (
           // Layout com flexbox responsivo (sem 'reverse' para ordem natural no mobile)
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
             {/* Product Info Sidebar */}
-            <div className="w-full lg:w-1/4 px-4 lg:px-0">
+            <div className="w-full lg:w-1/3 px-4 lg:px-0">
               <ProductInfo 
                 product={product} 
                 donationAmount={donationAmount}
@@ -92,7 +92,7 @@ const Checkout = () => {
             </div>
 
             {/* Checkout Form */}
-            <div className="w-full lg:w-3/4">
+            <div className="w-full lg:w-2/3">
               <CheckoutForm 
                 product={product}
                 onDonationAmountChange={setDonationAmount}
