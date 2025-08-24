@@ -185,38 +185,75 @@ Deno.serve(async (req) => {
     }
 
     // 4. Remover imagens do storage
-    const imagesToRemove = [];
+    let totalImagesRemoved = 0;
     
-    if (product.cover_image_url) {
-      const coverPath = product.cover_image_url.split('/').pop();
-      if (coverPath) imagesToRemove.push(coverPath);
-    }
-    
-    if (product.checkout_image_url) {
-      const checkoutPath = product.checkout_image_url.split('/').pop();
-      if (checkoutPath) imagesToRemove.push(checkoutPath);
-    }
-
-    if (imagesToRemove.length > 0) {
+    // Extrair nome do arquivo da URL corretamente
+    const extractFileName = (url: string): string | null => {
+      if (!url) return null;
       try {
-        const { error: storageError } = await serviceClient.storage
-          .from('product-covers')
-          .remove(imagesToRemove);
-
-        if (storageError) {
-          console.error('Erro ao remover imagens:', storageError);
-        } else {
-          console.log(`🖼️ ${imagesToRemove.length} imagens removidas do storage`);
+        // Se a URL contém o domínio do Supabase, extrair apenas o nome do arquivo
+        if (url.includes('supabase.co') || url.includes('supabase.')) {
+          const parts = url.split('/');
+          return parts[parts.length - 1];
         }
+        // Caso contrário, usar o split normal
+        return url.split('/').pop() || null;
+      } catch {
+        return null;
+      }
+    };
 
-        // Também tentar remover do bucket uploads (caso esteja lá)
-        await serviceClient.storage
-          .from('uploads')
-          .remove(imagesToRemove);
-      } catch (storageError) {
-        console.error('Erro ao remover imagens do storage:', storageError);
+    // Remover imagem de capa
+    if (product.cover_image_url) {
+      const coverFileName = extractFileName(product.cover_image_url);
+      console.log(`🖼️ Tentando remover imagem de capa: ${coverFileName}`);
+      
+      if (coverFileName) {
+        // Tentar remover de todos os buckets possíveis
+        const buckets = ['product-covers', 'uploads'];
+        for (const bucket of buckets) {
+          try {
+            const { error } = await serviceClient.storage
+              .from(bucket)
+              .remove([coverFileName]);
+            if (!error) {
+              console.log(`✅ Imagem de capa removida do bucket: ${bucket}`);
+              totalImagesRemoved++;
+              break; // Se conseguiu remover, não precisa tentar outros buckets
+            }
+          } catch (error) {
+            console.log(`⚠️ Erro ao remover do bucket ${bucket}:`, error);
+          }
+        }
       }
     }
+
+    // Remover imagem do checkout
+    if (product.checkout_image_url) {
+      const checkoutFileName = extractFileName(product.checkout_image_url);
+      console.log(`🖼️ Tentando remover imagem do checkout: ${checkoutFileName}`);
+      
+      if (checkoutFileName) {
+        // Tentar remover de todos os buckets possíveis
+        const buckets = ['product-checkout-images', 'uploads'];
+        for (const bucket of buckets) {
+          try {
+            const { error } = await serviceClient.storage
+              .from(bucket)
+              .remove([checkoutFileName]);
+            if (!error) {
+              console.log(`✅ Imagem do checkout removida do bucket: ${bucket}`);
+              totalImagesRemoved++;
+              break; // Se conseguiu remover, não precisa tentar outros buckets
+            }
+          } catch (error) {
+            console.log(`⚠️ Erro ao remover do bucket ${bucket}:`, error);
+          }
+        }
+      }
+    }
+
+    console.log(`🖼️ Total de imagens removidas: ${totalImagesRemoved}`);
 
     // 5. Por fim, deletar o produto
     const { error: productDeleteError } = await serviceClient
@@ -234,7 +271,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       message: 'Produto excluído completamente com sucesso',
       deleted_spaces: spaces?.length || 0,
-      deleted_images: imagesToRemove.length
+      deleted_images: totalImagesRemoved
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
