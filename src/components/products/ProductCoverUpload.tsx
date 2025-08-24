@@ -12,8 +12,7 @@ interface ProductCoverUploadProps {
 }
 
 const BUCKET_NAME = 'product-covers';
-const MAX_SIZE_KB = 100;
-const MAX_DIMENSION_PX = 500;
+const MAX_SIZE_KB = 150;
 
 export const ProductCoverUpload = ({ onUploadSuccess, initialUrl = '', userId }: ProductCoverUploadProps) => {
   const [uploading, setUploading] = useState(false);
@@ -37,12 +36,13 @@ export const ProductCoverUpload = ({ onUploadSuccess, initialUrl = '', userId }:
     image.src = URL.createObjectURL(file);
     image.onload = async () => {
       URL.revokeObjectURL(image.src);
-      if (image.width > MAX_DIMENSION_PX || image.height > MAX_DIMENSION_PX) {
-        toast.error(`A imagem é muito grande. A dimensão máxima é de ${MAX_DIMENSION_PX}x${MAX_DIMENSION_PX} px.`);
-        return;
-      }
-      if (image.width !== image.height) {
-        toast.error('A imagem deve ser quadrada (ex: 500x500 px).');
+      // Verificar se a proporção está correta (16:9)
+      const aspectRatio = image.width / image.height;
+      const targetAspectRatio = 16 / 9;
+      const tolerance = 0.01; // Tolerância para pequenas diferenças de arredondamento
+      
+      if (Math.abs(aspectRatio - targetAspectRatio) > tolerance) {
+        toast.error('A imagem deve ter proporção 16:9 (ex: 640×360px, 1280×720px).');
         return;
       }
 
@@ -96,7 +96,7 @@ export const ProductCoverUpload = ({ onUploadSuccess, initialUrl = '', userId }:
   };
 
   if (uploading) return <div className="border-2 border-dashed rounded-lg p-8 h-[150px] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin" /></div>;
-  if (uploadedUrl) return <div className="relative w-40 h-40 border rounded-lg group"><img src={uploadedUrl} alt="Capa" className="w-full h-full object-cover rounded-lg" /><div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"><Button type="button" variant="destructive" size="icon" onClick={handleRemoveImage}><X className="h-5 w-5" /></Button></div></div>;
+  if (uploadedUrl) return <div className="relative w-64 h-36 border rounded-lg group"><img src={uploadedUrl} alt="Capa" className="w-full h-full object-cover rounded-lg" /><div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"><Button type="button" variant="destructive" size="icon" onClick={handleRemoveImage}><X className="h-5 w-5" /></Button></div></div>;
   
   return (
     <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${ isDragActive ? 'border-primary bg-primary/10' : 'border-border' } h-[150px]`}>
@@ -104,7 +104,8 @@ export const ProductCoverUpload = ({ onUploadSuccess, initialUrl = '', userId }:
       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
         <UploadCloud className="h-10 w-10" />
         <p className="text-sm">Arraste uma imagem ou clique aqui</p>
-        <p className="text-xs">JPG, PNG, WEBP (Máx: 100KB, 500x500px)</p>
+        <p className="text-xs">Recomendado: Proporção 16:9 | 640×360px</p>
+        <p className="text-xs">JPG, PNG, WEBP (Máx: 150KB)</p>
       </div>
     </div>
   );
