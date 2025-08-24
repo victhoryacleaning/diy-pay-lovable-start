@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search, Edit, Brush } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { StudentLayout } from '@/components/StudentLayout';
 
@@ -54,34 +54,48 @@ export default function MyCoursesPage() {
         </div>
 
         {courses && courses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {courses.map((course: any) => (
-              <Card key={course.id}>
-                <CardHeader>
-                  <div className="aspect-[16/9] bg-muted rounded-md flex items-center justify-center">
-                    {course.checkout_image_url ? (
+              <Card key={course.id} className="flex flex-col">
+                <CardContent className="p-0">
+                  {/* Imagem quadrada */}
+                  <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
+                    {course.cover_image_url ? (
                       <img 
-                        src={course.checkout_image_url} 
+                        src={course.cover_image_url} 
                         alt={course.name} 
-                        className="object-cover w-full h-full rounded-md" 
+                        className="object-cover w-full h-full" 
                       />
                     ) : (
                       <BookOpen className="h-12 w-12 text-muted-foreground" />
                     )}
                   </div>
-                  <CardTitle className="pt-4">{course.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{course.producer_name}</p>
-                  {/* Barra de progresso será adicionada aqui */}
+                  
+                  {/* Conteúdo */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{course.name}</h3>
+                    <div className="text-xs text-muted-foreground mb-3 break-all">
+                      diypay.com.br/members/{course.space_slug || 'N/A'}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{course.producer_name}</p>
+                    
+                    {/* Botões */}
+                    <div className="flex flex-col gap-2">
+                      <Button asChild size="sm" className="w-full" disabled={!course.space_id}>
+                        <Link to={course.space_id ? `/spaces/edit/${course.space_id}` : '#'}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Conteúdo
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm" className="w-full" disabled={!course.space_id}>
+                        <Link to={course.space_id ? `/personalize/edit/${course.space_id}` : '#'}>
+                          <Brush className="mr-2 h-4 w-4" />
+                          Personalizar
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
-                <CardFooter>
-                  <Button asChild className="w-full" disabled={!course.space_id}>
-                    <Link to={course.space_id ? `/members/spaces/${course.space_id}` : '#'}>
-                      Começar
-                    </Link>
-                  </Button>
-                </CardFooter>
               </Card>
             ))}
           </div>
