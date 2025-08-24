@@ -1,3 +1,5 @@
+// Conteúdo completo e corrigido para supabase/functions/create-product/index.ts
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
@@ -13,14 +15,10 @@ Deno.serve(async (req) => {
     );
 
     const token = req.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!token) {
-      throw new Error('Token de autorização não fornecido');
-    }
+    if (!token) throw new Error('Token de autorização não fornecido');
 
     const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
-    if (authError || !user) {
-      throw new Error('Usuário não autorizado');
-    }
+    if (authError || !user) throw new Error('Usuário não autorizado');
 
     const requestBody = await req.json();
     const { delivery_type, checkout_link_slug, ...productData } = requestBody;
@@ -29,12 +27,10 @@ Deno.serve(async (req) => {
     if (!productData.name || typeof productData.name !== 'string') {
       throw new Error('Nome do produto é obrigatório');
     }
-
     if (typeof productData.price_cents !== 'number' || productData.price_cents < 0) {
       throw new Error('Preço deve ser um número válido e não negativo');
     }
 
-    // Preparar dados para inserção
     const insertData = {
       name: productData.name.trim(),
       description: productData.description || null,
@@ -73,8 +69,22 @@ Deno.serve(async (req) => {
     // Se o delivery_type for 'members_area', criar a estrutura do espaço
     if (delivery_type === 'members_area') {
       try {
-        const { data: newSpace, error: spaceError } = await serviceClient.from('spaces').insert({ producer_id: user.id, name: newProduct.name, slug: newProduct.checkout_link_slug }).select('id').single();
+        // ### CORREÇÃO APLICADA AQUI ###
+        // Adicionamos 'product_id: newProduct.id' para ligar o space ao produto.
+        const { data: newSpace, error: spaceError } = await serviceClient
+          .from('spaces')
+          .insert({ 
+            producer_id: user.id, 
+            name: newProduct.name, 
+            slug: newProduct.checkout_link_slug,
+            product_id: newProduct.id // A LIGAÇÃO QUE FALTAVA
+          })
+          .select('id')
+          .single();
+
         if (spaceError) throw spaceError;
+
+        // O resto da criação da estrutura...
         const { data: newContainer, error: containerError } = await serviceClient.from('space_containers').insert({ space_id: newSpace.id, title: 'Sejam bem-vindos', display_order: 0 }).select('id').single();
         if (containerError) throw containerError;
         const { error: spError } = await serviceClient.from('space_products').insert({ space_id: newSpace.id, product_id: newProduct.id, product_type: 'principal', container_id: newContainer.id });
@@ -87,8 +97,13 @@ Deno.serve(async (req) => {
         if (lessonError) throw lessonError;
         const { error: enrollmentError } = await serviceClient.from('enrollments').insert({ user_id: user.id, product_id: newProduct.id, cohort_id: newCohort.id });
         if (enrollmentError) console.error(`Falha ao auto-matricular produtor: ${enrollmentError.message}`);
+
       } catch (membersAreaError) {
-        console.error('Erro ao criar estrutura de members_area:', membersAreaError);
+        // Se a criação da área de membros falhar, desfaz a criação do produto para não deixar lixo.
+        console.error('Erro ao criar estrutura de members_area. Revertendo criação do produto...', membersAreaError);
+        await serviceClient.from('products').delete().eq('id', newProduct.id);
+        // Lança o erro original para o frontend saber o que aconteceu.
+        throw membersAreaError;
       }
     }
     
@@ -96,4 +111,4 @@ Deno.serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
-})
+});
