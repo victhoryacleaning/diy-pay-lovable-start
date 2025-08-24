@@ -134,12 +134,23 @@ Deno.serve(async (req) => {
         // Remover imagem do banner do space se existir
         if (space.banner_image_url) {
           try {
-            const bannerPath = space.banner_image_url.split('/').pop();
-            if (bannerPath) {
-              await serviceClient.storage
-                .from('uploads')
-                .remove([bannerPath]);
-              console.log(`🖼️ Banner do space removido: ${bannerPath}`);
+            const bannerFileName = extractFileName(space.banner_image_url);
+            if (bannerFileName) {
+              const buckets = ['uploads', 'product-covers'];
+              for (const bucket of buckets) {
+                try {
+                  const { error } = await serviceClient.storage
+                    .from(bucket)
+                    .remove([bannerFileName]);
+                  if (!error) {
+                    console.log(`🖼️ Banner do space removido do bucket: ${bucket}`);
+                    totalImagesRemoved++;
+                    break;
+                  }
+                } catch (error) {
+                  console.log(`⚠️ Erro ao remover banner do bucket ${bucket}:`, error);
+                }
+              }
             }
           } catch (storageError) {
             console.error('Erro ao remover banner do space:', storageError);
