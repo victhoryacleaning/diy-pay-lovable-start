@@ -97,15 +97,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setActiveView(null);
   }, []);
 
+  // Função para determinar a view baseada na rota atual
+  const getViewFromRoute = useCallback((pathname: string): ActiveView => {
+    // Rotas que são exclusivamente do painel de estudante
+    if (pathname.startsWith('/members')) {
+      return 'student';
+    }
+    // Rotas que são exclusivamente do painel de produtor
+    if (pathname.startsWith('/dashboard') || 
+        pathname.startsWith('/products') || 
+        pathname.startsWith('/sales') || 
+        pathname.startsWith('/members-area') || 
+        pathname.startsWith('/spaces') || 
+        pathname.startsWith('/personalize') || 
+        pathname.startsWith('/producer') || 
+        pathname.startsWith('/financials') || 
+        pathname.startsWith('/settings')) {
+      return 'producer';
+    }
+    // Para outras rotas, usar a view padrão baseada no role
+    return 'producer'; // Padrão
+  }, []);
+
   // Função simplificada para buscar perfil
   const loadUserProfile = useCallback(async (userId: string) => {
     const profile = await fetchUserProfile(userId);
     if (profile) {
       setProfile(profile);
-      setActiveView(profile.role === 'producer' ? 'producer' : 'student');
+      // Determinar a view baseada na rota atual para preservar o contexto
+      const routeBasedView = getViewFromRoute(location.pathname);
+      setActiveView(profile.role === 'producer' ? routeBasedView : 'student');
     }
     return profile;
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, getViewFromRoute, location.pathname]);
 
   // Inicialização do auth - versão simplificada
   useEffect(() => {
@@ -131,8 +155,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userProfile = await fetchUserProfile(currentSession.user.id);
           if (mounted && userProfile) {
             setProfile(userProfile);
-            setActiveView(userProfile.role === 'producer' ? 'producer' : 'student');
-            console.log('✅ Profile restored:', userProfile.full_name);
+            // Determinar a view baseada na rota atual para preservar o contexto no refresh
+            const routeBasedView = getViewFromRoute(location.pathname);
+            setActiveView(userProfile.role === 'producer' ? routeBasedView : 'student');
+            console.log('✅ Profile restored:', userProfile.full_name, 'View:', routeBasedView);
           }
         }
 
@@ -169,6 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (userProfile) {
                 console.log('✅ Profile loaded:', userProfile.full_name);
                 setProfile(userProfile);
+                // Para novos logins, usar a view padrão baseada no role
                 setActiveView(userProfile.role === 'producer' ? 'producer' : 'student');
                 
                 // Handle Google Auth redirect
