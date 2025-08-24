@@ -59,51 +59,23 @@ export default function SpacesListPage() {
           <h1 className="text-3xl font-bold">Suas Áreas de Membros</h1>
           <Button onClick={handleToggleView}><PlusCircle className="mr-2 h-4 w-4" />Mudar para painel do Aluno</Button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {spaces.map((space: any) => (
-            <Card key={space.id} className="flex flex-col">
-              <CardContent className="p-0">
-                {/* Imagem quadrada */}
-                <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
-                  {space.cover_image_url ? (
-                    <img 
-                      src={space.cover_image_url} 
-                      alt={space.name} 
-                      className="object-cover w-full h-full" 
-                    />
-                  ) : (
-                    <BookOpen className="h-12 w-12 text-muted-foreground" />
-                  )}
-                </div>
-                
-                {/* Conteúdo */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{space.name}</h3>
-                  <div className="text-xs text-muted-foreground mb-3 break-all">
-                    diypay.com.br/members/{space.slug}
-                  </div>
-                  <div className="flex items-center text-xs text-muted-foreground mb-4">
-                    <Package className="mr-1 h-3 w-3" />
-                    <span>{space.product_count} produtos</span>
-                  </div>
-                  
-                  {/* Botões */}
-                  <div className="flex flex-col gap-2">
-                    <Button asChild size="sm" className="w-full">
-                      <Link to={`/spaces/edit/${space.id}`}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Conteúdo
-                      </Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="w-full">
-                      <Link to={`/personalize/edit/${space.id}`}>
-                        <Brush className="mr-2 h-4 w-4" />
-                        Personalizar
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
+            <Card key={space.id} className="flex flex-col justify-between">
+              <div>
+                <CardHeader>
+                  <div className="aspect-[16/9] bg-muted rounded-md mb-4 flex items-center justify-center"><BookOpen className="h-12 w-12 text-muted-foreground" /></div>
+                  <CardTitle>{space.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <div className="flex items-center text-sm text-muted-foreground"><Package className="mr-2 h-4 w-4" /><span>{space.product_count} produtos</span></div>
+                  <div className="flex items-center text-sm text-muted-foreground"><Copy className="mr-2 h-4 w-4" /><span className="truncate">diypay.com.br/members/{space.slug}</span></div>
+                </CardContent>
+              </div>
+              <CardFooter className="flex gap-2">
+                <Button asChild className="w-full"><Link to={`/spaces/edit/${space.id}`}><Edit className="mr-2 h-4 w-4" />Conteúdo</Link></Button>
+                <Button asChild variant="outline" className="w-full"><Link to={`/personalize/edit/${space.id}`}><Brush className="mr-2 h-4 w-4" />Personalizar</Link></Button>
+              </CardFooter>
             </Card>
           ))}
         </div>

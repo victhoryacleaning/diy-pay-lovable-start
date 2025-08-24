@@ -21,13 +21,13 @@ Deno.serve(async (req) => {
           id,
           title,
           display_order,
-            space_products (
-              product:products (
-                id,
-                name,
-                cover_image_url
-              )
+          space_products (
+            product:products (
+              id,
+              name,
+              checkout_image_url
             )
+          )
         )
       `)
       .eq('id', space_id)

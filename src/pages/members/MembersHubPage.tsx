@@ -54,25 +54,19 @@ const MembersHubPage = () => {
           {hubData?.space_containers.map((container) => (
             <div key={container.id}>
               <h2 className="text-2xl font-bold mb-4">{container.title}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {container.space_products.map(({ product }) => (
                   <Link to={`/members/courses/${product.id}`} key={product.id}>
                     <Card className="hover:scale-105 transition-transform duration-200">
                       <CardContent className="p-0">
-                        <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center overflow-hidden">
-                          {product.cover_image_url ? (
-                            <img 
-                              src={product.cover_image_url} 
-                              alt={product.name} 
-                              className="object-cover w-full h-full" 
-                            />
+                        <div className="aspect-[3/4] bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                          {product.checkout_image_url ? (
+                            <img src={product.checkout_image_url} alt={product.name} className="object-cover w-full h-full" />
                           ) : (
                             <BookOpen className="h-12 w-12 text-muted-foreground" />
                           )}
                         </div>
-                        <div className="p-3">
-                          <h3 className="font-semibold text-sm line-clamp-2">{product.name}</h3>
-                        </div>
+                        <h3 className="font-semibold text-sm p-2">{product.name}</h3>
                       </CardContent>
                     </Card>
                   </Link>
