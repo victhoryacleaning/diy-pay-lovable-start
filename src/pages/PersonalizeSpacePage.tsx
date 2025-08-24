@@ -1,5 +1,9 @@
+// src/pages/PersonalizeSpacePage.tsx
+
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+// ### INÍCIO DA ADIÇÃO ###
+import { useParams, useNavigate } from 'react-router-dom';
+// ### FIM DA ADIÇÃO ###
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,8 +51,12 @@ export default function PersonalizeSpacePage() {
   const [isAddProductModalOpen, setAddProductModalOpen] = useState(false);
   const [activeContainerId, setActiveContainerId] = useState<string | null>(null);
   const [newContainerTitle, setNewContainerTitle] = useState('');
+  
+  // ### INÍCIO DA ADIÇÃO ###
+  const navigate = useNavigate();
+  // ### FIM DA ADIÇÃO ###
 
-  const { data: space, isLoading } = useQuery({
+  const { data: space, isLoading, isError } = useQuery({ // Adicionado 'isError'
     queryKey: ['space-details', spaceId],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-space-details', { body: { spaceId } });
@@ -57,6 +65,18 @@ export default function PersonalizeSpacePage() {
     },
     enabled: !!spaceId,
   });
+  
+  // ### INÍCIO DA ADIÇÃO ###
+  // Hook para lidar com o erro de "não encontrado" e redirecionar
+  useEffect(() => {
+    if (isError) {
+      toast.error("Área de Membros não encontrada", {
+        description: "Este conteúdo pode ter sido excluído. Redirecionando...",
+      });
+      navigate('/members-area');
+    }
+  }, [isError, navigate]);
+  // ### FIM DA ADIÇÃO ###
 
   const appearanceForm = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceSchema),
@@ -89,8 +109,6 @@ export default function PersonalizeSpacePage() {
 
   const updateAppearanceMutation = useMutation({
     mutationFn: async (values: AppearanceFormValues) => {
-      // NOTA: A função 'update-space-details' precisará ser atualizada para receber estes campos.
-      // Por enquanto, esta chamada irá falhar graciosamente ou apenas não atualizará os novos campos.
       const { error } = await supabase.from('spaces').update({
         banner_image_url: values.banner_image_url || null,
         background_color: values.background_color || null
@@ -108,10 +126,16 @@ export default function PersonalizeSpacePage() {
   const onAppearanceSubmit = (values: AppearanceFormValues) => updateAppearanceMutation.mutate(values);
 
   if (isLoading) return <ProducerLayout><Skeleton className="h-96 w-full" /></ProducerLayout>;
+  
+  // ### INÍCIO DA ADIÇÃO ###
+  // Retorna null enquanto o redirecionamento está acontecendo para evitar renderizar a página vazia
+  if (isError) return null;
+  // ### FIM DA ADIÇÃO ###
 
   return (
     <>
       <ProducerLayout>
+          {/* O restante do seu código JSX permanece exatamente o mesmo */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold">{space?.name || 'Carregando...'}</h1>
             <p className="text-muted-foreground">Personalize a estrutura e aparência da sua área de membros.</p>
