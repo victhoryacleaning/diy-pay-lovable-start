@@ -42,7 +42,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isGoogleUser: boolean;
-  activeView: ActiveView;
+  activeView: ActiveView | null;
   toggleView: () => void;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<ActiveView>('producer');
+  const [activeView, setActiveView] = useState<ActiveView | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('🧹 Clearing auth state');
     setSession(null);
     setProfile(null);
-    setActiveView('producer');
+    setActiveView(null);
   }, []);
 
   // Função simplificada para buscar perfil

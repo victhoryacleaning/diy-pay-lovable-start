@@ -59,9 +59,9 @@ export default function MyCoursesPage() {
               <Card key={course.id}>
                 <CardHeader>
                   <div className="aspect-[16/9] bg-muted rounded-md flex items-center justify-center">
-                    {course.checkout_image_url ? (
+                    {course.cover_image_url ? (
                       <img 
-                        src={course.checkout_image_url} 
+                        src={course.cover_image_url} 
                         alt={course.name} 
                         className="object-cover w-full h-full rounded-md" 
                       />

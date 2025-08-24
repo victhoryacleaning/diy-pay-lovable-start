@@ -49,7 +49,7 @@ export const AuthGuard = ({
   }
 
   // Verificar view se especificado
-  if (requiredView && activeView !== requiredView) {
+  if (requiredView && activeView && activeView !== requiredView) {
     if (requiredView === 'producer' && profile?.role !== 'producer') {
       return <Navigate to="/members" replace />;
     }
