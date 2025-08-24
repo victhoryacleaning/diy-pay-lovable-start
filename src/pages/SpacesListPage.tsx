@@ -64,13 +64,15 @@ export default function SpacesListPage() {
             <Card key={space.id} className="flex flex-col justify-between">
               <div>
                 <CardHeader>
-                  <div className="aspect-[16/9] bg-muted rounded-md mb-4 flex items-center justify-center"><BookOpen className="h-12 w-12 text-muted-foreground" /></div>
+                  <div className="aspect-[16/9] bg-muted rounded-md mb-4 flex items-center justify-center overflow-hidden">
+                    {space.cover_image_url ? (
+                      <img src={space.cover_image_url} alt={space.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="h-12 w-12 text-muted-foreground" />
+                    )}
+                  </div>
                   <CardTitle>{space.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <div className="flex items-center text-sm text-muted-foreground"><Package className="mr-2 h-4 w-4" /><span>{space.product_count} produtos</span></div>
-                  <div className="flex items-center text-sm text-muted-foreground"><Copy className="mr-2 h-4 w-4" /><span className="truncate">diypay.com.br/members/{space.slug}</span></div>
-                </CardContent>
               </div>
               <CardFooter className="flex gap-2">
                 <Button asChild className="w-full"><Link to={`/spaces/edit/${space.id}`}><Edit className="mr-2 h-4 w-4" />Conteúdo</Link></Button>

@@ -21,24 +21,38 @@ Deno.serve(async (req) => {
     );
 
     // ETAPA 1: CORREÇÃO DA QUERY
-    // Substituída a subquery manual pela sintaxe PostgREST para contagem.
+    // Busca espaços com produtos e suas imagens de capa
     const { data, error } = await serviceClient
       .from('spaces')
-      .select('id, name, slug, created_at, space_products(count)')
+      .select(`
+        id, 
+        name, 
+        slug, 
+        created_at, 
+        space_products(
+          products(cover_image_url)
+        )
+      `)
       .eq('producer_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     // ETAPA 2: FORMATAÇÃO DA RESPOSTA
-    // A nova query retorna a contagem aninhada. Formatamos para a estrutura que o frontend espera.
-    const formattedData = data.map(space => ({
-      id: space.id,
-      name: space.name,
-      slug: space.slug,
-      created_at: space.created_at,
-      product_count: space.space_products?.length || 0,
-    }));
+    // Formatamos para incluir a primeira imagem de capa encontrada
+    const formattedData = data.map(space => {
+      const firstProductWithImage = space.space_products?.find(
+        sp => sp.products?.cover_image_url
+      );
+      
+      return {
+        id: space.id,
+        name: space.name,
+        slug: space.slug,
+        created_at: space.created_at,
+        cover_image_url: firstProductWithImage?.products?.cover_image_url || null,
+      };
+    });
 
     return new Response(JSON.stringify(formattedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
