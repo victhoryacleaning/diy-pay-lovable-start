@@ -199,16 +199,25 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
       if (!productId) throw new Error("ID do produto não encontrado para exclusão.");
-      const { error } = await supabase.from('products').delete().eq('id', productId);
+      const { data, error } = await supabase.functions.invoke('delete-product', {
+        body: { productId }
+      });
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
-      toast.success('Produto excluído com sucesso!');
+    onSuccess: (result) => {
+      const spacesDeleted = result?.deleted_spaces || 0;
+      const imagesDeleted = result?.deleted_images || 0;
+      toast.success(`Produto excluído completamente! ${spacesDeleted} área(s) de membros e ${imagesDeleted} imagem(ns) removidas.`);
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['producer-spaces'] });
       navigate('/products');
     },
-    onError: (error) => {
-      toast.error('Erro ao excluir produto');
+    onError: (error: any) => {
+      let errorMessage = 'Erro ao excluir produto';
+      if (error?.context?.error?.message) errorMessage = error.context.error.message;
+      else if (error?.message) errorMessage = error.message;
+      toast.error(errorMessage);
     }
   });
 
