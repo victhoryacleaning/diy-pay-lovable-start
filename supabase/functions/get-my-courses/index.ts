@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
         product:products (
           id,
           name,
-          checkout_image_url,
+          cover_image_url,
           producer:profiles (full_name),
           space_products!inner(space_id) 
         )

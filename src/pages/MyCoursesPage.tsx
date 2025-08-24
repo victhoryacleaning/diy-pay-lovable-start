@@ -58,12 +58,12 @@ export default function MyCoursesPage() {
             {courses.map((course: any) => (
               <Card key={course.id}>
                 <CardHeader>
-                  <div className="aspect-[16/9] bg-muted rounded-md flex items-center justify-center">
-                    {course.checkout_image_url ? (
+                  <div className="aspect-square bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                    {course.cover_image_url ? (
                       <img 
-                        src={course.checkout_image_url} 
+                        src={course.cover_image_url} 
                         alt={course.name} 
-                        className="object-cover w-full h-full rounded-md" 
+                        className="w-full h-full object-cover" 
                       />
                     ) : (
                       <BookOpen className="h-12 w-12 text-muted-foreground" />

@@ -64,7 +64,13 @@ export default function SpacesListPage() {
             <Card key={space.id} className="flex flex-col justify-between">
               <div>
                 <CardHeader>
-                  <div className="aspect-[16/9] bg-muted rounded-md mb-4 flex items-center justify-center"><BookOpen className="h-12 w-12 text-muted-foreground" /></div>
+                  <div className="aspect-square bg-muted rounded-md mb-4 flex items-center justify-center overflow-hidden">
+                    {space.cover_image_url ? (
+                      <img src={space.cover_image_url} alt={space.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="h-12 w-12 text-muted-foreground" />
+                    )}
+                  </div>
                   <CardTitle>{space.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
