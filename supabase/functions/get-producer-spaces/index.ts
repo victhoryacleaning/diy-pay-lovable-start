@@ -24,7 +24,17 @@ Deno.serve(async (req) => {
     // Substituída a subquery manual pela sintaxe PostgREST para contagem.
     const { data, error } = await serviceClient
       .from('spaces')
-      .select('id, name, slug, created_at, space_products(count)')
+      .select(`
+        id, 
+        name, 
+        slug, 
+        created_at, 
+        banner_image_url,
+        space_products(
+          count,
+          product:products(cover_image_url)
+        )
+      `)
       .eq('producer_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -38,6 +48,8 @@ Deno.serve(async (req) => {
       slug: space.slug,
       created_at: space.created_at,
       product_count: space.space_products?.length || 0,
+      cover_image_url: space.banner_image_url || 
+                       space.space_products?.[0]?.product?.cover_image_url || null,
     }));
 
     return new Response(JSON.stringify(formattedData), {
