@@ -15,7 +15,6 @@ export const ImageFormatGuide = () => {
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-foreground">Horizontal</p>
-          <p className="text-xs text-muted-foreground">640×360px</p>
         </div>
       </div>
 
@@ -34,7 +33,6 @@ export const ImageFormatGuide = () => {
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-foreground">Vertical</p>
-          <p className="text-xs text-muted-foreground">360×640px</p>
         </div>
       </div>
     </div>
