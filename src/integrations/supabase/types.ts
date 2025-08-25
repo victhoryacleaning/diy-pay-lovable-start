@@ -512,6 +512,7 @@ export type Database = {
           subscription_frequency: string | null
           type: string | null
           updated_at: string
+          vertical_cover_image_url: string | null
         }
         Insert: {
           allowed_payment_methods?: Json
@@ -538,6 +539,7 @@ export type Database = {
           subscription_frequency?: string | null
           type?: string | null
           updated_at?: string
+          vertical_cover_image_url?: string | null
         }
         Update: {
           allowed_payment_methods?: Json
@@ -564,6 +566,7 @@ export type Database = {
           subscription_frequency?: string | null
           type?: string | null
           updated_at?: string
+          vertical_cover_image_url?: string | null
         }
         Relationships: [
           {

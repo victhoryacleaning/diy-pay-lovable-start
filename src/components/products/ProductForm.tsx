@@ -20,6 +20,7 @@ interface ProductFormData {
   name: string;
   description: string;
   cover_image_url: string;
+  vertical_cover_image_url: string;
   price: string;
   file_url_or_access_info: string;
   max_installments_allowed: number;
@@ -61,7 +62,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
   };
   
   const [formData, setFormData] = useState<ProductFormData>({
-    name: '', description: '', cover_image_url: '', price: '0,00', file_url_or_access_info: '',
+    name: '', description: '', cover_image_url: '', vertical_cover_image_url: '', price: '0,00', file_url_or_access_info: '',
     max_installments_allowed: 1, is_active: true, product_type: productTypeFromUrl,
     subscription_frequency: '', allowed_payment_methods: getDefaultPaymentMethods(productTypeFromUrl),
     show_order_summary: true, donation_title: '', donation_description: '', checkout_image_url: '',
@@ -91,6 +92,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         name: product.name || '',
         description: product.description || '',
         cover_image_url: product.cover_image_url || '',
+        vertical_cover_image_url: product.vertical_cover_image_url || '',
         price: product.price_cents ? (product.price_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00',
         file_url_or_access_info: product.file_url_or_access_info || '',
         max_installments_allowed: product.max_installments_allowed || 1,
@@ -144,6 +146,7 @@ const ProductForm = ({ productId, mode }: ProductFormProps) => {
         name: data.name.trim(),
         description: data.description?.trim() || null,
         cover_image_url: data.cover_image_url?.trim() || null,
+        vertical_cover_image_url: data.vertical_cover_image_url?.trim() || null,
         price_cents: priceInCents,
         file_url_or_access_info: data.file_url_or_access_info?.trim() || null,
         max_installments_allowed: Number(data.max_installments_allowed) || 1,
