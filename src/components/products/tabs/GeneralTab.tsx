@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ProductCoverUpload } from "../ProductCoverUpload";
+import { ProductVerticalCoverUpload } from "../ProductVerticalCoverUpload";
+import { ImageFormatGuide } from "../ImageFormatGuide";
 
 interface GeneralTabProps {
   formData: any;
@@ -74,16 +76,41 @@ const GeneralTab = ({ formData, onInputChange, userId }: GeneralTabProps) => {
       </div>
 
       {userId && (
-        <div className="space-y-2">
-          <Label>Imagem de Capa do Produto</Label>
-          <ProductCoverUpload
-            onUploadSuccess={(url) => onInputChange('cover_image_url', url)}
-            initialUrl={formData.cover_image_url}
-            userId={userId}
-          />
-          <p className="text-sm text-muted-foreground">
-            Faça upload de uma imagem que representa seu produto (opcional)
-          </p>
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <Label className="text-base font-medium">Imagens do Produto</Label>
+            <ImageFormatGuide />
+            <p className="text-sm text-muted-foreground text-center">
+              Escolha o formato adequado para cada uso. As imagens horizontais são ideais para listas de produtos, 
+              enquanto as verticais serão utilizadas no modelo Netflix da área de membros.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label>Imagem Horizontal (16:9)</Label>
+              <ProductCoverUpload
+                onUploadSuccess={(url) => onInputChange('cover_image_url', url)}
+                initialUrl={formData.cover_image_url}
+                userId={userId}
+              />
+              <p className="text-xs text-muted-foreground">
+                Para listagens e visualização padrão
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Imagem Vertical (9:16)</Label>
+              <ProductVerticalCoverUpload
+                onUploadSuccess={(url) => onInputChange('vertical_cover_image_url', url)}
+                initialUrl={formData.vertical_cover_image_url}
+                userId={userId}
+              />
+              <p className="text-xs text-muted-foreground">
+                Para modelo Netflix da área de membros
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
