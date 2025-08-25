@@ -95,11 +95,11 @@ export const ProductCoverUpload = ({ onUploadSuccess, initialUrl = '', userId }:
     }
   };
 
-  if (uploading) return <div className="border-2 border-dashed rounded-lg p-8 h-[150px] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin" /></div>;
-  if (uploadedUrl) return <div className="relative w-64 h-36 border rounded-lg group"><img src={uploadedUrl} alt="Capa" className="w-full h-full object-cover rounded-lg" /><div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"><Button type="button" variant="destructive" size="icon" onClick={handleRemoveImage}><X className="h-5 w-5" /></Button></div></div>;
+  if (uploading) return <div className="w-full h-[240px] border-2 border-dashed rounded-lg flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin" /></div>;
+  if (uploadedUrl) return <div className="w-full h-[240px] flex items-center justify-center"><div className="relative max-w-64 h-36 border rounded-lg group"><img src={uploadedUrl} alt="Capa" className="w-full h-full object-cover rounded-lg" /><div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"><Button type="button" variant="destructive" size="icon" onClick={handleRemoveImage}><X className="h-5 w-5" /></Button></div></div></div>;
   
   return (
-    <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${ isDragActive ? 'border-primary bg-primary/10' : 'border-border' } h-[150px]`}>
+    <div {...getRootProps()} className={`w-full h-[240px] border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors flex items-center justify-center ${ isDragActive ? 'border-primary bg-primary/10' : 'border-border' }`}>
       <input {...getInputProps()} />
       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
         <UploadCloud className="h-10 w-10" />
