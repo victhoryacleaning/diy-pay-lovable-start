@@ -691,7 +691,7 @@ export type Database = {
           payout_status: string | null
           platform_fee_cents: number
           producer_share_cents: number
-          product_id: string
+          product_id: string | null
           release_date: string | null
           security_reserve_cents: number | null
           status: string
@@ -722,7 +722,7 @@ export type Database = {
           payout_status?: string | null
           platform_fee_cents?: number
           producer_share_cents?: number
-          product_id: string
+          product_id?: string | null
           release_date?: string | null
           security_reserve_cents?: number | null
           status?: string
@@ -753,7 +753,7 @@ export type Database = {
           payout_status?: string | null
           platform_fee_cents?: number
           producer_share_cents?: number
-          product_id?: string
+          product_id?: string | null
           release_date?: string | null
           security_reserve_cents?: number | null
           status?: string
