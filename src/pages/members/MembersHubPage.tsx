@@ -19,6 +19,8 @@ const MembersHubPage = () => {
       return data;
     },
     enabled: !!spaceId,
+    staleTime: 5 * 60 * 1000, // 5 minutos de cache
+    gcTime: 10 * 60 * 1000, // 10 minutos em cache
   });
 
   if (isLoading) {

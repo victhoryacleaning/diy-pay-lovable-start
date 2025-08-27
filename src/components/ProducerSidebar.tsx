@@ -110,8 +110,8 @@ export function ProducerSidebar() {
                 </div>
               </div>
             </div>
-          ) : dashboardData ? (
-            <AwardsModal currentRevenue={dashboardData.currentRevenue || dashboardData.kpiValorLiquido || 0}>
+           ) : dashboardData ? (
+            <AwardsModal currentRevenue={dashboardData.kpiValorLiquido || 0}>
               <div className="cursor-pointer p-3 rounded-lg bg-[#4d0782] hover:bg-[#3d0564] transition-all duration-200">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-white" />
@@ -120,17 +120,17 @@ export function ProducerSidebar() {
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-white">
-                    <span>R$ {formatRevenue(dashboardData.currentRevenue || dashboardData.kpiValorLiquido || 0)}</span>
-                    <span>R$ {formatRevenue(dashboardData.currentMilestone || 1000000)}</span>
+                    <span>R$ {formatRevenue(dashboardData.kpiValorLiquido || 0)}</span>
+                    <span>R$ 10K</span>
                   </div>
                   
                   <Progress 
-                    value={dashboardData.progressPercentage || 0} 
+                    value={Math.min(((dashboardData.kpiValorLiquido || 0) / 1000000) * 100, 100)} 
                     className="h-2"
                   />
                   
                   <div className="text-xs text-purple-200 text-center">
-                    {Math.round(dashboardData.progressPercentage || 0)}% concluído
+                    {Math.round(Math.min(((dashboardData.kpiValorLiquido || 0) / 1000000) * 100, 100))}% concluído
                   </div>
                 </div>
               </div>

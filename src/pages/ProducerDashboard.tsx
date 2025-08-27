@@ -72,6 +72,9 @@ const ProducerDashboard = () => {
     enabled: !!profile, // Só executa se profile existir
   });
 
+  // Só mostra o conteúdo quando os dados estão prontos ou quando não há loading
+  const showContent = !isLoading && data;
+
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -133,7 +136,7 @@ const ProducerDashboard = () => {
                 </div>
               </div>
 
-              {isLoading ? (
+              {!showContent ? (
                 <DashboardSkeleton />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
