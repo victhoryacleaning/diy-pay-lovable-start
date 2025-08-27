@@ -67,7 +67,9 @@ const ProducerDashboard = () => {
       });
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutos para dashboard
+    enabled: !!profile, // Só executa se profile existir
   });
 
   const formatCurrency = (cents: number) => {

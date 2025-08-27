@@ -29,5 +29,4 @@ export const useProducerFinancialsStore = create<FinancialState>((set) => ({
   },
 }));
 
-// Iniciar a busca de dados imediatamente após a criação do store
-useProducerFinancialsStore.getState().fetchFinancialData();
+// Store não executa automaticamente - será chamado apenas quando necessário
