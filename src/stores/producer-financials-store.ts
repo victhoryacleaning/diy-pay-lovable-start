@@ -6,12 +6,16 @@ interface FinancialState {
   financialData: any | null;
   isLoading: boolean;
   fetchFinancialData: () => Promise<void>;
+  clearFinancialData: () => void;
 }
 
-export const useProducerFinancialsStore = create<FinancialState>((set) => ({
+export const useProducerFinancialsStore = create<FinancialState>((set, get) => ({
   financialData: null,
-  isLoading: true,
+  isLoading: false,
   fetchFinancialData: async () => {
+    // Evita múltiplas chamadas simultâneas
+    if (get().isLoading) return;
+    
     set({ isLoading: true });
     try {
       const { data, error } = await supabase.functions.invoke('get-producer-dashboard-v2', {
@@ -27,6 +31,7 @@ export const useProducerFinancialsStore = create<FinancialState>((set) => ({
       set({ isLoading: false, financialData: null });
     }
   },
+  clearFinancialData: () => set({ financialData: null, isLoading: false })
 }));
 
 // Store não executa automaticamente - será chamado apenas quando necessário

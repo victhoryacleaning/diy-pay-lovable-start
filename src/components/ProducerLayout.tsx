@@ -16,7 +16,14 @@ interface ProducerLayoutProps {
 export function ProducerLayout({ children }: ProducerLayoutProps) {
   const { profile, signOut, toggleView } = useAuth();
   const navigate = useNavigate();
-  const { financialData } = useProducerFinancialsStore();
+  const { financialData, fetchFinancialData } = useProducerFinancialsStore();
+
+  // Fetch financial data only once when component mounts
+  useEffect(() => {
+    if (profile && !financialData) {
+      fetchFinancialData();
+    }
+  }, [profile, financialData, fetchFinancialData]);
 
   const handleToggleView = () => {
     toggleView();

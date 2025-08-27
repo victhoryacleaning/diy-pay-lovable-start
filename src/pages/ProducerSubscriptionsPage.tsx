@@ -31,7 +31,7 @@ const ProducerSubscriptionsPage = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'canceled'>('all');
 
   const { data: subscriptionsData, isLoading, error } = useQuery({
-    queryKey: ['all-subscriptions'],
+    queryKey: ['producer-subscriptions'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-producer-subscriptions', {
         body: {} // No productId means get all subscriptions
@@ -41,6 +41,8 @@ const ProducerSubscriptionsPage = () => {
       return data;
     },
     enabled: !!user,
+    staleTime: 60 * 1000, // 1 minuto - dados de assinatura não mudam tão frequentemente
+    refetchOnMount: true,
   });
 
   const cancelSubscriptionMutation = useMutation({
@@ -54,7 +56,7 @@ const ProducerSubscriptionsPage = () => {
     },
     onSuccess: () => {
       toast.success('Assinatura cancelada com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['producer-subscriptions'] });
     },
     onError: (error) => {
       console.error('Erro ao cancelar assinatura:', error);

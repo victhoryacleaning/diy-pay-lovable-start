@@ -68,7 +68,7 @@ const ProducerDashboard = () => {
       if (error) throw error;
       return data;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutos para dashboard
+    staleTime: 30 * 1000, // 30 segundos para dados sempre frescos
     enabled: !!profile, // Só executa se profile existir
   });
 
