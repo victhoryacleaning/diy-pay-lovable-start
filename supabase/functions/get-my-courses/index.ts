@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // ### INÍCIO DA CORREÇÃO ###
+    // Busca enrollments com produtos e seus respectivos spaces
     const { data, error } = await serviceClient
       .from('enrollments')
       .select(`
@@ -29,41 +29,40 @@ Deno.serve(async (req) => {
           id,
           name,
           cover_image_url,
-          producer:profiles (full_name),
-          space_products(space_id) 
+          producer:profiles (full_name)
         )
       `)
-      // .eq('product.is_active', true) // Opcional: Descomente se quiser mostrar apenas produtos ativos
       .eq('user_id', user.id);
-    // ### FIM DA CORREÇÃO ###
 
     if (error) throw error;
     
-    // Simplifica a estrutura dos dados para o frontend
-    const courses = data.map(enrollment => {
-      // Se enrollment ou product for nulo, pula este item para evitar erros
-      if (!enrollment.product) {
-        return null;
-      }
+    // Para cada curso, busca o space_id correspondente
+    const coursesWithSpaces = await Promise.all(
+      data.map(async (enrollment) => {
+        if (!enrollment.product) {
+          return null;
+        }
 
-      // Garante que o space_id seja extraído corretamente
-      const spaceId = enrollment.product.space_products && enrollment.product.space_products.length > 0
-        ? enrollment.product.space_products[0].space_id
-        : null;
+        // Busca o space_id para este produto
+        const { data: spaceProduct } = await serviceClient
+          .from('space_products')
+          .select('space_id')
+          .eq('product_id', enrollment.product.id)
+          .single();
 
-      // Remove o objeto aninhado para limpar a resposta
-      delete enrollment.product.space_products;
-      
-      const producerName = enrollment.product.producer 
-        ? (enrollment.product.producer as { full_name: string }).full_name 
-        : 'Produtor não encontrado';
+        const producerName = enrollment.product.producer 
+          ? (enrollment.product.producer as { full_name: string }).full_name 
+          : 'Produtor não encontrado';
 
-      return {
-        ...enrollment.product,
-        producer_name: producerName,
-        space_id: spaceId, // Adiciona o space_id ao objeto final (pode ser null)
-      };
-    }).filter(course => course !== null); // Remove quaisquer matrículas de produtos que foram deletados
+        return {
+          ...enrollment.product,
+          producer_name: producerName,
+          space_id: spaceProduct?.space_id || null,
+        };
+      })
+    );
+
+    const courses = coursesWithSpaces.filter(course => course !== null);
 
     return new Response(JSON.stringify(courses), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
