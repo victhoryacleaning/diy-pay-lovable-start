@@ -77,7 +77,7 @@ export default function MyCoursesPage() {
                 </CardContent>
                 <CardFooter>
                   <Button asChild className="w-full" disabled={!course.space_id}>
-                    <Link to={course.space_id ? `/members/spaces/${course.space_id}` : '#'}>
+                    <Link to={course.space_id ? `/members/spaces/${course.space_id}` : '/members/courses/' + course.id}>
                       Começar
                     </Link>
                   </Button>

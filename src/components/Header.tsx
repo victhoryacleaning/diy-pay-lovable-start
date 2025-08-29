@@ -26,7 +26,10 @@ const Header = () => {
   
   const isLoggedIn = !!user;
   const currentRole = profile?.role ?? 'user';
-  const displayName = profile?.full_name ? formatUserName(profile.full_name) : 'Usuário';
+  // Garante que está usando full_name e não email
+  const displayName = profile?.full_name && profile.full_name.trim() 
+    ? formatUserName(profile.full_name) 
+    : (profile?.email ? profile.email.split('@')[0] : 'Usuário');
   const userInitial = displayName.charAt(0).toUpperCase();
 
   const getRoleDashboardLink = (role: string) => {
